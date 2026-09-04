@@ -1,0 +1,332 @@
+{
+  "agent-md-refactor": {
+    "positive": [
+      "Our AGENTS.md is huge and contradictory; split it into scoped guidance.",
+      "Refactor CLAUDE.md so the root stays short and links to topic instructions.",
+      "Clean up repeated rules in these agent instruction files without changing policy."
+    ],
+    "negative": [
+      "Write an implementation plan for this feature.",
+      "Improve a skill using yesterday's agent transcript."
+    ]
+  },
+  "archify": {
+    "positive": [
+      "Create one interactive HTML architecture diagram for this system.",
+      "Turn this sequence into a polished standalone HTML visual.",
+      "Visualize this lifecycle as a self-contained explorable web file."
+    ],
+    "negative": [
+      "Create an editable UML class diagram in draw.io.",
+      "Sketch this flow on an Excalidraw canvas."
+    ]
+  },
+  "capture-project-vision": {
+    "positive": [
+      "Interview me and capture the long-term vision for this repository.",
+      "Help record our project direction and durable product decisions.",
+      "Create the project's vision document from a structured interview."
+    ],
+    "negative": [
+      "Design the retry behavior for this one feature.",
+      "Write an implementation plan from the approved billing spec."
+    ]
+  },
+  "chrome-cdp": {
+    "positive": [
+      "With my approval, inspect the Chrome tab I already have open via CDP.",
+      "Debug the page in my existing local Chromium session.",
+      "Connect to my approved Chrome debugging port and click the button."
+    ],
+    "negative": [
+      "Search the web for Chrome release notes.",
+      "Launch a new browser profile and buy this item."
+    ]
+  },
+  "deslop": {
+    "positive": [
+      "Do a broad deslop pass over the entire codebase.",
+      "Find and remove dead code, duplication, and accidental complexity across src.",
+      "Clean up this repository deeply without changing behavior.",
+      "Replace the old config API: migrate every caller, then delete the legacy path in the same cleanup."
+    ],
+    "negative": [
+      "Simplify only the function I just changed before the PR.",
+      "Rewrite this paragraph so it sounds less like AI.",
+      "Deep-clean the two files from my small settled fix before commit."
+    ]
+  },
+  "doc-coauthoring": {
+    "positive": [
+      "Work with me iteratively to draft this technical proposal.",
+      "Co-author this ADR by gathering context and testing it with a reader.",
+      "Help me discover and refine the content of a substantial design document."
+    ],
+    "negative": [
+      "Classify this page as tutorial, how-to, reference, or explanation.",
+      "Rewrite this finished paragraph in plain language."
+    ]
+  },
+  "documentation-writer": {
+    "positive": [
+      "Write a Diátaxis how-to guide for this API.",
+      "Turn these notes into software reference documentation.",
+      "Classify and write this documentation as a tutorial or explanation."
+    ],
+    "negative": [
+      "Interview me to discover what this proposal should say.",
+      "Create a redacted handoff for another agent."
+    ]
+  },
+  "drawio-skill": {
+    "positive": [
+      "Create an editable draw.io ER diagram and export it to SVG.",
+      "Draw a precise BPMN process with swimlanes in draw.io.",
+      "Build a branded network topology as a .drawio file."
+    ],
+    "negative": [
+      "Make a standalone interactive HTML architecture explainer.",
+      "Sketch this informally in Excalidraw."
+    ]
+  },
+  "effective-agent-skills": {
+    "positive": [
+      "Create a new Agent Skill with a strong trigger description.",
+      "Review these SKILL.md files for progressive disclosure problems.",
+      "Why is this skill not triggering on the right prompts?"
+    ],
+    "negative": [
+      "Mine this session transcript for improvements to the release skill.",
+      "Refactor our AGENTS.md into scoped repository instructions."
+    ]
+  },
+  "excalidraw": {
+    "positive": [
+      "Sketch this architecture as an editable Excalidraw file.",
+      "Create a hand-drawn workflow diagram and export an SVG.",
+      "Visualize this brainstorming flow on an Excalidraw canvas."
+    ],
+    "negative": [
+      "Create a strict UML diagram in draw.io.",
+      "Deliver this diagram as one interactive HTML file."
+    ]
+  },
+  "handoff": {
+    "positive": [
+      "Create a handoff so I can continue in a fresh agent session.",
+      "We're near the context limit; save a redacted continuation brief.",
+      "Split this work by giving the next session everything non-obvious."
+    ],
+    "negative": [
+      "Coordinate five implementation tasks in parallel worktrees.",
+      "Summarize this article for me."
+    ]
+  },
+  "humanizer": {
+    "positive": [
+      "Rewrite this AI-sounding paragraph in natural plain language.",
+      "Humanize this draft without changing any facts or citations.",
+      "Make this sound like my writing sample rather than a chatbot."
+    ],
+    "negative": [
+      "Remove dead code and duplicated helpers from the repository.",
+      "Co-author a new technical proposal with me."
+    ]
+  },
+  "improve-skill": {
+    "positive": [
+      "Use this Pi session transcript to improve the debugging skill.",
+      "Extract a reusable Agent Skill from my recent Codex session.",
+      "Analyze this coding-agent history for missing skill instructions.",
+      "I corrected the same import mistake five times this session; turn that recurring correction into a tested guard in the skill."
+    ],
+    "negative": [
+      "Create a skill from these requirements without session history.",
+      "Refactor CLAUDE.md into shorter scoped files.",
+      "Add my one-off wording preference from this chat as a permanent skill rule."
+    ]
+  },
+  "last30days": {
+    "positive": [
+      "What have people said about local coding agents in the last 30 days?",
+      "Research recent Reddit, X, YouTube, GitHub, and web discussion of marimo.",
+      "What's trending in AI developer tools this month?"
+    ],
+    "negative": [
+      "Find the official Python language specification.",
+      "Summarize this single article from 2020."
+    ]
+  },
+  "make-release": {
+    "positive": [
+      "Prepare a patch release and GitHub Release for this Node package.",
+      "Bump the Python package version, update the changelog, tag, and publish to PyPI.",
+      "Create a dry-run minor release for this uv project."
+    ],
+    "negative": [
+      "Merge this completed feature worktree into main.",
+      "Verify the tests before I open a PR."
+    ]
+  },
+  "marimo-notebook": {
+    "positive": [
+      "Create a marimo notebook as a Python file.",
+      "Edit this .py marimo notebook and run marimo check.",
+      "Add reactive cells and PEP 723 dependencies to this notebook file."
+    ],
+    "negative": [
+      "Change a cell in the marimo kernel currently open in my browser.",
+      "Set up a general Python package with uv."
+    ]
+  },
+  "marimo-pair": {
+    "positive": [
+      "Pair with me in the marimo notebook currently running on port 2718.",
+      "Inspect the live marimo kernel and persist a new cell.",
+      "Change this open notebook through marimo code mode, not the file."
+    ],
+    "negative": [
+      "Create a new marimo notebook file from scratch without starting it.",
+      "Write a standalone Python script with PEP 723 metadata."
+    ]
+  },
+  "merge-worktree": {
+    "positive": [
+      "Land this completed worktree on main and clean it up safely.",
+      "Open a PR from this worktree, but do not merge without separate approval.",
+      "Integrate the finished feature branch from its managed worktree."
+    ],
+    "negative": [
+      "Implement these five tasks in separate worktrees.",
+      "Publish a new package release."
+    ]
+  },
+  "modern-python": {
+    "positive": [
+      "Set up this new Python package with uv, Ruff, and ty.",
+      "Migrate this Poetry project to uv at validation parity.",
+      "Write a standalone dependency-bearing Python script using PEP 723."
+    ],
+    "negative": [
+      "Fix this existing Python test failure.",
+      "Publish the current Python package to PyPI."
+    ]
+  },
+  "orchestrate-implementation": {
+    "positive": [
+      "Implement this approved plan across parallel tasks and worktrees.",
+      "Coordinate workers and reviewers for this multi-repository feature.",
+      "Execute this specification with isolated implementation lanes."
+    ],
+    "negative": [
+      "Create a handoff for one fresh session.",
+      "Merge the already completed worktree into main."
+    ]
+  },
+  "pi-custom-model": {
+    "positive": [
+      "Add this exact provider/model ID to Pi because the registry cannot resolve it.",
+      "Register a custom Pi model variant at my explicit request.",
+      "Repair my unresolved saved Pi model default."
+    ],
+    "negative": [
+      "Choose the best built-in model for this task.",
+      "Update an API key in my production account."
+    ]
+  },
+  "prototype-question": {
+    "positive": [
+      "Build a throwaway prototype to test whether this state model feels right.",
+      "Create a disposable UI spike to compare these layouts.",
+      "Sanity-check this algorithm's feasibility with minimal temporary code.",
+      "Don't ask me which retry backoff actually recovers faster; prototype both and measure it."
+    ],
+    "negative": [
+      "Design the production architecture for this feature.",
+      "Implement the approved specification fully.",
+      "Which of these two feature names should we ship with?"
+    ]
+  },
+  "review-codebase-architecture": {
+    "positive": [
+      "Review this codebase for shallow modules and missing seams without editing it.",
+      "Rank module-deepening opportunities and include a visual HTML report.",
+      "Audit architecture hotspots that make testing and navigation difficult."
+    ],
+    "negative": [
+      "Help me choose the final interface for one architecture candidate.",
+      "Refactor the code to implement this approved architecture."
+    ]
+  },
+  "shape-design": {
+    "positive": [
+      "Shape this feature idea into an approved bounded design before coding.",
+      "Ask targeted questions and compare architecture alternatives for this change.",
+      "Help settle the interface and constraints for the selected architecture candidate.",
+      "Our job runner has scattered boolean flags and retries that double-apply; shape the state model."
+    ],
+    "negative": [
+      "Survey the whole repository for architecture opportunities.",
+      "Turn this approved design into an implementation plan."
+    ]
+  },
+  "simplify-code": {
+    "positive": [
+      "Simplify the code I just changed before opening the PR.",
+      "Review this settled diff for reuse, quality, and efficiency, then apply fixes.",
+      "Clean up this completed feature without widening beyond its changed files.",
+      "The finished diff is full of phase-label narration comments; strip them before I open the PR."
+    ],
+    "negative": [
+      "Do a deep cleanup of the entire codebase.",
+      "Review this diff but do not change any files.",
+      "Simplify every module in the repository while you're at it, not just my change."
+    ]
+  },
+  "systematic-debugging": {
+    "positive": [
+      "Debug this intermittent test failure and fix the root cause.",
+      "Diagnose why the build fails only in CI.",
+      "Investigate this performance regression with a reproducible experiment."
+    ],
+    "negative": [
+      "Simplify this working function.",
+      "Set up a new test framework for the project.",
+      "Just add a defensive retry guard around that endpoint without reproducing the failure."
+    ]
+  },
+  "terminal-session-control": {
+    "positive": [
+      "Inspect the existing Herdr session named backend.",
+      "Send this command to the cmux workspace I explicitly named.",
+      "Read the output from my current Herdr target without launching anything."
+    ],
+    "negative": [
+      "Start five new implementation agents.",
+      "Open a new terminal window and change my workspace layout."
+    ]
+  },
+  "verification-before-completion": {
+    "positive": [
+      "Verify everything before saying this task is complete.",
+      "Run fresh checks and inspect the diff before committing.",
+      "Prove the bug is fixed before we open the PR.",
+      "The typecheck passed, but prove the dashboard actually renders before we call this done."
+    ],
+    "negative": [
+      "Write the implementation now.",
+      "Explain which tests this project has without running them."
+    ]
+  },
+  "write-implementation-plan": {
+    "positive": [
+      "Turn this approved design into an executable implementation plan.",
+      "Break these requirements into independently testable task contracts.",
+      "Write a plan from this specification before any code changes."
+    ],
+    "negative": [
+      "Help me decide what the feature should do.",
+      "Execute this already approved implementation plan."
+    ]
+  }
+}

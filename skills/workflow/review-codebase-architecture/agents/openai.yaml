@@ -1,0 +1,4 @@
+---
+interface:
+  display_name: "Review Codebase Architecture"
+  short_description: "Find and explain architecture improvements"

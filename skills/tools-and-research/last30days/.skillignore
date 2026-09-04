@@ -1,0 +1,7 @@
+# Hermes scans from this skill directory, not the repository root.
+# Keep non-runtime assets and metadata out of install-time security scans.
+assets/
+agents/
+
+# Vendored third-party X-search client (node_modules analog); excluded from scan, still installed.
+scripts/lib/vendor/

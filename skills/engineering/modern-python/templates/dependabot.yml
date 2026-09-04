@@ -1,0 +1,36 @@
+# Dependabot configuration for Python projects
+# Adapt to the repository only after automated dependency PRs are approved.
+# Validate options against current GitHub documentation before copying to
+# .github/dependabot.yml. See references/dependabot.md for details.
+
+version: 2
+updates:
+  # Python dependencies (pyproject.toml, requirements.txt)
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    # 7-day cooldown delays version-update PRs for new releases;
+    # it reduces immediate exposure but is not a security guarantee
+    cooldown:
+      default-days: 7
+    # Group minor/patch updates to reduce PR noise
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-dependencies:
+        dependency-type: production
+        update-types: [patch]
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]

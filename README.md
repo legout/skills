@@ -1,106 +1,113 @@
 # Skills
 
-Reusable agent skills published by [legout](https://github.com/legout) for installation with the [Agent Skills CLI](https://skills.sh/).
+Reusable [Agent Skills](https://agentskills.io/) published by [legout](https://github.com/legout).
 
 ## Install
 
-Install all skills for Pi:
+Install one skill:
 
 ```bash
-npx skills add legout/skills \
-  --skill orchestrate-implementation \
-  --skill merge-worktree \
-  --skill make-release \
-  --skill handoff \
-  --skill effective-agent-skills \
-  --skill agent-md-refactor \
-  --global --agent pi --yes --copy
+npx skills add legout/skills --skill systematic-debugging --global --agent pi --yes --copy
 ```
 
-Or install one:
+Install the complete catalog:
 
 ```bash
-npx skills add legout/skills --skill orchestrate-implementation --global --agent pi --yes --copy
-npx skills add legout/skills --skill merge-worktree --global --agent pi --yes --copy
-npx skills add legout/skills --skill make-release --global --agent pi --yes --copy
-npx skills add legout/skills --skill handoff --global --agent pi --yes --copy
-npx skills add legout/skills --skill effective-agent-skills --global --agent pi --yes --copy
-npx skills add legout/skills --skill agent-md-refactor --global --agent pi --yes --copy
+npx skills add legout/skills --skill '*' --global --agent pi --yes --copy
 ```
 
-## Skills
+The catalog uses nested categories; skill names and `/skill:<name>` commands remain unchanged.
 
-### `orchestrate-implementation`
+## Catalog
 
-Executes plans, specifications, ADRs, and tickets with isolated Pi workers, explicit test obligations, adaptive independent review, durable handoffs, and orchestrator-owned integration. It uses `pi-subagents` for child lifecycle and optionally consults named read-only `pi-intercom` peers.
+### Engineering
 
-### `merge-worktree`
+- **`deslop`** — broad evidence-driven codebase cleanup.
+- **`modern-python`** — uv, Ruff, and ty setup or migration.
+- **`simplify-code`** — behavior-preserving cleanup of settled changed code.
+- **`systematic-debugging`** — reproducible root-cause diagnosis.
 
-Integrates a registered Git worktree locally or through an automatically merged GitHub pull request. It commits pending source changes, validates on an isolated integration branch, attempts intent-preserving conflict resolution, pushes and verifies the target, and optionally removes the merged worktree with `--clean-up`.
+### Skill authoring
 
-Required companion skills:
+- **`agent-md-refactor`** — concise agent instructions with scoped references.
+- **`effective-agent-skills`** — Agent Skill authoring, review, and debugging.
+- **`improve-skill`** — skill changes derived from agent-session evidence.
 
-- `github` for pull-request operations
-- [`resolving-merge-conflicts`](https://skills.sh/mattpocock/skills/resolving-merge-conflicts) for conflicts
+### Tools and research
 
-Install the conflict resolver:
+- **`chrome-cdp`** — approved control of an existing local Chrome session.
+- **`handoff`** — redacted handoff for a fresh agent session.
+- **`last30days`** — recent social, community, video, GitHub, and web research.
+- **`marimo-notebook`** — file-based marimo notebooks.
+- **`marimo-pair`** — live marimo-kernel collaboration.
+- **`pi-custom-model`** — explicit custom Pi model registration.
+- **`terminal-session-control`** — explicit Herdr or cmux target interaction.
 
-```bash
-npx skills add mattpocock/skills \
-  --skill resolving-merge-conflicts \
-  --global --agent pi --yes --copy
+### Visualization
+
+- **`archify`** — standalone interactive HTML diagrams.
+- **`drawio-skill`** — precise editable draw.io diagrams.
+- **`excalidraw`** — sketch-like editable Excalidraw diagrams.
+
+### Workflow
+
+- **`capture-project-vision`** — project vision and durable decisions.
+- **`make-release`** — semver GitHub and optional PyPI releases.
+- **`merge-worktree`** — worktree integration and cleanup.
+- **`orchestrate-implementation`** — coordinated multi-task implementation.
+- **`prototype-question`** — disposable code for one design question.
+- **`review-codebase-architecture`** — read-only module and seam review.
+- **`shape-design`** — approved bounded design before implementation.
+- **`verification-before-completion`** — fresh evidence before success claims.
+- **`write-implementation-plan`** — executable plans from approved requirements.
+
+### Writing
+
+- **`doc-coauthoring`** — collaborative document discovery and drafting.
+- **`documentation-writer`** — Diátaxis software documentation.
+- **`humanizer`** — fact-preserving natural-language rewrites.
+
+## Boundaries
+
+- `deslop` owns broad cleanup; `simplify-code` owns settled changed-code cleanup.
+- `documentation-writer` owns document type and quality; `doc-coauthoring` owns collaborative drafting.
+- `marimo-notebook` edits files; `marimo-pair` works through a live kernel.
+- `effective-agent-skills` covers general authoring; `improve-skill` requires session evidence.
+- `review-codebase-architecture` identifies candidates; `shape-design` settles one.
+- `archify` produces interactive HTML, `drawio-skill` produces precise editable diagrams, and `excalidraw` produces sketch-like canvases.
+
+## Workflow
+
+```text
+review architecture ─┐
+capture vision ──────┴─> shape design -> write plan -> orchestrate -> merge
+                           |     ^
+                           v     |
+                     prototype spike
+
+unexpected failure -> systematic-debugging
+completion claim   -> verification-before-completion
 ```
 
-### `make-release`
+`orchestrate-implementation` expects `pi-subagents` and may use configured `pi-intercom` peers. `merge-worktree` PR mode expects an authenticated `gh` CLI. `make-release` composes with release, changelog, GitHub, commit, and uv tooling when available.
 
-Creates patch, minor, or major releases for Python/uv and Node projects. It previews the release, updates versions and changelogs, validates build artifacts, commits and pushes, creates an immutable version tag and GitHub Release, and optionally publishes Python packages to PyPI.
+## Provenance
 
-Required companion skills:
-
-- `update-changelog`
-- `commit`
-- `github`
-- `uv` for Python releases
-
-### `agent-md-refactor`
-
-Refactors bloated `AGENTS.md`, `CLAUDE.md`, or similar instruction files into concise roots with linked, progressive-disclosure documentation.
-
-### Adopted upstream skills
-
-These two general-purpose skills are adopted from [David Ondrej's `skills` repository](https://github.com/davidondrej/skills) at pinned commit [`11dee2e`](https://github.com/davidondrej/skills/tree/11dee2ebc2d045806b686ba0b57746f1e3d7e331). They are MIT-licensed; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
-
-- `handoff` — creates a compact, redacted handoff for a fresh agent when context or sessions change.
-- `effective-agent-skills` — guidance for authoring, composing, testing, and securing `SKILL.md` files.
-
-## Source updates
-
-`sources.json` records each adopted source and commit. Check it manually or from CI:
+[`UPSTREAM_ADOPTION.md`](UPSTREAM_ADOPTION.md) records adoption decisions. [`sources.json`](sources.json) records pinned file-level provenance, and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) carries applicable notices.
 
 ```bash
 bash scripts/check-skill-sources.sh
 ```
 
-The check is read-only. A non-zero exit means a pinned upstream branch moved or a local adopted file is missing; inspect the printed compare URL before updating any copy. Links alone are not enough for skill discovery, so adopted skills stay vendored and pinned.
-
-## Usage
-
-```text
-/skill:orchestrate-implementation supervised path/to/plan.md
-/skill:merge-worktree local /path/to/worktree --clean-up
-/skill:merge-worktree pr /path/to/worktree
-/skill:make-release patch --dry-run
-/skill:make-release minor
-/skill:agent-md-refactor CLAUDE.md
-```
-
 ## Development
 
 ```bash
-bash -n tests/skills_test.sh
+bash -n tests/skills_test.sh scripts/check-skill-sources.sh
 bash tests/skills_test.sh
+bash scripts/check-skill-sources.sh
+git diff --check
 ```
 
 ## License
 
-[MIT](LICENSE)
+Original material is [MIT](LICENSE). Adopted material remains under the licenses listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

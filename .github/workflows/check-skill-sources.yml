@@ -8,8 +8,10 @@ permissions:
 jobs:
   sources:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - run: bash scripts/check-skill-sources.sh
+      - name: Validate pinned sources and branch drift
+        run: bash scripts/check-skill-sources.sh
