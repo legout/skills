@@ -131,6 +131,10 @@ The installed `~/.agents/skills` packages were checked before adoption. Support 
 | Draw.io diagrams | Adapt | `drawio-skill` (the installed package's canonical name), including scripts, references, styles, and shape data |
 | Excalidraw diagrams | Adapt | `excalidraw`, including its helper and schema reference |
 | Skill improvement from transcripts | Add local material | `improve-skill`, including its session extractor |
+| Active domain language and ADR maintenance | Adapt | `domain-modeling`, including its CONTEXT.md and ADR formats |
+| Decision-tree stress testing | Merge wrappers | `grilling`; `grill-me` is its plain mode and `grill-with-docs` composes it with `domain-modeling` |
+| Durable primary-source research | Adapt | `research`; `last30days` remains the separate recent-community owner |
+| Working-preference mining | Adapt | `workflow-from-chats`; `improve-skill` remains the owner for one skill from a specific session |
 
 The visual report from the requested architecture package is now an optional reference under `review-codebase-architecture`; design interrogation routes to `shape-design` instead of duplicating it. The requested `deslop` URL resolves to Cursor's `cursor-team-kit/skills/deslop`; useful material from `pstack/skills/unslop` is merged into `humanizer`. `codebase-deslop` was removed because it duplicated `deslop` exactly. `simplify-code` remains the distinct recent-diff simplifier copied from the installed Pi skill set.
 
@@ -155,11 +159,15 @@ Source pin: `cursor/plugins@93b00b89ef425a9c1bac0d0b317dfc49c930ac99`, `pstack/s
 | `effective-agent-skills` | `poteto-mode/SKILL.md`, `playbooks/authoring-a-skill.md` |
 | `improve-skill` | `poteto-mode/SKILL.md`, `playbooks/eval.md` |
 
-The `AGENTS.md` completion-boundary routing (offer `simplify-code` once; widen to `deslop` only when findings show broader systemic scope and the user accepts) adapts the package's deslop-before-commit habit. It has no `sources.json` relationship because the provenance validator requires a skill owner; this note records that routing adaptation.
+The `AGENTS.md` completion-boundary routing (offer `simplify-code` once; widen to `deslop` only when findings show broader systemic scope and the user accepts) adapts the package's deslop-before-commit habit. File-level relationships for skill-owned adaptations are recorded in `sources.json`; this note also records the repository-level routing adaptation.
 
 **Adopted:** narrating- and phase-label comment cleanup with non-obvious-why retention; reader-load evidence; smallest behavior pins before risky rewrites; subtraction-first cleanup with earn-your-place structure; behavior-change separation; migrate-callers-then-delete-legacy sequencing with compatibility only for demonstrated consumers; same-surface verification with concrete surface examples and compilation-proves-compilation; evidence-traced fixes with speculative-guard rejection, disproven-hypothesis reverts, and baseline-plus-after performance measurement; conditional data-shape, boundary, idempotency, and shared-state analysis; observable-uncertainty routing to prototypes without displacing user-owned decisions; runnable-check task sequencing with removal conditions; smallest safe decomposition with shared-write separation and parent-owned review of child diffs; bounded child context; recurring-correction executable enforcement with pre-change/post-change comparison.
 
 **Rejected:** the `poteto-mode` skill, `poteto-agent`, and all 23 playbooks as units; mandatory todolists and principle-citation rituals; fixed per-role model assignments; mandatory subagents and design exploration for every function boundary; a custom tool for every non-trivial task; automatic PR creation, always-ready PR policy, and `gh`/Origin/Graphite forge machinery; blanket external-action authority ("use any MCP tool", "never block on the human") overriding this catalog's approval gates; mandatory multi-prototype comparisons for routine work; `control-cli`/`control-ui` control skills; babysit, autopilot, hillclimb, and shipping orchestration; swarm/arena/interrogate fan-out; global punctuation and prose-style rules; the `/goal`-armed program skeleton and audit ticks. The catalog's static assertions in `tests/skills_test.sh` already serve the encode-lessons-in-structure role without a plan-format checker script.
+
+## Post-ADR artifact policy
+
+An ADR explains why a durable decision was made; it is not a behavioral specification. Bounded changes proceed from an approved in-chat design directly to orchestration. Architectural or behavior-heavy changes get a written specification with observable acceptance examples, followed by the smallest executable plan. Tracker tickets are created only for established tracker workflows, explicit requests, or coordination that must outlive one run; the ticket set replaces rather than duplicates the implementation plan. Independent subsystems become separate plans or ticket groups instead of one oversized plan.
 
 ## Safety and licensing decisions
 

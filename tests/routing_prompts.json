@@ -67,6 +67,17 @@
       "Rewrite this finished paragraph in plain language."
     ]
   },
+  "domain-modeling": {
+    "positive": [
+      "Sharpen the terms in our CONTEXT.md while we discuss this domain.",
+      "Record this hard-to-reverse architecture choice as an ADR.",
+      "The code and glossary disagree about what an account means; resolve the domain model."
+    ],
+    "negative": [
+      "Write the behavioral specification for this approved feature.",
+      "Grill me about this idea without writing any documentation."
+    ]
+  },
   "documentation-writer": {
     "positive": [
       "Write a Diátaxis how-to guide for this API.",
@@ -109,6 +120,17 @@
     "negative": [
       "Create a strict UML diagram in draw.io.",
       "Deliver this diagram as one interactive HTML file."
+    ]
+  },
+  "grilling": {
+    "positive": [
+      "Grill me relentlessly about this migration plan.",
+      "Stress-test my decision one round of questions at a time.",
+      "Grill this architecture with docs and record qualifying domain decisions."
+    ],
+    "negative": [
+      "Implement the approved migration now.",
+      "Update this glossary without interviewing me."
     ]
   },
   "handoff": {
@@ -258,6 +280,17 @@
       "Refactor the code to implement this approved architecture."
     ]
   },
+  "research": {
+    "positive": [
+      "Research the official API behavior and save cited findings in this repository.",
+      "Delegate a primary-source investigation of this protocol specification.",
+      "Trace these library claims back to docs and source code in a Markdown note."
+    ],
+    "negative": [
+      "What are people saying about this tool on Reddit this month?",
+      "Summarize this one article without creating a repository note."
+    ]
+  },
   "shape-design": {
     "positive": [
       "Shape this feature idea into an approved bounded design before coding.",
@@ -327,6 +360,17 @@
     "negative": [
       "Help me decide what the feature should do.",
       "Execute this already approved implementation plan."
+    ]
+  },
+  "workflow-from-chats": {
+    "positive": [
+      "Mine my recent Cursor chats for durable working preferences.",
+      "Learn the repeated review workflow I prefer across the last week of chats.",
+      "Turn recurring feedback across recent conversations into rules or skills."
+    ],
+    "negative": [
+      "Improve this one debugging skill from the transcript I supplied.",
+      "Summarize what happened in yesterday's chat."
     ]
   }
 }

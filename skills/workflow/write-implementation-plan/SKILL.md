@@ -7,7 +7,16 @@ description: Turn an approved specification or multi-step requirement into an ex
 
 > Adapted from [`obra/superpowers`](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/writing-plans) at commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` (MIT). Verifiable-unit sequencing and migration cleanup are adapted from Cursor's [`poteto-mode`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99/pstack/skills/poteto-mode) at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor).
 
-Write for an implementer with no conversational context. The specification remains authoritative; the plan maps it to repository evidence and checks.
+Write for an implementer with no conversational context. The specification remains authoritative; the plan is a compact execution map, not a rewritten specification.
+
+## Artifact policy
+
+- For one bounded change under one owner, skip a plan file and pass the approved in-chat design directly to `orchestrate-implementation`.
+- For architectural or multi-step work, write the smallest plan that exposes dependencies, ownership, integration order, and verification.
+- Split independent subsystems into separate plans instead of producing one huge plan.
+- Create tracker tickets only when the user asks for them, an established tracker requires them, or coordination must outlive the current run. Publish each task as a ticket and treat that ticket set as the plan; do not maintain a duplicate full plan.
+
+ADRs explain **why**, specifications define **what**, and plans or tickets define the executable next units.
 
 ## Preflight
 
@@ -21,14 +30,13 @@ Use the repository's established plan location. If none exists, propose a locati
 
 ## Plan header
 
-Include:
+Link rather than restating specification content. Include:
 
 - goal;
 - source specification path;
-- architecture summary;
-- constraints and non-goals;
+- only the architecture constraints and non-goals needed to sequence work;
 - technology/runtime assumptions;
-- acceptance criteria; and
+- a requirement-to-task map pointing to the specification's acceptance criteria; and
 - exact global validation commands.
 
 ## Tasks

@@ -5,7 +5,7 @@ description: Shape an idea into an approved bounded design or architectural spec
 
 # Design Shaping
 
-> Consolidates [`obra/superpowers` brainstorming](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/brainstorming/SKILL.md), [`mattpocock/skills` grilling](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/productivity/grilling/SKILL.md), and Matt Pocock's [`domain-modeling`](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/engineering/domain-modeling/SKILL.md) terminology/decision-record guidance (all MIT). Exact pins are recorded in `sources.json`.
+> Combines [`obra/superpowers` brainstorming](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/brainstorming/SKILL.md) with selected techniques from [`mattpocock/skills` grilling](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/productivity/grilling/SKILL.md) and [`domain-modeling`](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/engineering/domain-modeling/SKILL.md) (all MIT). The dedicated `grilling` and `domain-modeling` skills own those full workflows. Exact pins are recorded in `sources.json`.
 >
 > Data-shape, boundary, idempotency, and shared-state analysis are adapted from Cursor's [`poteto-mode`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99/pstack/skills/poteto-mode) at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor).
 
@@ -13,7 +13,7 @@ Classify the request before implementation:
 
 - **Spike:** classify and approve a feasibility question, then hand the disposable probe to `prototype-question`.
 - **Bounded:** change an existing, understood flow with a short in-chat design.
-- **Architectural:** create or reshape modules, interfaces, or cross-cutting behavior; produce a written specification.
+- **Architectural:** create or reshape modules, interfaces, cross-cutting behavior, or behavior with many interacting rules; produce a written specification with observable acceptance examples.
 
 When unsure, take the heavier path. Hidden complexity upgrades the path.
 
@@ -22,8 +22,10 @@ When unsure, take the heavier path. Hidden complexity upgrades the path.
 1. Read project instructions, relevant files, recent changes, and any established context map or decision records.
 2. Separate facts the agent can inspect from decisions the user owns.
 3. Model dependent choices as a decision tree. Ask each round's full frontier, with a recommendation for every question; defer questions whose prerequisites remain open.
-4. Challenge ambiguous domain terms with concrete scenarios. Update the established glossary as terms settle. Offer an ADR only for a hard-to-reverse, surprising decision chosen from real alternatives.
+4. Challenge ambiguous domain terms with concrete scenarios. Invoke `domain-modeling` only when actively changing the glossary or recording an ADR.
 5. State non-goals and observable success criteria.
+
+Invoke `grilling` only for an explicit stress-test or grill request. Ordinary shaping stops when the material choices needed for an approved design are settled; it does not exhaust every branch.
 
 ## Spike
 
@@ -42,6 +44,8 @@ Ask only material questions. Present a short design covering behavior, files, er
 5. Self-review for placeholders, contradictions, ambiguity, and excess scope.
 6. Ask the user to review the written specification.
 7. After approval, invoke `write-implementation-plan`—not an implementation skill.
+
+An ADR records why a durable choice was made; it never replaces the specification. The specification owns behavior, invariants, interfaces, and acceptance examples. The implementation plan owns only task boundaries, order, ownership, and verification.
 
 ## Design quality
 

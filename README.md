@@ -32,12 +32,14 @@ The catalog uses nested categories; skill names and `/skill:<name>` commands rem
 - **`agent-md-refactor`** — concise agent instructions with scoped references.
 - **`effective-agent-skills`** — Agent Skill authoring, review, and debugging.
 - **`improve-skill`** — skill changes derived from agent-session evidence.
+- **`workflow-from-chats`** — durable preferences mined across recent chats.
 
 ### Tools and research
 
 - **`chrome-cdp`** — approved control of an existing local Chrome session.
 - **`handoff`** — redacted handoff for a fresh agent session.
 - **`last30days`** — recent social, community, video, GitHub, and web research.
+- **`research`** — primary-source research captured in a repository note.
 - **`marimo-notebook`** — file-based marimo notebooks.
 - **`marimo-pair`** — live marimo-kernel collaboration.
 - **`pi-custom-model`** — explicit custom Pi model registration.
@@ -52,6 +54,8 @@ The catalog uses nested categories; skill names and `/skill:<name>` commands rem
 ### Workflow
 
 - **`capture-project-vision`** — project vision and durable decisions.
+- **`domain-modeling`** — active glossary and ADR maintenance.
+- **`grilling`** — decision-tree stress testing, with optional domain docs.
 - **`make-release`** — semver GitHub and optional PyPI releases.
 - **`merge-worktree`** — worktree integration and cleanup.
 - **`orchestrate-implementation`** — coordinated multi-task implementation.
@@ -73,21 +77,29 @@ The catalog uses nested categories; skill names and `/skill:<name>` commands rem
 - `documentation-writer` owns document type and quality; `doc-coauthoring` owns collaborative drafting.
 - `marimo-notebook` edits files; `marimo-pair` works through a live kernel.
 - `effective-agent-skills` covers general authoring; `improve-skill` requires session evidence.
+- `improve-skill` targets one skill/session; `workflow-from-chats` mines cross-cutting preferences across recent chats.
+- `research` follows durable claims to primary sources; `last30days` measures recent community discussion and sentiment.
 - `review-codebase-architecture` identifies candidates; `shape-design` settles one.
+- `grilling` owns the stress-test interview; `domain-modeling` owns glossary and ADR updates; `shape-design` owns the approved design or specification.
 - `archify` produces interactive HTML, `drawio-skill` produces precise editable diagrams, and `excalidraw` produces sketch-like canvases.
 
 ## Workflow
 
 ```text
 review architecture ─┐
-capture vision ──────┴─> shape design -> write plan -> orchestrate -> merge
-                           |     ^
-                           v     |
-                     prototype spike
+capture vision ──────┼─> shape design <-> domain modeling (glossary / optional ADR)
+grilling ────────────┘          |
+                               ├─ bounded design ───────────────────────> orchestrate -> merge
+                               ├─ architectural spec -> thin plan ──────┤
+                               └─ architectural spec -> tracker tickets ┘
+
+shape design -> prototype spike -> shape design
 
 unexpected failure -> systematic-debugging
 completion claim   -> verification-before-completion
 ```
+
+ADRs explain why; specifications define behavior and acceptance; plans define executable units. Tracker tickets replace—rather than duplicate—the plan when durable coordination is required.
 
 `orchestrate-implementation` expects `pi-subagents` and may use configured `pi-intercom` peers. `merge-worktree` PR mode expects an authenticated `gh` CLI. `make-release` composes with release, changelog, GitHub, commit, and uv tooling when available.
 

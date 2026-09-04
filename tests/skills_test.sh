@@ -23,10 +23,10 @@ from pathlib import Path, PurePosixPath
 root = Path(sys.argv[1]).resolve()
 expected = {
     "engineering": {"deslop", "modern-python", "simplify-code", "systematic-debugging"},
-    "skill-authoring": {"agent-md-refactor", "effective-agent-skills", "improve-skill"},
-    "tools-and-research": {"chrome-cdp", "handoff", "last30days", "marimo-notebook", "marimo-pair", "pi-custom-model", "terminal-session-control"},
+    "skill-authoring": {"agent-md-refactor", "effective-agent-skills", "improve-skill", "workflow-from-chats"},
+    "tools-and-research": {"chrome-cdp", "handoff", "last30days", "marimo-notebook", "marimo-pair", "pi-custom-model", "research", "terminal-session-control"},
     "visualization": {"archify", "drawio-skill", "excalidraw"},
-    "workflow": {"capture-project-vision", "make-release", "merge-worktree", "orchestrate-implementation", "prototype-question", "review-codebase-architecture", "shape-design", "verification-before-completion", "write-implementation-plan"},
+    "workflow": {"capture-project-vision", "domain-modeling", "grilling", "make-release", "merge-worktree", "orchestrate-implementation", "prototype-question", "review-codebase-architecture", "shape-design", "verification-before-completion", "write-implementation-plan"},
     "writing": {"doc-coauthoring", "documentation-writer", "humanizer"},
 }
 
@@ -75,8 +75,8 @@ for path in skill_files:
 
 if actual != expected:
     errors.append(f"catalog mismatch: expected {expected!r}, got {actual!r}")
-if len(skill_files) != 29:
-    errors.append(f"expected 29 skills, found {len(skill_files)}")
+if len(skill_files) != 33:
+    errors.append(f"expected 33 skills, found {len(skill_files)}")
 for removed in ("unslop", "improve-codebase-architecture"):
     if any(path.parent.name == removed for path in (root / "skills").rglob("SKILL.md")):
         errors.append(f"removed skill remains: {removed}")

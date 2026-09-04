@@ -38,7 +38,7 @@ Vendored or adapted material appears in `handoff`, `effective-agent-skills`, `pi
 
 Source: [mattpocock/skills](https://github.com/mattpocock/skills), pinned to [`3cca18b`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015).
 
-Adapted material appears in `agent-md-refactor`, `orchestrate-implementation`, `shape-design`, `systematic-debugging`, `review-codebase-architecture`, and `prototype-question`. The visual-report material formerly packaged separately is now a reference within `review-codebase-architecture`.
+Vendored or adapted material appears in `agent-md-refactor`, `domain-modeling`, `grilling`, `orchestrate-implementation`, `prototype-question`, `research`, `review-codebase-architecture`, `shape-design`, and `systematic-debugging`. The visual-report material formerly packaged separately is now a reference within `review-codebase-architecture`.
 
 > MIT License
 >
@@ -152,7 +152,7 @@ The following packages were copied from the pinned revisions listed in `sources.
 - `drawio-skill` and `excalidraw` from [Agents365-ai/365-skills](https://github.com/Agents365-ai/365-skills/tree/08f4791bbe21f42ef8e4013c7bd15c92347b916f), commit `08f4791bbe21f42ef8e4013c7bd15c92347b916f`. Their skill metadata declares MIT; copyright attribution is Agents365-ai.
 - `marimo-pair` from [marimo-team/marimo-pair](https://github.com/marimo-team/marimo-pair/tree/de98ee4e268df1b44fa777f360aa58e241a7a635), commit `de98ee4e268df1b44fa777f360aa58e241a7a635`, and `marimo-notebook` from [marimo-team/skills](https://github.com/marimo-team/skills/tree/6454470960d3cd57151aaeffb1176dd55f598b18), commit `6454470960d3cd57151aaeffb1176dd55f598b18`. Apache-2.0; marimo contributors.
 
-`deslop` and part of `humanizer`'s pattern catalog are adapted from the MIT-licensed Cursor plugins repository, [cursor/plugins](https://github.com/cursor/plugins), pinned to commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (Copyright (c) 2026 Cursor).
+`deslop`, `workflow-from-chats`, and part of `humanizer`'s pattern catalog are adapted from the MIT-licensed Cursor plugins repository, [cursor/plugins](https://github.com/cursor/plugins), pinned to commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (Copyright (c) 2026 Cursor).
 
 Selected principles from Cursor's `pstack/skills/poteto-mode` at the same pinned commit are also adapted, distributed across existing canonical owners rather than vendoring the package: `simplify-code`, `deslop`, `verification-before-completion`, `systematic-debugging`, `shape-design`, `prototype-question`, `write-implementation-plan`, `orchestrate-implementation`, `effective-agent-skills`, and `improve-skill`. File-level mappings are recorded in `sources.json`; the adoption decision is documented in `UPSTREAM_ADOPTION.md`. No poteto-mode file is redistributed intact.
 
