@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "local": "skills/handoff/SKILL.md",
+      "source": "skills/agent-orchestration/handoff/SKILL.md",
+      "repository": "https://github.com/davidondrej/skills",
+      "branch": "main",
+      "commit": "11dee2ebc2d045806b686ba0b57746f1e3d7e331",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 David Ondrej"
+    },
+    {
+      "local": "skills/effective-agent-skills/SKILL.md",
+      "source": "skills/skill-authoring/effective-agent-skills/SKILL.md",
+      "repository": "https://github.com/davidondrej/skills",
+      "branch": "main",
+      "commit": "11dee2ebc2d045806b686ba0b57746f1e3d7e331",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 David Ondrej"
+    }
+  ]
+}
