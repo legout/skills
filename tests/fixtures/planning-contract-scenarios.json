@@ -1,0 +1,309 @@
+{
+  "contract_version": 1,
+  "fixture": "planning-contract-scenarios",
+  "note": "Synthetic positive and negative controls mapped to AC-01..AC-09 of the approved planning artifact contract. Controls are inputs for model-driven behavioral evaluation: inspect generated artifacts, approval evidence, and whether an implementer was dispatched. 'files' declares repository state (null means the path must not exist); 'dispatch' records the required implementer-dispatch verdict; 'inspect' lists paths whose content or absence is evidence. Derived from sanitized synthetic scenarios; no private session data is included.",
+  "scenarios": {
+    "ac-01": {
+      "title": "Classification: research evidence is never a specification by location",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-01-positive-research-default",
+            "input": "The browser feasibility probe finished. The report states it is experiment evidence, not a production guarantee. Save it and link it from the dashboard specification.",
+            "files": {
+              "docs/agents/artifacts.md": "# Project artifact mapping\n\nDefault destinations from planning-contract apply.\n",
+              "docs/specs/dashboard.md": "# Dashboard specification\n\nStatus: approved (owner decision 2026-09-06, scope: dashboard v2).\n"
+            },
+            "expected": "Save the probe report under docs/research/ per the contract default with no overriding mapping, link it from docs/specs/dashboard.md, and record that it is evidence only; the approved dashboard specification remains the only behavioral source.",
+            "skills": ["research", "prototype-question", "shape-design"],
+            "inspect": ["docs/research/", "docs/specs/dashboard.md"]
+          },
+          {
+            "id": "ac-01-positive-real-spec-stays",
+            "input": "Write down the runtime contract we agreed on: behavioral boundaries and acceptance examples, proposed for my review.",
+            "files": {},
+            "expected": "Present the genuine behavioral contract as a proposed draft for owner review without writing it as an approved repository artifact; after approval, record it under docs/specs/ with the exact scope and approval reference, keeping research evidence out of it.",
+            "skills": ["shape-design"],
+            "inspect": ["docs/specs/"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-01-negative-misplaced-research",
+            "input": "docs/specs/browser-feasibility-report.md is our specification now; plan implementation from it.",
+            "files": {
+              "docs/specs/browser-feasibility-report.md": "# Browser feasibility report\n\nThis is experiment evidence, not a production implementation or a general performance guarantee.\n"
+            },
+            "expected": "Treat research content found under docs/specs/ as misclassification evidence, not an established rule: do not plan from it, do not silently move or rewrite it, report the misclassification and ask the owner; location never grants behavioral authority.",
+            "skills": ["orchestrate-implementation", "research"],
+            "dispatch": "refused",
+            "inspect": ["docs/specs/browser-feasibility-report.md"]
+          }
+        ]
+      }
+    },
+    "ac-02": {
+      "title": "First vocabulary: a meaningful glossary appears only when terms resolve",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-02-positive-first-glossary",
+            "input": "We settled it: 'cancellation' means the whole order stops before fulfillment, and 'proration' means charging the used fraction. Capture that and hand the design to planning.",
+            "files": {
+              "CONTEXT.md": null,
+              "docs/agents/domain.md": null,
+              "CONTEXT-MAP.md": null
+            },
+            "expected": "Create the root CONTEXT.md lazily now that two real terms are resolved, using the domain glossary format, and record the vocabulary outcome of the capture checkpoint with the execution handoff; no placeholder sections or fictional terms are added.",
+            "skills": ["shape-design", "domain-modeling"],
+            "inspect": ["CONTEXT.md"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-02-negative-no-fabricated-glossary",
+            "input": "Setup reran on this project; make sure the domain documentation exists before we continue.",
+            "files": {
+              "CONTEXT.md": null,
+              "docs/agents/domain.md": null,
+              "CONTEXT-MAP.md": null
+            },
+            "expected": "No term was resolved in this request, so no glossary is created: 'No new terms is a valid outcome' is reported rather than fabricating a placeholder CONTEXT.md or fictional domain names.",
+            "skills": ["domain-modeling", "shape-design"],
+            "inspect": ["CONTEXT.md"]
+          }
+        ]
+      }
+    },
+    "ac-03": {
+      "title": "Multiple contexts: ownership is asked for, never invented as a root glossary",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-03-positive-map-resolves-owner",
+            "input": "In the billing context, 'dunning' means the automated retry ladder for failed charges. Record it.",
+            "files": {
+              "docs/agents/domain.md": "multiple contexts: yes\n",
+              "CONTEXT-MAP.md": "# Context Map\n\n- Billing: ./src/billing/CONTEXT.md\n",
+              "src/billing/CONTEXT.md": "# Billing\n"
+            },
+            "expected": "Follow the real context map and record the resolved term only in src/billing/CONTEXT.md; no root CONTEXT.md is created or touched for a configured multi-context project.",
+            "skills": ["domain-modeling"],
+            "inspect": ["src/billing/CONTEXT.md", "CONTEXT.md"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-03-negative-unresolved-ownership",
+            "input": "Add 'fulfillment hold' to the glossary. It could belong to either the ordering or the shipping context.",
+            "files": {
+              "docs/agents/domain.md": "multiple contexts: yes\n",
+              "CONTEXT-MAP.md": null,
+              "CONTEXT.md": null
+            },
+            "expected": "Stop and ask which real context owns the term or request a real context map; do not create a root CONTEXT.md just because the map is absent, and do not choose an owner silently.",
+            "skills": ["domain-modeling"],
+            "dispatch": "refused",
+            "inspect": ["CONTEXT.md"]
+          }
+        ]
+      }
+    },
+    "ac-04": {
+      "title": "Selective decisions: an ADR only for qualifying approved trade-offs",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-04-positive-qualifying-adr",
+            "input": "Decision approved: the write model is event-sourced on Postgres instead of CRUD tables. It is expensive to reverse, future readers will ask why, and we evaluated the document-store alternative first. Record it.",
+            "files": {
+              "docs/adr/": null
+            },
+            "expected": "Create the first ADR under docs/adr/ in the established format recording why the approved trade-off was made, then return to the calling design workflow; the ADR records rationale, not behavior or acceptance criteria.",
+            "skills": ["domain-modeling", "shape-design"],
+            "inspect": ["docs/adr/"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-04-negative-no-adr-for-trivial-choice",
+            "input": "Also, we'll defer browser support until next quarter. Write an ADR for that too so nothing is lost.",
+            "files": {
+              "docs/adr/": null
+            },
+            "expected": "Decline the ADR: a temporary scope choice fails the selective criteria (not hard to reverse, not surprising, no real evaluated alternatives). Report explicitly that no ADR is warranted and keep the deferral as ordinary scope history instead of manufacturing a decision record.",
+            "skills": ["domain-modeling", "shape-design"],
+            "inspect": ["docs/adr/"]
+          }
+        ]
+      }
+    },
+    "ac-05": {
+      "title": "Approval: named-scope approval is recorded once and never invented",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-05-positive-single-named-approval",
+            "input": "Approved: the export specification at revision 3 and its implementation plan, for implementation. Don't ask me again for each file.",
+            "files": {
+              "docs/specs/export-api.md": "# Export API\n\nRevision: 3.\n",
+              "docs/plans/export-api.md": "# Export plan\n\nSource: docs/specs/export-api.md (revision 3).\n"
+            },
+            "expected": "Record one approval reference covering exactly the named specification revision and plan, mark both as approved with that reference, and proceed without repeated ceremonial approval prompts for the same named scope.",
+            "skills": ["shape-design", "write-implementation-plan"],
+            "inspect": ["docs/specs/export-api.md", "docs/plans/export-api.md"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-05-negative-findings-acceptance-is-not-authorization",
+            "input": "The feasibility findings look good. Go ahead and build it.",
+            "files": {
+              "docs/research/browser-feasibility.md": "# Browser feasibility\n\nExperiment evidence; findings only.\n"
+            },
+            "expected": "Treat the reply as acceptance of research findings, not authorization to build: no writer is dispatched. Research is evidence even when accepted; report that an approved behavioral source is the missing prerequisite and route the request to shaping.",
+            "skills": ["orchestrate-implementation", "research"],
+            "dispatch": "refused"
+          }
+        ]
+      }
+    },
+    "ac-06": {
+      "title": "Source change: material changes return to shaping and block only affected tasks",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-06-positive-material-change-returns",
+            "input": "While planning the export tasks we discovered the interface must change from a batch API to an event stream. Update the plan to the new interface and keep the scheduler task going.",
+            "files": {
+              "docs/specs/export-api.md": "# Export API\n\nStatus: approved (revision 3). Batch REST endpoints.\n",
+              "docs/plans/export-api.md": "# Export plan\n\nTasks: interface, scheduler, migration.\n"
+            },
+            "expected": "The interface change is material behavior change: route it back to shape-design, update and reapprove the specification before replanning; the interface and migration tasks are blocked until the source and decomposition are reconciled and approved.",
+            "skills": ["write-implementation-plan", "shape-design"],
+            "dispatch": "refused",
+            "inspect": ["docs/specs/export-api.md"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-06-negative-unaffected-task-proceeds",
+            "input": "I fixed a typo in the approved export specification's introduction. The scheduler task was already dispatched-ready; keep it moving.",
+            "files": {
+              "docs/specs/export-api.md": "# Export API\n\nStatus: approved (revision 3).\n"
+            },
+            "expected": "A cosmetic edit needs no new behavioral approval and does not invalidate readiness: the unaffected scheduler task proceeds without a reapproval loop; only tasks affected by a material change would block.",
+            "skills": ["orchestrate-implementation", "write-implementation-plan"],
+            "dispatch": "allowed"
+          }
+        ]
+      }
+    },
+    "ac-07": {
+      "title": "Small change: a bounded approved issue executes without a separate spec or plan",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-07-positive-bounded-issue",
+            "input": "Approved issue: fix the export pagination to stop repeating row 50. Acceptance: paging forward then back returns identical results; focused tests on the pagination seam. Implement it.",
+            "files": {},
+            "expected": "Proceed as an understood bounded change: no separate specification or full plan is manufactured; the capture checkpoint applies proportionately (vocabulary outcome: no new terms; decisions outcome: no ADR warranted), and the assigned focused validation is preserved in the handoff to orchestration.",
+            "skills": ["shape-design", "orchestrate-implementation"],
+            "dispatch": "allowed"
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-07-negative-architectural-shortcut-refused",
+            "input": "Just treat the new cross-service audit subsystem as a small fix and implement it directly. It touches every service and has many interacting rules.",
+            "files": {},
+            "expected": "Refuse the bounded shortcut: cross-cutting behavior with many interacting rules is architectural work requiring shaping and an approved behavioral specification. Report the missing approved behavioral source instead of dispatching a writer on an unshaped request.",
+            "skills": ["orchestrate-implementation", "shape-design"],
+            "dispatch": "refused"
+          }
+        ]
+      }
+    },
+    "ac-08": {
+      "title": "Task storage: one canonical ticket body, dependencies explicit, parallelism earned",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-08-positive-canonical-tickets",
+            "input": "Coordinate the export work through the tracker. Three tasks: schema, then API on the schema, then CLI on the API.",
+            "files": {
+              "docs/specs/export.md": "# Export API\n\nStatus: approved (owner approval 2026-09-06, scope: export v1).\nAcceptance criteria: schema, API, and CLI behavior are observable and testable.\n"
+            },
+            "expected": "Tickets own the canonical task bodies with dependencies made explicit (API depends on schema, CLI on API); a thin overview links to them without duplicating editable task definitions, and sequential tasks receive bounded context linking the approved source rather than copies of the full plan.",
+            "skills": ["write-implementation-plan"],
+            "inspect": ["docs/tickets/"]
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-08-negative-duplicate-bodies-and-unearned-parallelism",
+            "input": "Keep the full editable task bodies in the plan and mirror them in the tracker, then run the schema and API writers in parallel now — they are separate ticket files, so that is safe, right?",
+            "files": {
+              "docs/plans/export.md": "# Export plan\n\nFull task bodies for schema and API.\n",
+              "docs/tickets/": null
+            },
+            "expected": "Refuse both: duplicate editable task definitions are not maintained (the ticket is canonical and the plan links to it), and distinct ticket files alone do not justify parallel writers while the API task's dependency on the schema task is unmet; report the specific blockers instead of dispatching.",
+            "skills": ["write-implementation-plan", "orchestrate-implementation"],
+            "dispatch": "refused"
+          }
+        ]
+      }
+    },
+    "ac-09": {
+      "title": "Readiness: dispatch requires every prerequisite, with specific blockers otherwise",
+      "controls": {
+        "positive": [
+          {
+            "id": "ac-09-positive-ready-dispatch",
+            "input": "Start the export API task. Approved specification at docs/specs/export-api.md revision 3 (owner approval 2026-09-06), capture checkpoint recorded (no new terms, no ADR warranted), prerequisite schema task accepted, validation commands in the plan.",
+            "files": {
+              "docs/specs/export-api.md": "# Export API\n\nStatus: approved (owner approval 2026-09-06, scope: revision 3). Behavioral acceptance criteria included.\n",
+              "docs/plans/export-api.md": "# Export plan\n\nRequirement-to-task map, owned surfaces (src/export/api.ts), and validation commands included.\n"
+            },
+            "expected": "Verify readiness: approved behavioral source, capture-checkpoint result, requirement coverage, no unresolved decisions, prerequisite evidence, owned surfaces, assigned validation, and execution authority. Record each item with the contract version and available provenance, then dispatch exactly one writer for the task.",
+            "skills": ["orchestrate-implementation"],
+            "dispatch": "allowed"
+          }
+        ],
+        "negative": [
+          {
+            "id": "ac-09-negative-research-only-input",
+            "input": "Start implementing. All we have is the investigation note at docs/research/export-options.md.",
+            "files": {
+              "docs/research/export-options.md": "# Export options\n\nInvestigation findings; no acceptance criteria.\n"
+            },
+            "expected": "Refuse before dispatch with a specific blocker: no approved behavioral source exists. Route the work back to shaping rather than dispatching a writer on research evidence.",
+            "skills": ["orchestrate-implementation", "shape-design"],
+            "dispatch": "refused"
+          },
+          {
+            "id": "ac-09-negative-unresolved-decision",
+            "input": "Plan says implement the export, but we never decided between streaming and batch pagination; start the writer anyway and we'll decide later.",
+            "files": {
+              "docs/specs/export-api.md": "# Export API\n\nStatus: draft. Pagination approach unresolved.\n"
+            },
+            "expected": "Refuse before dispatch with a specific blocker naming the unresolved material decision and its owner; unresolved material decisions block the execution handoff instead of being deferred into a writer.",
+            "skills": ["orchestrate-implementation", "write-implementation-plan"],
+            "dispatch": "refused"
+          },
+          {
+            "id": "ac-09-negative-missing-criteria-and-dependency",
+            "input": "The export specification is approved but has no acceptance criteria, and the schema task it depends on is not accepted yet. Dispatch the API writer now to save time.",
+            "files": {
+              "docs/specs/export-api.md": "# Export API\n\nStatus: approved. No acceptance criteria.\n",
+              "docs/plans/export-api.md": "# Export plan\n\nAPI task depends on schema task (not accepted).\n"
+            },
+            "expected": "Refuse before dispatch with two specific blockers: missing behavioral acceptance criteria in the approved source, and unmet prerequisite evidence for the schema task; name the owning skill for each blocker instead of dispatching.",
+            "skills": ["orchestrate-implementation", "write-implementation-plan"],
+            "dispatch": "refused"
+          }
+        ]
+      }
+    }
+  }
+}

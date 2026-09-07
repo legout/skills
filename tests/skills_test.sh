@@ -30,7 +30,7 @@ expected = {
     "skill-authoring": {"agent-md-refactor", "effective-agent-skills", "improve-skill", "workflow-from-chats"},
     "tools-and-research": {"chrome-cdp", "handoff", "last30days", "marimo-notebook", "marimo-pair", "pi-custom-model", "research", "terminal-session-control"},
     "visualization": {"archify", "drawio-skill", "excalidraw"},
-    "workflow": {"capture-project-vision", "domain-modeling", "grilling", "make-release", "merge-worktree", "orchestrate-implementation", "prototype-question", "review-codebase-architecture", "shape-design", "verification-before-completion", "write-implementation-plan"},
+    "workflow": {"capture-project-vision", "domain-modeling", "grilling", "make-release", "merge-worktree", "orchestrate-implementation", "planning-contract", "prototype-question", "review-codebase-architecture", "shape-design", "verification-before-completion", "write-implementation-plan"},
     "writing": {"doc-coauthoring", "documentation-writer", "humanizer"},
 }
 
@@ -79,8 +79,8 @@ for path in skill_files:
 
 if actual != expected:
     errors.append(f"catalog mismatch: expected {expected!r}, got {actual!r}")
-if len(skill_files) != 33:
-    errors.append(f"expected 33 skills, found {len(skill_files)}")
+if len(skill_files) != 34:
+    errors.append(f"expected 34 skills, found {len(skill_files)}")
 for removed in ("unslop", "improve-codebase-architecture"):
     if any(path.parent.name == removed for path in (root / "skills").rglob("SKILL.md")):
         errors.append(f"removed skill remains: {removed}")
@@ -107,6 +107,99 @@ if set(handoffs) != required_handoffs:
 for name in ("multi_context_without_map", "configured_single_context", "unconfigured_single_context"):
     if name in handoffs and "files" not in handoffs[name]:
         errors.append(f"handoff fixture {name} must declare its repository file state")
+
+# T2: the planning-contract scenario fixture must map synthetic positive and
+# negative controls to AC-01..AC-09 of the approved contract. These controls
+# are the inputs for model-driven behavioral evaluation; the structural checks
+# here validate wiring and coverage only, never agent compliance.
+scenario_path = root / "tests/fixtures/planning-contract-scenarios.json"
+if not scenario_path.is_file():
+    errors.append("missing required fixture: tests/fixtures/planning-contract-scenarios.json")
+else:
+    fixture = json.loads(scenario_path.read_text())
+    if fixture.get("contract_version") != 1:
+        errors.append("scenario fixture must pin contract_version 1")
+    scenarios = fixture.get("scenarios")
+    if not isinstance(scenarios, dict):
+        errors.append("scenario fixture must contain a scenarios object")
+    else:
+        expected_acs = {f"ac-{index:02d}" for index in range(1, 10)}
+        if set(scenarios) != expected_acs:
+            errors.append(f"scenario fixture must cover exactly {sorted(expected_acs)!r}, got {sorted(scenarios)!r}")
+        consumers = {
+            "research", "shape-design", "domain-modeling", "prototype-question",
+            "write-implementation-plan", "orchestrate-implementation",
+        }
+        seen_ids = set()
+        referenced_skills = set()
+        dispatch_verdicts = set()
+        for ac, scenario in sorted(scenarios.items()):
+            if not isinstance(scenario, dict) or not str(scenario.get("title", "")).strip():
+                errors.append(f"scenario {ac} must carry a non-empty title")
+                continue
+            controls = scenario.get("controls")
+            if not isinstance(controls, dict):
+                errors.append(f"scenario {ac} must contain positive and negative controls")
+                continue
+            for kind in ("positive", "negative"):
+                items = controls.get(kind)
+                if not isinstance(items, list) or not items:
+                    errors.append(f"scenario {ac} requires at least one {kind} control")
+                    continue
+                for control in items:
+                    control_id = control.get("id", "")
+                    if not control_id.startswith(f"{ac}-"):
+                        errors.append(f"control id must be prefixed with {ac}: {control_id!r}")
+                    if control_id in seen_ids:
+                        errors.append(f"duplicate control id: {control_id}")
+                    seen_ids.add(control_id)
+                    for field in ("input", "expected"):
+                        if not isinstance(control.get(field), str) or not control[field].strip():
+                            errors.append(f"{control_id}: {field} must be a non-empty string")
+                    files = control.get("files", {})
+                    if not isinstance(files, dict):
+                        errors.append(f"{control_id}: files must be an object")
+                    else:
+                        for key, value in files.items():
+                            if value is not None and not isinstance(value, str):
+                                errors.append(f"{control_id}: files[{key!r}] must be string content or null")
+                    dispatch = control.get("dispatch")
+                    if dispatch is not None:
+                        if dispatch not in {"allowed", "refused"}:
+                            errors.append(f"{control_id}: dispatch must be allowed, refused, or omitted")
+                        else:
+                            dispatch_verdicts.add(dispatch)
+                    skills = control.get("skills", [])
+                    if not isinstance(skills, list) or not skills:
+                        errors.append(f"{control_id}: skills must be a non-empty list")
+                    else:
+                        referenced_skills.update(skills)
+                    inspect_paths = control.get("inspect", [])
+                    if not isinstance(inspect_paths, list):
+                        errors.append(f"{control_id}: inspect must be a list of paths")
+                    else:
+                        for path in inspect_paths:
+                            if not isinstance(path, str) or not path.strip() or path.startswith(("/", "..")):
+                                errors.append(f"{control_id}: unsafe inspect path {path!r}")
+        ac09 = scenarios.get("ac-09")
+        if isinstance(ac09, dict):
+            verdicts = set()
+            controls09 = ac09.get("controls")
+            if isinstance(controls09, dict):
+                for kind in ("positive", "negative"):
+                    for control in controls09.get(kind, []) or []:
+                        if isinstance(control, dict) and control.get("dispatch") is not None:
+                            verdicts.add(control["dispatch"])
+            if verdicts != {"allowed", "refused"}:
+                errors.append("ac-09 controls must include one allowed and one refused dispatch verdict")
+        missing_consumers = consumers - referenced_skills
+        if missing_consumers:
+            errors.append(f"scenario fixture never exercises contract consumers: {sorted(missing_consumers)!r}")
+        unknown_skills = referenced_skills - names
+        if unknown_skills:
+            errors.append(f"scenario fixture references unknown skills: {sorted(unknown_skills)!r}")
+        if "allowed" not in dispatch_verdicts or "refused" not in dispatch_verdicts:
+            errors.append("scenario fixture must include allowed and refused dispatch controls")
 
 # The lifecycle acceptance eval must be an executable native fixture, not prose
 # that forbids the very skill and tools it claims to accept.
@@ -294,6 +387,107 @@ assert_contains "$ROOT/skills/workflow/merge-worktree/SKILL.md" "Opening a PR ne
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "test obligation"
 assert_contains "$ROOT/skills/workflow/verification-before-completion/SKILL.md" "NO COMPLETION CLAIMS"
 assert_contains "$ROOT/skills/writing/humanizer/SKILL.md" "pattern catalog"
+
+# T1: the canonical, locally authored planning contract must exist, stay
+# normative, and remain discoverable; consumers reference it in T2.
+CONTRACT="$ROOT/skills/workflow/planning-contract/SKILL.md"
+test -f "$CONTRACT" || fail "missing required skill: skills/workflow/planning-contract/SKILL.md"
+assert_contains "$CONTRACT" "Contract version: 1"
+assert_contains "$CONTRACT" "docs/research/"
+assert_contains "$CONTRACT" "docs/adr/"
+assert_contains "$CONTRACT" "docs/specs/"
+assert_contains "$CONTRACT" "docs/plans/"
+assert_contains "$CONTRACT" "docs/tickets/"
+assert_contains "$CONTRACT" "docs/agents/artifacts.md"
+assert_contains "$CONTRACT" "CONTEXT.md"
+assert_contains "$CONTRACT" "declarative documentation"
+assert_contains "$CONTRACT" "never an executable configuration file"
+assert_contains "$CONTRACT" "Directory membership never grants approval"
+assert_contains "$CONTRACT" "Scoped authority"
+assert_contains "$CONTRACT" "Glossaries own terminology"
+assert_contains "$CONTRACT" "capture checkpoint"
+assert_contains "$CONTRACT" "No new terms is a valid outcome"
+assert_contains "$CONTRACT" "Research alone"
+assert_contains "$CONTRACT" "Unaffected tasks need no reapproval"
+assert_contains "$CONTRACT" "Research is evidence"
+assert_contains "$CONTRACT" "Execution readiness"
+assert_contains "$CONTRACT" "compact plan"
+assert_contains "$CONTRACT" "Tickets own the canonical task bodies"
+assert_contains "$CONTRACT" "satisfied dependencies, stable consumed interfaces, and non-conflicting ownership"
+assert_contains "$CONTRACT" "detect its absence"
+assert_contains "$CONTRACT" "request installation"
+assert_contains "$CONTRACT" "does not resolve skill-to-skill dependencies"
+assert_contains "$CONTRACT" "unknown"
+# The contract is locally authored; it must not claim a fake upstream origin.
+assert_not_contains "$CONTRACT" "Adapted from"
+assert_contains "$ROOT/README.md" "planning-contract"
+
+# T2: consumers load the shared planning contract by name, pin the version
+# they depend on, and refuse explicitly when it is missing. These are wiring
+# assertions only; behavioral compliance is evaluated through the scenario
+# fixture above and native model-driven runs, never through these phrases.
+for consumer in \
+    skills/tools-and-research/research \
+    skills/workflow/shape-design \
+    skills/workflow/domain-modeling \
+    skills/workflow/prototype-question \
+    skills/workflow/write-implementation-plan \
+    skills/workflow/orchestrate-implementation; do
+    file="$ROOT/$consumer/SKILL.md"
+    test -f "$file" || fail "missing contract consumer: $file"
+    assert_contains "$file" "planning-contract"
+    assert_contains "$file" "Contract version: 1"
+    assert_contains "$file" 'request installing `planning-contract`'
+done
+
+# Research and probe findings are evidence routed to research destinations;
+# directory membership never turns evidence into a behavioral specification.
+assert_contains "$ROOT/skills/tools-and-research/research/SKILL.md" "docs/research/"
+assert_contains "$ROOT/skills/tools-and-research/research/SKILL.md" "docs/agents/artifacts.md"
+assert_contains "$ROOT/skills/tools-and-research/research/SKILL.md" "misclassification"
+assert_contains "$ROOT/skills/tools-and-research/research/SKILL.md" "Research is evidence"
+assert_contains "$ROOT/skills/workflow/prototype-question/SKILL.md" "docs/research/"
+assert_contains "$ROOT/skills/workflow/prototype-question/SKILL.md" "Probe approval does not authorize"
+
+# Shaping runs the capture checkpoint defined by the canonical contract and
+# records its outcome with the handoff; vocabulary and ADR capture route
+# through domain-modeling. Canonical checkpoint prose stays in the contract.
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "capture checkpoint"
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "sole canonical"
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "docs/research/"
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" 'vocabulary through `domain-modeling`'
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "never as a standalone checklist document"
+assert_not_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "No new terms is a valid outcome"
+assert_contains "$ROOT/skills/workflow/domain-modeling/SKILL.md" "capture checkpoint"
+
+# Planning requires an approved behavioral source per the contract, reconciles
+# material source changes through shaping, and keeps tickets canonical. The
+# readiness and reconciliation rules themselves stay canonical in the contract.
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "approved behavioral source"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "bounded-change equivalent"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" 'returns to `shape-design`'
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "capture-checkpoint"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "canonical"
+assert_not_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "The specification remains authoritative"
+assert_not_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "Unaffected tasks need no reapproval"
+assert_not_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "satisfied dependencies, stable consumed interfaces"
+
+# Orchestration gates implementer dispatch on readiness defined by the
+# canonical contract: refuse before any writer is allocated, name the missing
+# prerequisite, route back to the owning skill, and record manifest evidence.
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "sole canonical"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Refuse the dispatch before any writer or worktree is allocated"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "route the work back"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "capture-checkpoint"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "readiness"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "available provenance"
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Research alone"
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Unaffected tasks need no reapproval"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "capture-checkpoint"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "contract version"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "available provenance"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "readiness"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "approved scope"
 
 bash -n "$ROOT/scripts/check-skill-sources.sh"
 printf 'all skills valid\n'

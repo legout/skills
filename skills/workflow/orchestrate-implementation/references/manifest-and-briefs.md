@@ -5,9 +5,12 @@
 Create one compact run manifest in runtime-managed artifacts. Record:
 
 - repository, cwd, base ref, and mode;
-- source artifact references;
+- source artifact references, each with its planning-contract classification, approved scope and revision, and approval reference;
+- the contract version and available provenance, or `unknown`;
+- the capture-checkpoint outcome;
 - normalized constraints, non-goals, and acceptance criteria;
 - task IDs, dependency edges, lanes, and claimed files/contracts;
+- per-task readiness: prerequisite evidence and the readiness verdict recorded before dispatch;
 - worker, reviewer, simplifier, oracle, and peer configuration;
 - validation commands and review-round cap;
 - unresolved decisions and their owners;
@@ -24,7 +27,7 @@ Give each worker one bounded brief containing:
 1. goal;
 2. repository, cwd, base ref, lane, and managed worktree;
 3. allowed files/contracts and authority boundary;
-4. relevant upstream interfaces and approved decisions;
+4. relevant upstream interfaces, the approved behavioral source with its exact approved scope and revision, and approved decisions;
 5. acceptance criteria;
 6. focused validation commands;
 7. test obligation: the assigned obligation and its rationale;

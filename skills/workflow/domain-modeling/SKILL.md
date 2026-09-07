@@ -9,6 +9,8 @@ Actively build and sharpen the project's domain model as you design. This is the
 
 This skill owns domain vocabulary and durable decision records. `shape-design` owns feature behavior and requirements. An ADR records **why** a hard-to-reverse decision was made; it is not a specification or implementation plan.
 
+This skill is the acting half of the vocabulary and decisions parts of the [`planning-contract`](../planning-contract/SKILL.md) capture checkpoint (Contract version: 1): shaping calls it when resolved terms or qualifying decisions need capture. Load that contract for classification, scoped authority, and handoff rules; if it is not installed, stop and request installing `planning-contract` rather than proceeding on inherited or invented rules.
+
 ## File structure
 
 Most repos have a single context:
@@ -86,7 +88,7 @@ Only offer to create an ADR when all three are true:
 2. **Surprising without context**: a future reader will wonder "why did they do it this way?"
 3. **The result of a real trade-off**: there were genuine alternatives and you picked one for specific reasons
 
-If any of the three is missing, skip the ADR. Use the format in [adr-format.md](./references/adr-format.md).
+If any of the three is missing, skip the ADR. When the capture checkpoint asks, report that no ADR is warranted instead of manufacturing one. Use the format in [adr-format.md](./references/adr-format.md).
 
 After recording an ADR, return to the calling design workflow. If the decision changes observable behavior, invariants, or acceptance criteria, capture those in the specification rather than expanding the ADR.
 
