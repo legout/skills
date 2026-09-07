@@ -22,7 +22,8 @@ Create one command that exercises the user's exact symptom and can turn red on t
 3. browser automation assertion;
 4. captured-request or trace replay;
 5. minimal throwaway harness;
-6. fuzz, differential, or automated bisection loop.
+6. fuzz, differential, or automated bisection loop; or
+7. as a last resort, a human-in-the-loop bash script — drive the human with `scripts/hitl-loop.template.sh` so the loop stays structured.
 
 Run it. Tighten speed, determinism, and specificity. For flaky bugs, increase reproduction rate with repetition, controlled concurrency, seeded randomness, or timing instrumentation.
 
