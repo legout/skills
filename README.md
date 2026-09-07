@@ -59,6 +59,7 @@ The catalog uses nested categories; skill names and `/skill:<name>` commands rem
 - **`make-release`** — semver GitHub and optional PyPI releases.
 - **`merge-worktree`** — worktree integration and cleanup.
 - **`orchestrate-implementation`** — coordinated multi-task implementation.
+- **`planning-contract`** — canonical planning artifact and handoff contract.
 - **`prototype-question`** — disposable code for one design question.
 - **`review-codebase-architecture`** — read-only module and seam review.
 - **`shape-design`** — approved bounded design before implementation.

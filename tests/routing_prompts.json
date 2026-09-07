@@ -261,6 +261,18 @@
       "Update an API key in my production account."
     ]
   },
+  "planning-contract": {
+    "positive": [
+      "Where should this feasibility study go: research, specs, or plans?",
+      "Check whether this specification is approved enough to dispatch implementers.",
+      "Should the tracker tickets or the plan own the canonical task bodies for this feature?",
+      "An approved probe report is sitting in docs/specs; classify it correctly."
+    ],
+    "negative": [
+      "Build a throwaway prototype to compare two layouts.",
+      "Interview me to capture this repository's long-term vision."
+    ]
+  },
   "prototype-question": {
     "positive": [
       "Build a throwaway prototype to test whether this state model feels right.",

@@ -30,7 +30,7 @@ expected = {
     "skill-authoring": {"agent-md-refactor", "effective-agent-skills", "improve-skill", "workflow-from-chats"},
     "tools-and-research": {"chrome-cdp", "handoff", "last30days", "marimo-notebook", "marimo-pair", "pi-custom-model", "research", "terminal-session-control"},
     "visualization": {"archify", "drawio-skill", "excalidraw"},
-    "workflow": {"capture-project-vision", "domain-modeling", "grilling", "make-release", "merge-worktree", "orchestrate-implementation", "prototype-question", "review-codebase-architecture", "shape-design", "verification-before-completion", "write-implementation-plan"},
+    "workflow": {"capture-project-vision", "domain-modeling", "grilling", "make-release", "merge-worktree", "orchestrate-implementation", "planning-contract", "prototype-question", "review-codebase-architecture", "shape-design", "verification-before-completion", "write-implementation-plan"},
     "writing": {"doc-coauthoring", "documentation-writer", "humanizer"},
 }
 
@@ -79,8 +79,8 @@ for path in skill_files:
 
 if actual != expected:
     errors.append(f"catalog mismatch: expected {expected!r}, got {actual!r}")
-if len(skill_files) != 33:
-    errors.append(f"expected 33 skills, found {len(skill_files)}")
+if len(skill_files) != 34:
+    errors.append(f"expected 34 skills, found {len(skill_files)}")
 for removed in ("unslop", "improve-codebase-architecture"):
     if any(path.parent.name == removed for path in (root / "skills").rglob("SKILL.md")):
         errors.append(f"removed skill remains: {removed}")
@@ -294,6 +294,37 @@ assert_contains "$ROOT/skills/workflow/merge-worktree/SKILL.md" "Opening a PR ne
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "test obligation"
 assert_contains "$ROOT/skills/workflow/verification-before-completion/SKILL.md" "NO COMPLETION CLAIMS"
 assert_contains "$ROOT/skills/writing/humanizer/SKILL.md" "pattern catalog"
+
+# T1: the canonical, locally authored planning contract must exist, stay
+# normative, and remain discoverable; consumers reference it in T2.
+CONTRACT="$ROOT/skills/workflow/planning-contract/SKILL.md"
+test -f "$CONTRACT" || fail "missing required skill: skills/workflow/planning-contract/SKILL.md"
+assert_contains "$CONTRACT" "Contract version: 1"
+assert_contains "$CONTRACT" "docs/research/"
+assert_contains "$CONTRACT" "docs/adr/"
+assert_contains "$CONTRACT" "docs/specs/"
+assert_contains "$CONTRACT" "docs/plans/"
+assert_contains "$CONTRACT" "docs/tickets/"
+assert_contains "$CONTRACT" "docs/agents/artifacts.md"
+assert_contains "$CONTRACT" "CONTEXT.md"
+assert_contains "$CONTRACT" "declarative documentation"
+assert_contains "$CONTRACT" "never an executable configuration file"
+assert_contains "$CONTRACT" "Directory membership never grants approval"
+assert_contains "$CONTRACT" "Scoped authority"
+assert_contains "$CONTRACT" "Glossaries own terminology"
+assert_contains "$CONTRACT" "capture checkpoint"
+assert_contains "$CONTRACT" "Research is evidence"
+assert_contains "$CONTRACT" "Execution readiness"
+assert_contains "$CONTRACT" "compact plan"
+assert_contains "$CONTRACT" "Tickets own the canonical task bodies"
+assert_contains "$CONTRACT" "satisfied dependencies, stable consumed interfaces, and non-conflicting ownership"
+assert_contains "$CONTRACT" "detect its absence"
+assert_contains "$CONTRACT" "request installation"
+assert_contains "$CONTRACT" "does not resolve skill-to-skill dependencies"
+assert_contains "$CONTRACT" "unknown"
+# The contract is locally authored; it must not claim a fake upstream origin.
+assert_not_contains "$CONTRACT" "Adapted from"
+assert_contains "$ROOT/README.md" "planning-contract"
 
 bash -n "$ROOT/scripts/check-skill-sources.sh"
 printf 'all skills valid\n'
