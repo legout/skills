@@ -41,7 +41,9 @@ If the user does not specify a mode, use `supervised` and state that choice brie
 
 ## Intake and preflight
 
-Read all supplied ADRs, specifications, issues, plans, and approved designs before dispatching a writer. Preserve them as source material. Extract:
+Load the [`planning-contract`](../planning-contract/SKILL.md) skill (Contract version: 1) before dispatch; it owns artifact classification, approval, and readiness. If it is not installed, refuse to dispatch and request installing `planning-contract` rather than proceeding on inherited or invented rules; never assume automatic dependency resolution.
+
+Read all supplied ADRs, specifications, issues, plans, and approved designs before dispatching a writer. Preserve them as source material. Classify each input with the contract: research reports, probe verdicts, and ADRs without behavioral acceptance are evidence, never approved behavioral sources. Extract:
 
 - constraints, invariants, and non-goals;
 - acceptance criteria and validation evidence;
@@ -56,6 +58,14 @@ Require a git repository for mutation modes. Verify repository, cwd, base ref, c
 Before dispatch, run or record the repository's baseline checks. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one managed worktree and one writer. Follow the plan's smallest safe decomposition: separate shared write targets into distinct lanes before serializing writers on one target, and prefer one writer when the work cannot decompose safely. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
 
 Normalize different plan formats with a read-only scout. Preserve the planner's source documents; do not require every planning skill to emit one new format.
+
+## Planning readiness gate
+
+Before dispatching any implementer, verify execution readiness per `planning-contract`: an approved behavioral source or its bounded-change equivalent, the capture-checkpoint result, requirement coverage, unresolved decisions, prerequisite evidence, owned surfaces, assigned validation, and execution authority. Research alone, a draft specification, an ADR without behavioral acceptance, or a materially changed unapproved source cannot satisfy readiness. Refuse the dispatch before any writer or worktree is allocated, report the specific missing prerequisite, and route the work back to the skill that owns it — `shape-design` for behavior and approval, `write-implementation-plan` for decomposition.
+
+A material behavior, interface, or scope change discovered during execution invalidates the readiness of affected tasks until the source and decomposition are reconciled and approved: route the change back to shaping and block only affected tasks. Unaffected tasks need no reapproval, and cosmetic edits need no new behavioral approval.
+
+Record in the manifest: each source artifact's classification, approved scope and revision, and approval reference; the capture-checkpoint outcome; the contract version and available provenance, or `unknown`; and each task's prerequisite evidence and readiness verdict.
 
 ## Test obligations
 
@@ -77,6 +87,7 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 |---|---|
 | Non-git directory | `plan-only`; no mutation workers |
 | Conflicting sources | Stop before dispatch; request owner decision |
+| Research-only, draft, or unapproved source | Refuse dispatch; route the work back to the owning skill |
 | Independent writers | Managed worktree per writer |
 | High-risk or dependency-defining task | Immediate review |
 | Low-risk completed task | Queue on its lane for cumulative `lastReviewedSha..laneHeadSha` review at the next boundary |
@@ -100,4 +111,5 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 - Starting a replacement writer before failed-lane ownership is resolved.
 - Assuming a completed child's worktree or cwd still exists at fix time; durable handoff patch paths, pinned named bases, and registered parent-owned review/candidate checkouts are the recovery boundary.
 - Treating a worker-reported SHA as the reviewed tree without reconstructing and checking the artifact.
+- Dispatching a writer from research findings, a draft specification, or a materially changed unapproved source.
 - Calling autonomous candidate-assembly permission to integrate or publish.
