@@ -29,12 +29,7 @@ Invoke `grilling` only for an explicit stress-test or grill request. Ordinary sh
 
 ## Capture checkpoint
 
-Before handing a shaped change to planning or implementation, run the capture checkpoint from `planning-contract` and record its outcome with the handoff itself, never as a standalone checklist document:
-
-1. **Vocabulary:** resolved new or changed terms are captured in the owning glossary through `domain-modeling`, lazily — created when the first term is actually resolved, never as a placeholder. No new terms is a valid outcome; missing confirmed vocabulary is not silently skipped.
-2. **Decisions:** assess consequential choices against all ADR criteria — hard to reverse, surprising without context, based on real alternatives. Record a qualifying approved choice as an ADR or present its proposed ADR for approval; otherwise report that no ADR is warranted. An ADR is never created merely because a question was asked.
-3. **Behavior:** identify scope, non-goals, acceptance criteria, and the approved source. The approved specification or bounded design is the approved behavioral source; research findings and probe verdicts are evidence and never satisfy it.
-4. **Uncertainty:** unresolved material decisions block the execution handoff. Research and probes may continue within their authorized scope.
+Before handing a shaped change to planning or implementation, run the capture checkpoint defined in `planning-contract` — the sole canonical procedure; never restate or re-edit its vocabulary, decision, behavior, or uncertainty steps here. Record the outcome with the handoff itself, never as a standalone checklist document. Consumer routes: capture resolved vocabulary through `domain-modeling`, lazily — the owning glossary is created when the first term is actually resolved, never as a placeholder — and take consequential decisions to `domain-modeling`'s ADR criteria rather than manufacturing an ADR for every question.
 
 Record the contract version and the available installed provenance, or `unknown`, with the handoff.
 

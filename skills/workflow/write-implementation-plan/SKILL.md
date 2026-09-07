@@ -21,11 +21,11 @@ ADRs explain **why**, specifications define **what**, and plans or tickets defin
 ## Preflight
 
 1. Read the approved specification, project instructions, relevant code/tests, and any established domain glossary or decision records.
-2. **Readiness gate:** require an approved behavioral source — an approved specification, or the bounded-change equivalent of an explicitly approved issue or short design with acceptance criteria. Research reports, probe verdicts, and draft specifications are evidence, not sources: stop, report the specific missing prerequisite, and route the work back to `shape-design`. An owner's acceptance of research findings is not approval to build.
+2. **Readiness gate:** require an approved behavioral source per `planning-contract` — an approved specification or its bounded-change equivalent; research findings and probe verdicts are evidence, not sources. If it is missing, stop, report the specific missing prerequisite, and route the work back to `shape-design`.
 3. Stop if requirements conflict or a material owner decision is unresolved.
-4. A material behavior, interface, or scope change discovered during planning returns to `shape-design`: update the source, obtain approval for the changed scope and revision, and block affected tasks until the source and decomposition are reconciled. Unaffected tasks need no reapproval; cosmetic edits need no new behavioral approval.
+4. A material behavior, interface, or scope change discovered during planning returns to `shape-design`: update the source, obtain approval for the changed scope and revision, and block affected tasks until the source and decomposition are reconciled per the contract's readiness rule.
 5. Split independent subsystems into separate plans.
-6. Identify files, responsibilities, interfaces, dependencies, and integration order. Identify blocking first steps, independent workstreams, shared write targets, and the smallest safe decomposition; when work cannot decompose safely, plan one sequential owner. Mark tasks ready for parallel execution only when dependencies are satisfied, consumed interfaces are stable, and ownership does not conflict; distinct ticket files alone never justify parallel writers, and contract-defining tasks are accepted before dependent tasks consume them.
+6. Identify files, responsibilities, interfaces, dependencies, and integration order. Identify blocking first steps, independent workstreams, shared write targets, and the smallest safe decomposition; when work cannot decompose safely, plan one sequential owner. Mark tasks ready for parallel execution only when they satisfy the contract's parallel-execution rule.
 7. Follow established project conventions; do not hide unrelated refactoring in the plan.
 
 Use the repository's established plan location. If none exists, propose a location or a runtime-managed artifact and get approval before creating a new documentation convention.

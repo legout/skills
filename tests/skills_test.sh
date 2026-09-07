@@ -406,6 +406,9 @@ assert_contains "$CONTRACT" "Directory membership never grants approval"
 assert_contains "$CONTRACT" "Scoped authority"
 assert_contains "$CONTRACT" "Glossaries own terminology"
 assert_contains "$CONTRACT" "capture checkpoint"
+assert_contains "$CONTRACT" "No new terms is a valid outcome"
+assert_contains "$CONTRACT" "Research alone"
+assert_contains "$CONTRACT" "Unaffected tasks need no reapproval"
 assert_contains "$CONTRACT" "Research is evidence"
 assert_contains "$CONTRACT" "Execution readiness"
 assert_contains "$CONTRACT" "compact plan"
@@ -446,34 +449,40 @@ assert_contains "$ROOT/skills/tools-and-research/research/SKILL.md" "Research is
 assert_contains "$ROOT/skills/workflow/prototype-question/SKILL.md" "docs/research/"
 assert_contains "$ROOT/skills/workflow/prototype-question/SKILL.md" "Probe approval does not authorize"
 
-# Shaping owns the vocabulary/decision capture checkpoint with lazy, selective
-# domain capture; domain-modeling remains the acting glossary/ADR skill.
+# Shaping runs the capture checkpoint defined by the canonical contract and
+# records its outcome with the handoff; vocabulary and ADR capture route
+# through domain-modeling. Canonical checkpoint prose stays in the contract.
 assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "capture checkpoint"
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "sole canonical"
 assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "docs/research/"
-assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "No new terms is a valid outcome"
-assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "ADR criteria"
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" 'vocabulary through `domain-modeling`'
+assert_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "never as a standalone checklist document"
+assert_not_contains "$ROOT/skills/workflow/shape-design/SKILL.md" "No new terms is a valid outcome"
 assert_contains "$ROOT/skills/workflow/domain-modeling/SKILL.md" "capture checkpoint"
 
-# Planning requires an approved behavioral source, reconciles material source
-# changes through shaping, and keeps tickets canonical. The old blanket
-# precedence rule contradicts the contract's scoped authority.
+# Planning requires an approved behavioral source per the contract, reconciles
+# material source changes through shaping, and keeps tickets canonical. The
+# readiness and reconciliation rules themselves stay canonical in the contract.
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "approved behavioral source"
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "bounded-change equivalent"
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" 'returns to `shape-design`'
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "capture-checkpoint"
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "canonical"
 assert_not_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "The specification remains authoritative"
+assert_not_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "Unaffected tasks need no reapproval"
+assert_not_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "satisfied dependencies, stable consumed interfaces"
 
-# Orchestration gates implementer dispatch on readiness, refuses
-# research-only/draft/unapproved inputs before any writer is allocated, and
-# reconciles material source changes by blocking only affected tasks.
-assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Research alone"
-assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "draft specification"
+# Orchestration gates implementer dispatch on readiness defined by the
+# canonical contract: refuse before any writer is allocated, name the missing
+# prerequisite, route back to the owning skill, and record manifest evidence.
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "sole canonical"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Refuse the dispatch before any writer or worktree is allocated"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "route the work back"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "capture-checkpoint"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "readiness"
-assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "materially changed"
-assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "route the work back"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "available provenance"
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Research alone"
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Unaffected tasks need no reapproval"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "capture-checkpoint"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "contract version"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/manifest-and-briefs.md" "available provenance"

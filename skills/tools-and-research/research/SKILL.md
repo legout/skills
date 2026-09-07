@@ -13,7 +13,7 @@ Its job:
 
 1. Investigate the question against **primary sources** (official docs, source code, specs, first-party APIs), not a secondary write-up of them. Follow every claim back to the source that owns it.
 2. Write the findings to a single Markdown note, citing each claim's source.
-3. Save it as research evidence: investigations, design studies, and probe reports belong under `docs/research/` by default, adjusted only by the project's explicit mapping in `docs/agents/artifacts.md`. Match an established research-note convention when one exists, but never file research under `docs/specs/` — a research note found there is misclassification evidence to report, not a convention to copy. Link the note from the owning specification or design when one exists.
+3. Save it as research evidence: investigations, design studies, and probe reports belong under `docs/research/` by default. Depart from that default only via the project's explicit mapping in `docs/agents/artifacts.md` or an explicit owner decision. When research notes already exist elsewhere, inspect that established convention and report it — with any conflict against the mapping or default — for an owner decision instead of silently adopting it; a research note found under `docs/specs/` is misclassification evidence to report, not a convention to copy. Link the note from the owning specification or design when one exists.
 
 ## Approval boundary
 

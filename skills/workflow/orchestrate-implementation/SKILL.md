@@ -61,9 +61,7 @@ Normalize different plan formats with a read-only scout. Preserve the planner's 
 
 ## Planning readiness gate
 
-Before dispatching any implementer, verify execution readiness per `planning-contract`: an approved behavioral source or its bounded-change equivalent, the capture-checkpoint result, requirement coverage, unresolved decisions, prerequisite evidence, owned surfaces, assigned validation, and execution authority. Research alone, a draft specification, an ADR without behavioral acceptance, or a materially changed unapproved source cannot satisfy readiness. Refuse the dispatch before any writer or worktree is allocated, report the specific missing prerequisite, and route the work back to the skill that owns it — `shape-design` for behavior and approval, `write-implementation-plan` for decomposition.
-
-A material behavior, interface, or scope change discovered during execution invalidates the readiness of affected tasks until the source and decomposition are reconciled and approved: route the change back to shaping and block only affected tasks. Unaffected tasks need no reapproval, and cosmetic edits need no new behavioral approval.
+Before dispatching any implementer, verify execution readiness as defined in `planning-contract` — the sole canonical procedure; never restate its checklist here. Refuse the dispatch before any writer or worktree is allocated, report the specific missing prerequisite, and route the work back to the skill that owns it — `shape-design` for behavior and approval, `write-implementation-plan` for decomposition. A material change discovered during execution re-runs the contract's readiness rule for the affected tasks before further dispatch.
 
 Record in the manifest: each source artifact's classification, approved scope and revision, and approval reference; the capture-checkpoint outcome; the contract version and available provenance, or `unknown`; and each task's prerequisite evidence and readiness verdict.
 
