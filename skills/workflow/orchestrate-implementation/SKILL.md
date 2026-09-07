@@ -19,6 +19,16 @@ The parent owns every child's work: review the diff yourself and write the final
 
 Use `pi-intercom` only for explicitly named, persistent read-only peers or visible cross-project peers. Spawned children use Pi's native supervisor channel for decisions and progress.
 
+## Durable handoff and recovery boundary
+
+The worker worktree is an execution detail, not the review artifact. Before mutation, create a collision-checked, parent-owned named base ref such as `refs/heads/orchestrator/<run>/base/<lane>` at the approved lane base. Record its resolved SHA and require that the ref still resolves to that SHA before every recovery. Pass the named ref—not a raw SHA or the moving parent `HEAD`—to managed allocation.
+
+Require each mutation lane to report a complete binary-capable patch, its digest, worker-reported commit/tree/cleanliness, and the runtime handoff/cleanup status. Keep the base and handoff artifacts until every consumer is terminal. Missing, partial, dirty, corrupt, or inconsistent handoffs block acceptance; a child exiting is not success by itself.
+
+When the worker worktree or branch is gone, reconstruct in a registered parent-owned review worktree outside extension auto-discovery and the active source checkout: create it from the pinned named base, verify the patch digest, run `git apply --check` and `git apply --index`, and compare the staged tree with the expected worker tree. Commit that reconstructed tree, run focused checks there, and dispatch a fresh read-only reviewer against its exact base/head range. Record worker provenance separately from the materialized review SHA/tree; advance `lastReviewedSha` only for the reconstructed branch.
+
+A fix worker replays a full patch relative to the original pinned base. The replacement patch supersedes the prior full lane patch; it is not an incremental patch applied on top of the previous result. Reset the review boundary to the pinned base and review the complete replacement range. Assemble accepted reconstructed commits in a separate registered candidate worktree, then hand `merge-worktree` the candidate path, branch, base/head, checks, review evidence, and authorization state.
+
 ## Modes
 
 Choose one mode from the request or configured default:
@@ -41,7 +51,7 @@ Read all supplied ADRs, specifications, issues, plans, and approved designs befo
 
 Stop before mutation when inputs conflict or a material acceptance criterion is missing. Ask for the exact owner decision instead of selecting one silently.
 
-Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Detect whether the harness already provides isolation; never create nested or manually registered worktrees when managed child worktrees are available. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
+Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Detect whether the harness already provides isolation; never create nested or manually registered mutation worktrees when managed child worktrees are available. Registered parent-owned review and candidate checkouts are the one deliberate exception: they exist only for reconstruction, focused checks, review, and assembly of already-captured lanes. They are not nested child worktrees, not a second child allocator, and never concurrent shared-writer locations; managed mutation children stay with `pi-subagents`. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
 
 Before dispatch, run or record the repository's baseline checks. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one managed worktree and one writer. Follow the plan's smallest safe decomposition: separate shared write targets into distinct lanes before serializing writers on one target, and prefer one writer when the work cannot decompose safely. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
 
@@ -75,7 +85,8 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 | Persistent specialist | Named read-only intercom peer |
 | Missing optional peer | Fresh advisor fallback |
 | Missing required peer | Pause |
-| Review blocker | Resumable writer with intact worktree fixes; otherwise fresh fix worker replays the durable prior handoff patch; fresh re-review |
+| Review blocker | Resumable writer with intact worktree fixes; otherwise fresh fix worker replays the durable prior handoff patch from the pinned base; fresh full-range re-review |
+| Missing/corrupt handoff | Block acceptance; preserve the artifact and owned refs for recovery |
 | Candidate-assembly conflict | Pause and preserve ownership |
 | Push/merge/deploy/release | Separate authority gate |
 
@@ -87,5 +98,6 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 - Giving every worker the whole plan and accumulated reports.
 - Letting a reviewer or worker become the final scope or publication authority.
 - Starting a replacement writer before failed-lane ownership is resolved.
-- Assuming a completed child's worktree or cwd still exists at fix time; durable handoff patch paths, not child session survival, are the recovery boundary.
+- Assuming a completed child's worktree or cwd still exists at fix time; durable handoff patch paths, pinned named bases, and registered parent-owned review/candidate checkouts are the recovery boundary.
+- Treating a worker-reported SHA as the reviewed tree without reconstructing and checking the artifact.
 - Calling autonomous candidate-assembly permission to integrate or publish.

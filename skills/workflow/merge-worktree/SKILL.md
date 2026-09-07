@@ -22,6 +22,10 @@ Determine these inputs from the request and repository:
 
 Use the repository default branch only when unambiguous. If authorization is incomplete, offer: merge locally, open a PR without merging, open and merge a PR after checks, or keep the branch unchanged. Opening a PR never authorizes merging it. A local merge never authorizes a push.
 
+## Candidate handoff from orchestrate-implementation
+
+When the source is an orchestrator candidate, accept only a registered parent-owned candidate worktree and branch. The handoff must name the pinned candidate base/head, exact reviewed range, assembled lane commits, focused validation, fresh candidate review evidence, and authorization state. Do not substitute a deleted worker path, the target branch's current `HEAD`, or a worker-reported SHA for the candidate tree. A candidate handoff does not grant push, PR merge, deploy, or release authority.
+
 ## Preflight
 
 1. Run `git worktree list --porcelain`. Require the source to be a registered worktree on a non-detached branch.

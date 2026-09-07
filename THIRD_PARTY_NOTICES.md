@@ -38,7 +38,7 @@ Vendored or adapted material appears in `handoff`, `effective-agent-skills`, `pi
 
 Source: [mattpocock/skills](https://github.com/mattpocock/skills), pinned to [`3cca18b`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015).
 
-Vendored or adapted material appears in `agent-md-refactor`, `domain-modeling`, `grilling`, `orchestrate-implementation`, `prototype-question`, `research`, `review-codebase-architecture`, `shape-design`, and `systematic-debugging`. The visual-report material formerly packaged separately is now a reference within `review-codebase-architecture`.
+Vendored or adapted material appears in `agent-md-refactor`, `domain-modeling`, `grilling`, `orchestrate-implementation`, `prototype-question`, `research`, `review-codebase-architecture`, `shape-design`, and `systematic-debugging`. The visual-report material formerly packaged separately is now a reference within `review-codebase-architecture`. The `domain-modeling` context-format reference is adapted locally (tracked as `adapted` in `sources.json`) to resolve structure from configured context ownership before any glossary creation; the upstream pin and license are unchanged.
 
 > MIT License
 >

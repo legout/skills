@@ -1,0 +1,53 @@
+{
+  "prototype_choice_without_production_request": {
+    "input": "Compare two dashboard layouts and let me choose one.",
+    "evidence": ["prototype-question", "shape-design"],
+    "expected": "Build or inspect the bounded prototype, preserve the selected variant as a verdict, and return to shape-design; do not edit production implementation."
+  },
+  "explicit_production_request_after_design": {
+    "input": "The approved design is complete; implement the selected dashboard layout in production.",
+    "evidence": ["shape-design", "write-implementation-plan", "orchestrate-implementation"],
+    "expected": "Treat the explicit request as a new production handoff and follow the normal approved implementation route; a prototype verdict alone is not approval."
+  },
+  "multi_context_without_map": {
+    "files": {
+      "docs/agents/domain.md": "multiple contexts: yes\n",
+      "CONTEXT-MAP.md": null,
+      "CONTEXT.md": null,
+      "src/billing/CONTEXT.md": null
+    },
+    "expected": "Stop and ask which real context owns the term or request a real context map; do not create a root CONTEXT.md or a placeholder glossary."
+  },
+  "multi_context_with_map": {
+    "files": {
+      "docs/agents/domain.md": "multiple contexts: yes\n",
+      "CONTEXT-MAP.md": "# Context Map\n\n- Billing: ./src/billing/CONTEXT.md\n",
+      "src/billing/CONTEXT.md": "# Billing\n"
+    },
+    "expected": "Read the map and the owning context glossary, then write only to the resolved real context."
+  },
+  "conflicting_single_multi_evidence": {
+    "files": {
+      "docs/agents/domain.md": "multiple contexts: yes\n",
+      "CONTEXT-MAP.md": null,
+      "CONTEXT.md": "# Existing single-context glossary\n"
+    },
+    "expected": "Surface the configuration/evidence conflict and ask the owner which source is authoritative; do not silently rewrite either source."
+  },
+  "unconfigured_single_context": {
+    "files": {
+      "docs/agents/domain.md": null,
+      "CONTEXT-MAP.md": null,
+      "CONTEXT.md": null
+    },
+    "expected": "Preserve the existing single-context fallback and create the root CONTEXT.md lazily only when the first term is actually resolved."
+  },
+  "configured_single_context": {
+    "files": {
+      "docs/agents/domain.md": "multiple contexts: no\n",
+      "CONTEXT-MAP.md": null,
+      "CONTEXT.md": null
+    },
+    "expected": "Honor the configured single-context declaration: no context map is required; create the first real root CONTEXT.md lazily when the first term is actually resolved, never a placeholder or fictional map."
+  }
+}

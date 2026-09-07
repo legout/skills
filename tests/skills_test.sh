@@ -12,6 +12,10 @@ assert_contains() {
     grep -Fqi -- "$2" "$1" || fail "missing in $1: $2"
 }
 
+assert_not_contains() {
+    ! grep -Fqi -- "$2" "$1" || fail "contradictory text in $1: $2"
+}
+
 python3 - "$ROOT" <<'PY'
 import hashlib
 import json
@@ -87,6 +91,45 @@ if set(routing) != names:
 for name, cases in routing.items():
     if len(cases.get("positive", [])) < 3 or len(cases.get("negative", [])) < 2:
         errors.append(f"{name}: routing prompts require at least 3 positive and 2 negative cases")
+
+handoffs = json.loads((root / "tests/fixtures/orchestrator-skill-handoffs.json").read_text())
+required_handoffs = {
+    "prototype_choice_without_production_request",
+    "explicit_production_request_after_design",
+    "multi_context_without_map",
+    "multi_context_with_map",
+    "conflicting_single_multi_evidence",
+    "unconfigured_single_context",
+    "configured_single_context",
+}
+if set(handoffs) != required_handoffs:
+    errors.append(f"orchestrator handoff fixture mismatch: expected {required_handoffs!r}, got {set(handoffs)!r}")
+for name in ("multi_context_without_map", "configured_single_context", "unconfigured_single_context"):
+    if name in handoffs and "files" not in handoffs[name]:
+        errors.append(f"handoff fixture {name} must declare its repository file state")
+
+# The lifecycle acceptance eval must be an executable native fixture, not prose
+# that forbids the very skill and tools it claims to accept.
+evals_path = root / "skills/workflow/orchestrate-implementation/evals/evals.json"
+evals = json.loads(evals_path.read_text())
+by_id = {item.get("id"): item for item in evals.get("evals", [])}
+if sorted(by_id) != [1, 2, 3, 4]:
+    errors.append(f"orchestrate evals must remain ids 1..4, got {sorted(by_id)!r}")
+else:
+    acceptance = by_id[4]
+    joined = " ".join([acceptance.get("prompt", ""), acceptance.get("expected_output", "")]).lower()
+    if "use an orchestration skill" in joined or "do not modify files" in joined:
+        errors.append("eval id4 must not forbid the orchestration skill or file changes; it is an executable acceptance fixture")
+    for token in ("disposable", "orchestrate-implementation", "subagent", "finalization", "digest", "candidate", "blocked", "pending", "fallback", "autonomous", "awaiting approval", "ownership"):
+        if token not in joined:
+            errors.append(f"eval id4 must declare the bounded native acceptance contract (missing {token!r})")
+    fixture = (root / "skills/workflow/orchestrate-implementation/evals/fixtures/managed-lifecycle.md").read_text().lower()
+    for token in ("pending", "blocked", "disposable", "digest", "evidence", "finalization", "autonomous", "awaiting approval", "configured locations", "before commit"):
+        if token not in fixture:
+            errors.append(f"managed-lifecycle fixture must declare the executable acceptance contract (missing {token!r})")
+    for stale in ("all commits, refs, worktrees, and patches stay inside", "corrupt artifact must each abort before mutation", "init -q 2>/dev/null ||"):
+        if stale in fixture:
+            errors.append(f"managed-lifecycle fixture retains an incompatible boundary: {stale!r}")
 
 # Relative Markdown links must resolve. Ignore examples inside code fences.
 pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -169,6 +212,9 @@ for file in \
     skills/visualization/drawio-skill/scripts/validate.py \
     skills/visualization/excalidraw/scripts/excalidraw_lib.py \
     skills/workflow/orchestrate-implementation/evals/evals.json \
+    skills/workflow/orchestrate-implementation/evals/fixtures/managed-lifecycle.md \
+    tests/orchestrator_handoff_test.sh \
+    tests/fixtures/orchestrator-skill-handoffs.json \
     skills/workflow/review-codebase-architecture/references/html-report.md \
     skills/workflow/review-codebase-architecture/agents/openai.yaml \
     skills/skill-authoring/improve-skill/scripts/extract-session.js \
@@ -176,6 +222,7 @@ for file in \
     test -f "$ROOT/$file" || fail "missing required asset: $file"
 done
 
+# Static contract assertions only; they are not behavioral skill-execution evidence.
 assert_contains "$ROOT/skills/engineering/simplify-code/SKILL.md" "Reuse"
 assert_contains "$ROOT/skills/engineering/simplify-code/SKILL.md" "Quality"
 assert_contains "$ROOT/skills/engineering/simplify-code/SKILL.md" "Efficiency"
@@ -198,6 +245,46 @@ assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "remo
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "smallest safe decomposition"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "smallest safe decomposition"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "review the diff"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Durable handoff and recovery boundary"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "pinned named base"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "complete binary-capable patch"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "replacement patch supersedes"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "registered candidate worktree"
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "review the worker path"
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "cherry-pick worker commits only"
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'pi-subagents` 0.66.0'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'set -euo pipefail'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'stop() {'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'approved lane base'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'never fall back to the parent'
+# The old recipe called an undefined "stop", had no fail-fast, and overwrote existing pins.
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" '&& stop'
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'git update-ref "refs/heads/orchestrator/$run/base/$lane" "$base_sha"'
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md" 'cherry-picks only accepted commits'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/review-and-recovery.md" "git apply --check"
+# Worker-path-only validation/review wording is contradicted by reconstruction.
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/references/review-and-recovery.md" 'range in its managed worktree; never use'
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/references/review-and-recovery.md" 'validation in each worker worktree matching'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/references/review-and-recovery.md" 'reconstructed tree'
+# The blanket manual-worktree prohibition must be amended only for owned review/candidate checkouts.
+assert_not_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" 'never create nested or manually registered worktrees when managed child worktrees are available'
+assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" 'Registered parent-owned review and candidate checkouts'
+assert_contains "$ROOT/skills/workflow/merge-worktree/SKILL.md" "parent-owned candidate worktree"
+assert_contains "$ROOT/skills/workflow/prototype-question/references/ui.md" "shape-design"
+assert_not_contains "$ROOT/skills/workflow/prototype-question/references/ui.md" "implement the selected variant in production"
+assert_contains "$ROOT/skills/workflow/domain-modeling/SKILL.md" "docs/agents/domain.md"
+assert_contains "$ROOT/skills/workflow/domain-modeling/SKILL.md" "Do not create a root"
+# Root glossary creation is not restricted to unconfigured repos: a configured
+# single-context repo also creates its first real glossary lazily.
+assert_not_contains "$ROOT/skills/workflow/domain-modeling/SKILL.md" 'only for an unconfigured single-context project'
+assert_contains "$ROOT/skills/workflow/domain-modeling/SKILL.md" 'configured single-context'
+assert_contains "$ROOT/skills/workflow/domain-modeling/references/context-format.md" "CONTEXT-MAP.md"
+assert_contains "$ROOT/skills/workflow/domain-modeling/references/context-format.md" "docs/agents/domain.md"
+# The old reference fallback recreated a root glossary for configured multi-context projects.
+assert_not_contains "$ROOT/skills/workflow/domain-modeling/references/context-format.md" 'If neither exists, create a root `CONTEXT.md` lazily when the first term is resolved'
+assert_contains "$ROOT/skills/workflow/domain-modeling/references/context-format.md" 'do not create a root `CONTEXT.md` just because the map is absent'
+assert_contains "$ROOT/tests/orchestrator_handoff_test.sh" "GIT binary patch"
+assert_contains "$ROOT/tests/orchestrator_handoff_test.sh" "candidate missing from worktree registry"
 assert_contains "$ROOT/skills/skill-authoring/effective-agent-skills/SKILL.md" "executable enforcement"
 assert_contains "$ROOT/skills/skill-authoring/effective-agent-skills/SKILL.md" "routing"
 assert_contains "$ROOT/skills/skill-authoring/improve-skill/SKILL.md" "pre-change"

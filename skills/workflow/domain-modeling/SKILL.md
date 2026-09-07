@@ -23,7 +23,7 @@ Most repos have a single context:
 └── src/
 ```
 
-If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives:
+If a `CONTEXT-MAP.md` exists at the root, or the project explicitly declares multiple contexts, the repo has multiple contexts. The map points to where each one lives:
 
 ```
 /
@@ -39,7 +39,20 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 │       └── docs/adr/
 ```
 
-Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
+Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved — for any single-context project, configured or unconfigured. Never create a root `CONTEXT.md` for a configured multi-context project. If no `docs/adr/` exists, create it when the first ADR is needed.
+
+## Discover context ownership
+
+Before writing a glossary, read `docs/agents/domain.md` when present. Treat its explicit single/multiple-context declaration as configuration, not as a reason to invent names. Then:
+
+1. If `CONTEXT-MAP.md` exists, read it and follow its real paths.
+2. Inspect the relevant package/context directories and their existing `CONTEXT.md` or glossary files.
+3. If a term could belong to more than one context, ask which real context owns it rather than choosing silently.
+4. If explicit configuration and existing map/glossary evidence conflict, surface the conflict and ask the owner which source to update; do not rewrite either source automatically.
+5. For explicit multiple-context projects with no map or resolvable owner, stop and ask for the real context ownership. **Do not create a root `CONTEXT.md` just because the map is absent.** Capture a map or context glossary lazily once ownership is known.
+6. A project configured as single-context, or unconfigured with no map, preserves the single-context fallback: use the root `CONTEXT.md`, creating it lazily when the first term is actually resolved. A configured single-context repository with no glossary yet creates its first real glossary the same way; it does not need a context map.
+
+The installer does not create placeholder glossaries or fictional domain names. A context map is meaningful only when it names real contexts and relationships.
 
 ## During the session
 
@@ -61,7 +74,7 @@ When the user states how something works, check whether the code agrees. If you 
 
 ### Update CONTEXT.md inline
 
-When a term is resolved, update `CONTEXT.md` right there. Don't batch these up: capture them as they happen. Use the format in [context-format.md](./references/context-format.md).
+When a term is resolved, update the owning `CONTEXT.md` right there. Don't batch these up: capture them as they happen. Use the format in [context-format.md](./references/context-format.md).
 
 `CONTEXT.md` should be totally devoid of implementation details. Do not treat `CONTEXT.md` as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
 

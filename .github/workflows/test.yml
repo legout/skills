@@ -10,4 +10,15 @@ jobs:
         with:
           persist-credentials: false
       - run: bash -n tests/skills_test.sh
+      - run: bash -n tests/orchestrator_handoff_test.sh
+      - run: >-
+          python3 -m json.tool
+          skills/workflow/orchestrate-implementation/evals/evals.json
+      - run: >-
+          python3 -m json.tool
+          tests/fixtures/orchestrator-skill-handoffs.json
+      - run: python3 -m json.tool tests/routing_prompts.json >/dev/null
+      - run: python3 -m json.tool sources.json >/dev/null
       - run: bash tests/skills_test.sh
+      - run: bash tests/orchestrator_handoff_test.sh
+      - run: git diff --check

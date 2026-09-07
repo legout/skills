@@ -11,8 +11,8 @@ Create one compact run manifest in runtime-managed artifacts. Record:
 - worker, reviewer, simplifier, oracle, and peer configuration;
 - validation commands and review-round cap;
 - unresolved decisions and their owners;
-- per-lane base, head, last-reviewed SHA, commit, and handoff state;
-- candidate-branch base, head, cherry-pick, and review state; and
+- per-lane pinned named base ref and resolved SHA, worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
+- candidate-branch base, head, registered worktree, cherry-picks, exact review range, and review state; and
 - residual risks and artifact references.
 
 Store large content in artifacts. Keep only paths and concise summaries in the manifest or mission state.
@@ -40,7 +40,9 @@ The worker report contains:
 - test-obligation evidence: the assigned obligation, rationale, commands, and results; failing test before and passing test after implementation for `new-test`;
 - validation commands and results;
 - open decisions and residual risks; and
-- artifact and handoff references.
+- artifact and handoff references, including the complete patch digest, worker tree/cleanliness, runtime cleanup state, and any warnings.
+
+The manifest must distinguish four identities: worker provenance (the commit/tree reported by the child), the materialized review commit/tree (the parent-owned reconstruction actually checked), the lane review boundary (`lastReviewedSha` on that reconstruction), and the candidate commit/tree assembled from accepted reviewed lanes. Never copy a clean verdict between these identities.
 
 Workers do not expand scope, assemble other lanes, publish, or delegate further unless the orchestrator explicitly grants that authority.
 

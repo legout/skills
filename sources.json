@@ -4925,9 +4925,7 @@
       "commit": "3cca18b368ae95cdbdebbff572ccafa662551015",
       "license": "MIT",
       "copyright": "Copyright (c) 2026 Matt Pocock",
-      "mode": "vendored",
-      "upstream_sha256": "17ab16ce783e4d2801ee52fd9acdf550cbf44de65ae76797a93943bbedf22a13",
-      "local_sha256": "17ab16ce783e4d2801ee52fd9acdf550cbf44de65ae76797a93943bbedf22a13"
+      "mode": "adapted"
     },
     {
       "local": "skills/workflow/domain-modeling/references/adr-format.md",

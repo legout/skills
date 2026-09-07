@@ -71,11 +71,14 @@
     "positive": [
       "Sharpen the terms in our CONTEXT.md while we discuss this domain.",
       "Record this hard-to-reverse architecture choice as an ADR.",
-      "The code and glossary disagree about what an account means; resolve the domain model."
+      "The code and glossary disagree about what an account means; resolve the domain model.",
+      "Our docs/agents/domain.md declares multiple contexts; map this term to its real owning glossary.",
+      "Our docs/agents/domain.md declares a single context and we have no glossary yet; capture our first terms as we pin them down."
     ],
     "negative": [
       "Write the behavioral specification for this approved feature.",
-      "Grill me about this idea without writing any documentation."
+      "Grill me about this idea without writing any documentation.",
+      "Implement the approved feature without changing the domain glossary."
     ]
   },
   "documentation-writer": {
@@ -238,11 +241,13 @@
     "positive": [
       "Implement this approved plan across parallel tasks and worktrees.",
       "Coordinate workers and reviewers for this multi-repository feature.",
-      "Execute this specification with isolated implementation lanes."
+      "Execute this specification with isolated implementation lanes.",
+      "Recover a reviewed lane after its managed worker worktree disappeared."
     ],
     "negative": [
       "Create a handoff for one fresh session.",
-      "Merge the already completed worktree into main."
+      "Merge the already completed worktree into main.",
+      "Run a read-only architecture review without editing or coordinating workers."
     ]
   },
   "pi-custom-model": {
@@ -261,12 +266,14 @@
       "Build a throwaway prototype to test whether this state model feels right.",
       "Create a disposable UI spike to compare these layouts.",
       "Sanity-check this algorithm's feasibility with minimal temporary code.",
-      "Don't ask me which retry backoff actually recovers faster; prototype both and measure it."
+      "Don't ask me which retry backoff actually recovers faster; prototype both and measure it.",
+      "Compare these UI variants and preserve the selected layout as a verdict for shape-design."
     ],
     "negative": [
       "Design the production architecture for this feature.",
       "Implement the approved specification fully.",
-      "Which of these two feature names should we ship with?"
+      "Which of these two feature names should we ship with?",
+      "Implement the selected prototype variant in production now."
     ]
   },
   "review-codebase-architecture": {
