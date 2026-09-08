@@ -167,6 +167,16 @@
     },
     {
       "local": "skills/workflow/write-implementation-plan/SKILL.md",
+      "source": "skills/engineering/to-tickets/SKILL.md",
+      "repository": "https://github.com/mattpocock/skills",
+      "branch": "main",
+      "commit": "3cca18b368ae95cdbdebbff572ccafa662551015",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Matt Pocock",
+      "mode": "adapted"
+    },
+    {
+      "local": "skills/workflow/write-implementation-plan/SKILL.md",
       "source": "skills/writing-plans/SKILL.md",
       "repository": "https://github.com/obra/superpowers",
       "branch": "main",

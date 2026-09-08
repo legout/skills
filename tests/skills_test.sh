@@ -336,6 +336,15 @@ assert_contains "$ROOT/skills/workflow/prototype-question/SKILL.md" "observable 
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "runnable check"
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "removal condition"
 assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "smallest safe decomposition"
+# Tracer-bullet decomposition: vertical slices, prefactoring, and the
+# wide-refactor expand–contract exception, adapted from Matt Pocock's to-tickets.
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "vertical slices"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "narrow but complete path through every layer"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "horizontal layer tasks"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "Make the change easy, then make the easy change"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "Wide refactors are the exception"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "expand–contract"
+assert_contains "$ROOT/skills/workflow/write-implementation-plan/SKILL.md" "to-tickets"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "smallest safe decomposition"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "review the diff"
 assert_contains "$ROOT/skills/workflow/orchestrate-implementation/SKILL.md" "Durable handoff and recovery boundary"

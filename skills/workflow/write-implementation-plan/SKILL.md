@@ -5,7 +5,7 @@ description: Turn an approved specification or multi-step requirement into an ex
 
 # Implementation Planning
 
-> Adapted from [`obra/superpowers`](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/writing-plans) at commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` (MIT). Verifiable-unit sequencing and migration cleanup are adapted from Cursor's [`poteto-mode`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99/pstack/skills/poteto-mode) at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor).
+> Adapted from [`obra/superpowers`](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/writing-plans) at commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` (MIT). Verifiable-unit sequencing and migration cleanup are adapted from Cursor's [`poteto-mode`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99/pstack/skills/poteto-mode) at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor). Tracer-bullet slicing and the wide-refactor expand–contract exception are adapted from Matt Pocock's [`to-tickets`](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/engineering/to-tickets/SKILL.md) at commit `3cca18b368ae95cdbdebbff572ccafa662551015` (MIT, Copyright (c) 2026 Matt Pocock).
 
 Write for an implementer with no conversational context. Specifications own behavior; this plan owns only execution decomposition, per the scoped authority in [`planning-contract`](../planning-contract/SKILL.md) (Contract version: 1). The plan is a compact execution map, not a rewritten specification. If that contract skill is not installed, stop and request installing `planning-contract` rather than planning on inherited or invented rules; never assume automatic dependency resolution.
 
@@ -43,6 +43,14 @@ Link rather than restating specification content. Include:
 - exact global validation commands.
 
 ## Tasks
+
+### Tracer-bullet slices
+
+Decompose into **vertical slices**: each task cuts a narrow but complete path through every layer it touches (schema, API, UI, tests) and is demoable or verifiable on its own. Never decompose into horizontal layer tasks (a schema task, then an API task, then a UI task) whose intermediate states deliver no observable behavior. A completed slice still leaves the repository coherent and green.
+
+Make the change easy, then make the easy change: when a slice would fight the current code shape, plan an explicit prefactoring task before the behavior task rather than hiding the prefactoring inside it.
+
+**Wide refactors are the exception to vertical slicing.** A wide refactor is one mechanical change (rename a column, retype a shared symbol) whose blast radius spans the codebase, so no vertical slice can land green. Sequence it as expand–contract: add the new form beside the old; migrate call sites in batches sized by blast radius, each batch its own task blocked by the expand and keeping CI green because the old form still exists; delete the old form once no caller remains, in a task blocked by every migrate batch. If even the batches cannot stay green alone, keep the sequence on a shared integration branch and promise green only at the final integrate-and-verify task; per-task coherence on that sequence is judged against the integration branch, not main.
 
 A task is the smallest independently reviewable deliverable with its own verification cycle; every task ends with a runnable check and leaves the repository coherent. For each task specify:
 
