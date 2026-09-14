@@ -12,7 +12,7 @@ Create one compact run manifest in runtime-managed artifacts. Record:
 - task IDs, dependency edges, lanes, and claimed files/contracts;
 - per-task readiness: prerequisite evidence and the readiness verdict recorded before dispatch;
 - worker, reviewer, simplifier, oracle, and peer configuration;
-- validation commands and review-round cap;
+- validation units with risk, named failure modes, focused commands, review policy, and a one-correction-round default;
 - unresolved decisions and their owners;
 - per-lane pinned named base ref and resolved SHA, worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
 - candidate-branch base, head, registered worktree, cherry-picks, exact review range, and review state; and
@@ -29,7 +29,7 @@ Give each worker one bounded brief containing:
 3. allowed files/contracts and authority boundary;
 4. relevant upstream interfaces, the approved behavioral source with its exact approved scope and revision, and approved decisions;
 5. acceptance criteria;
-6. focused validation commands;
+6. the validation unit's risk, named failure mode, and focused command not already covered by required CI;
 7. test obligation: the assigned obligation and its rationale;
 8. commit and report requirements; and
 9. stop/escalate conditions.
@@ -40,7 +40,7 @@ The worker report contains:
 
 - status and commit IDs;
 - changed files;
-- test-obligation evidence: the assigned obligation, rationale, commands, and results; failing test before and passing test after implementation for `new-test`;
+- test-obligation evidence: the assigned obligation, named failure mode, commands, and results; failing test before and passing test after implementation for `new-test`;
 - validation commands and results;
 - open decisions and residual risks; and
 - artifact and handoff references, including the complete patch digest, worker tree/cleanliness, runtime cleanup state, and any warnings.

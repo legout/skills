@@ -15,6 +15,8 @@ The current session is the orchestrator. Keep user intent, scope, authority, rou
 
 The parent owns every child's work: review the diff yourself and write the final conclusion; a child's self-report is input, not acceptance. Delegate large outputs and bulk exploration, but hand children bounded file references and a task contract rather than accumulated conversation history.
 
+Default to lean assurance: use the smallest evidence set that establishes acceptance criteria and addresses named material risks. Do not add tests, validation commands, reviewers, or review rounds for speculative failures or duplicate evidence. Escalate assurance for security, permissions, secrets, money, destructive data handling, migrations, concurrency, distributed behavior, and public contracts; do not weaken approval, data-integrity, or publication gates.
+
 **REQUIRED SUB-SKILL:** Use `pi-subagents` for child lifecycle, fresh contexts, managed worktrees, artifacts, missions, review, and recovery.
 
 Use `pi-intercom` only for explicitly named, persistent read-only peers or visible cross-project peers. Spawned children use Pi's native supervisor channel for decisions and progress.
@@ -25,7 +27,7 @@ The worker worktree is an execution detail, not the review artifact. Before muta
 
 Require each mutation lane to report a complete binary-capable patch, its digest, worker-reported commit/tree/cleanliness, and the runtime handoff/cleanup status. Keep the base and handoff artifacts until every consumer is terminal. Missing, partial, dirty, corrupt, or inconsistent handoffs block acceptance; a child exiting is not success by itself.
 
-When the worker worktree or branch is gone, reconstruct in a registered parent-owned review worktree outside extension auto-discovery and the active source checkout: create it from the pinned named base, verify the patch digest, run `git apply --check` and `git apply --index`, and compare the staged tree with the expected worker tree. Commit that reconstructed tree, run focused checks there, and dispatch a fresh read-only reviewer against its exact base/head range. Record worker provenance separately from the materialized review SHA/tree; advance `lastReviewedSha` only for the reconstructed branch.
+When the worker worktree or branch is gone, reconstruct in a registered parent-owned review worktree outside extension auto-discovery and the active source checkout: create it from the pinned named base, verify the patch digest, run `git apply --check` and `git apply --index`, and compare the staged tree with the expected worker tree. Commit that reconstructed tree, run focused checks there, and apply the selected review policy to its exact base/head range. Record worker provenance separately from the materialized review SHA/tree; advance `lastReviewedSha` only for the reconstructed branch.
 
 A fix worker replays a full patch relative to the original pinned base. The replacement patch supersedes the prior full lane patch; it is not an incremental patch applied on top of the previous result. Reset the review boundary to the pinned base and review the complete replacement range. Assemble accepted reconstructed commits in a separate registered candidate worktree, then hand `merge-worktree` the candidate path, branch, base/head, checks, review evidence, and authorization state.
 
@@ -34,7 +36,7 @@ A fix worker replays a full patch relative to the original pinned base. The repl
 Choose one mode from the request or configured default:
 
 - **`plan-only`**: normalize inputs, create the manifest and task briefs, and make no source edits.
-- **`supervised`** (default): run workers, validation, fresh review, and accepted fix/re-review cycles; pause before cherry-picking or publication.
+- **`supervised`** (default): run workers with proportional validation and review, then pause before cherry-picking or publication.
 - **`autonomous`**: run the same loop and cherry-pick accepted commits when clean; pause on conflicts, unresolved decisions, failed gates, missing required peers, push, PR merge, deploy, or release.
 
 If the user does not specify a mode, use `supervised` and state that choice briefly.
@@ -55,7 +57,7 @@ Stop before mutation when inputs conflict or a material acceptance criterion is 
 
 Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Detect whether the harness already provides isolation; never create nested or manually registered mutation worktrees when managed child worktrees are available. Registered parent-owned review and candidate checkouts are the one deliberate exception: they exist only for reconstruction, focused checks, review, and assembly of already-captured lanes. They are not nested child worktrees, not a second child allocator, and never concurrent shared-writer locations; managed mutation children stay with `pi-subagents`. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
 
-Before dispatch, run or record the repository's baseline checks. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one managed worktree and one writer. Follow the plan's smallest safe decomposition: separate shared write targets into distinct lanes before serializing writers on one target, and prefer one writer when the work cannot decompose safely. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
+Before dispatch, run or record the smallest fast baseline able to distinguish pre-existing failures from task regressions. Do not run the full repository matrix unless project policy or the named risks require it. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one managed worktree and one writer. Follow the plan's smallest safe decomposition: do not create lanes merely to parallelize or add review points, and prefer one writer when coordination would cost more than the work. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
 
 Normalize different plan formats with a read-only scout. Preserve the planner's source documents; do not require every planning skill to emit one new format.
 
@@ -65,15 +67,15 @@ Before dispatching any implementer, verify execution readiness as defined in `pl
 
 Record in the manifest: each source artifact's classification, approved scope and revision, and approval reference; the capture-checkpoint outcome; the contract version and available provenance, or `unknown`; and each task's prerequisite evidence and readiness verdict.
 
-## Test obligations
+## Risk and test obligations
 
-Every task receives exactly one obligation during preflight:
+Classify each validation unit as low, normal, or high risk using the lean assurance policy in the approved plan. Several tightly related tasks may share one validation unit; do not multiply checks per checkbox. Assign exactly one obligation to each unit:
 
-- `new-test`: meaningful behavior, bug regression, branching/state, parsing/validation, security, permissions, money, destructive data handling, concurrency, public contracts, or behavior without existing coverage. Test behavior through a public seam with an independently derived expected value; require one vertical slice at a time: failing test → observed intended failure → minimal implementation → passing focused checks → refactor while green.
-- `existing-check`: existing tests already exercise the affected behavior. Add no redundant test; run and report the named focused checks.
-- `no-new-test`: documentation, formatting, comments, static metadata, generated artifacts, typo correction, or another change where a new test proves little. Run the smallest meaningful lint, parse, build, diff, or manual validation.
+- `new-test`: changed behavior lacks meaningful existing coverage and a named reachable failure would otherwise be unprotected. Add one focused test at the cheapest stable public seam with an independently derived expected value: failing test → intended failure → minimal implementation → passing focused check. Add further tests only for distinct material failure modes.
+- `existing-check`: an existing focused check already exercises the changed behavior. Add no redundant test; run and report that check.
+- `no-new-test`: a new test would prove little, including documentation, formatting, comments, static metadata, generated artifacts, mechanical changes, or behavior-neutral refactoring. Run the smallest meaningful parse, build, smoke check, or diff inspection.
 
-State the assigned obligation, rationale, commands, and results in each brief and report. A worker may challenge the assignment after inspection but must report why; it may not silently skip validation. Evidence is always mandatory; a new test is not.
+For every command or manual check, name the failure mode it covers. Reuse required CI; do not repeat the full suite in every lane or test the same behavior at multiple layers without a distinct risk. A worker may challenge the assignment after inspection but must report why; it may not silently skip validation. Evidence is mandatory, but more evidence is not automatically better evidence.
 
 ## Execution references
 
@@ -88,7 +90,7 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 | Research-only, draft, or unapproved source | Refuse dispatch; route the work back to the owning skill |
 | Independent writers | Managed worktree per writer |
 | High-risk or dependency-defining task | Immediate review |
-| Low-risk completed task | Queue on its lane for cumulative `lastReviewedSha..laneHeadSha` review at the next boundary |
+| Low-risk completed task | Run its focused check and include it in the parent's final diff inspection; no independent task review |
 | Dependent tasks | Serial handoff with explicit interface |
 | Spawned child question | Native supervisor channel |
 | Persistent specialist | Named read-only intercom peer |
@@ -109,5 +111,6 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 - Starting a replacement writer before failed-lane ownership is resolved.
 - Assuming a completed child's worktree or cwd still exists at fix time; durable handoff patch paths, pinned named bases, and registered parent-owned review/candidate checkouts are the recovery boundary.
 - Treating a worker-reported SHA as the reviewed tree without reconstructing and checking the artifact.
+- Adding duplicate tests, broad validation matrices, or review rounds without a distinct reachable failure mode.
 - Dispatching a writer from research findings, a draft specification, or a materially changed unapproved source.
 - Calling autonomous candidate-assembly permission to integrate or publish.

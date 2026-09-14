@@ -18,6 +18,18 @@ Write for an implementer with no conversational context. Specifications own beha
 
 ADRs explain **why**, specifications define **what**, and plans or tickets define the executable next units.
 
+## Lean assurance default
+
+Plan the smallest evidence set that establishes the acceptance criteria and addresses concrete material risks. Do not add a test, validation command, reviewer, or review boundary unless it covers a distinct reachable failure mode; if that failure cannot be named, omit the assurance work.
+
+Classify each validation unit once:
+
+- **low risk** — documentation, mechanical edits, generated output, or internal refactoring with unchanged behavior: use an existing check or the smallest smoke, parse, build, or diff inspection; add no test and no independent task review;
+- **normal risk** — ordinary behavior changes and bug fixes: use one focused regression test **or** an existing check at the cheapest stable seam, plus one candidate review; do not duplicate the same behavior across unit, integration, API, and browser layers; or
+- **high risk** — authentication, permissions, secrets, money, destructive data handling, migrations, concurrency, distributed behavior, or public contracts: target the named threats or failure modes and require immediate review where later work will consume the result.
+
+A validation unit may cover several tightly related tasks. Verification belongs to the changed behavior or risk, not to every checkbox. Reuse required repository CI instead of restating its full test, lint, and typecheck matrix in each task. Security work names trust boundaries and plausible threats; “test everything” is not a threat model.
+
 ## Preflight
 
 1. Read the approved specification, project instructions, relevant code/tests, and any established domain glossary or decision records.
@@ -25,7 +37,7 @@ ADRs explain **why**, specifications define **what**, and plans or tickets defin
 3. Stop if requirements conflict or a material owner decision is unresolved.
 4. A material behavior, interface, or scope change discovered during planning returns to `shape-design`: update the source, obtain approval for the changed scope and revision, and block affected tasks until the source and decomposition are reconciled per the contract's readiness rule.
 5. Split independent subsystems into separate plans.
-6. Identify files, responsibilities, interfaces, dependencies, and integration order. Identify blocking first steps, independent workstreams, shared write targets, and the smallest safe decomposition; when work cannot decompose safely, plan one sequential owner. Mark tasks ready for parallel execution only when they satisfy the contract's parallel-execution rule.
+6. Identify files, responsibilities, interfaces, dependencies, and integration order. Identify blocking first steps, independent workstreams, shared write targets, and the smallest safe decomposition; combine steps that share one behavior and validation boundary, and prefer one sequential owner when decomposition would create review or coordination overhead. Mark tasks ready for parallel execution only when they satisfy the contract's parallel-execution rule.
 7. Follow established project conventions; do not hide unrelated refactoring in the plan.
 
 Use the repository's established plan location. If none exists, propose a location or a runtime-managed artifact and get approval before creating a new documentation convention.
@@ -40,7 +52,7 @@ Link rather than restating specification content. Include:
 - only the architecture constraints and non-goals needed to sequence work;
 - technology/runtime assumptions;
 - a requirement-to-task map pointing to the specification's acceptance criteria; and
-- exact global validation commands.
+- the smallest global validation commands not already implied by required repository CI.
 
 ## Tasks
 
@@ -52,17 +64,17 @@ Make the change easy, then make the easy change: when a slice would fight the cu
 
 **Wide refactors are the exception to vertical slicing.** A wide refactor is one mechanical change (rename a column, retype a shared symbol) whose blast radius spans the codebase, so no vertical slice can land green. Sequence it as expand–contract: add the new form beside the old; migrate call sites in batches sized by blast radius, each batch its own task blocked by the expand and keeping CI green because the old form still exists; delete the old form once no caller remains, in a task blocked by every migrate batch. If even the batches cannot stay green alone, keep the sequence on a shared integration branch and promise green only at the final integrate-and-verify task; per-task coherence on that sequence is judged against the integration branch, not main.
 
-A task is the smallest independently reviewable deliverable with its own verification cycle; every task ends with a runnable check and leaves the repository coherent. For each task specify:
+A task is the smallest coherent deliverable that exposes a real dependency, ownership boundary, or independently useful behavior. Do not split work merely to create more review or verification points. Every task must be covered by a runnable check, but related tasks may share one validation unit and one review boundary. For each task specify:
 
 - exact files to create or modify;
 - interfaces consumed and produced;
 - prerequisites;
 - behavior and edge cases;
-- test obligation (`new-test`, `existing-check`, or `no-new-test`) with rationale;
-- exact commands and expected evidence; and
+- its validation unit and test obligation (`new-test`, `existing-check`, or `no-new-test`) with the distinct failure mode it covers;
+- only the focused commands and expected evidence not already supplied by required CI; and
 - a completion criterion.
 
-Use checkbox steps. For `new-test`, show the red → minimal green → verification sequence. Include code snippets only where exact signatures or non-obvious logic prevent ambiguity; do not invent large implementations in prose.
+Use checkbox steps. Assign `new-test` only when changed behavior would otherwise lack meaningful coverage; prefer one focused test at the cheapest stable public seam. For `new-test`, show the red → minimal green → verification sequence. Include code snippets only where exact signatures or non-obvious logic prevent ambiguity; do not invent large implementations in prose.
 
 Internal migrations sequence replacement, caller migration, verification, legacy-path deletion, and a stale-reference search inside one cleanup; any transitional compatibility names its real consumer and its removal condition.
 
@@ -74,7 +86,8 @@ Before handoff:
 2. Search for placeholders such as `TBD` or `TODO`, vague error handling, unnamed tests, and undefined interfaces.
 3. Check names and types across dependent tasks.
 4. Confirm each task leaves the repository in a coherent, testable state.
-5. State residual risks and manual checks.
-6. Record the contract version and the available installed provenance, or `unknown`, for the handoff.
+5. Remove duplicate checks, repeated coverage of the same behavior, and any review or validation step without a named reachable failure mode.
+6. State residual risks and only the manual checks needed for them.
+7. Record the contract version and the available installed provenance, or `unknown`, for the handoff.
 
 Present the plan for user approval. After approval, hand it to `orchestrate-implementation` with the approved source reference, capture-checkpoint outcome, and contract provenance recorded; do not create a second execution router.
