@@ -9,7 +9,7 @@ Use when the user requests simplification, or when the model offers one completi
 
 # Simplify Code
 
-Refine a settled change without altering behavior. Three reviewers — **Reuse**, **Quality**, **Efficiency** — examine the same scope from different angles; you aggregate their findings, apply the fixes, and verify.
+Refine a settled change without altering behavior. Three reviewers — **Reuse**, **Quality**, **Efficiency** — examine the same scope from different angles; you disposition their findings against approved scope, apply only accepted fixes, and verify. Zero findings is success, not a reason to keep searching.
 
 The premise is **exact functionality preservation**. Never relax assertions, weaken type signatures, or skip tests to make checks pass. Never simplify away a safety check — input validation at trust boundaries, data-loss-preventing error handling, security checks, and accessibility affordances stay even when a finding frames them as removable boilerplate.
 
@@ -42,6 +42,21 @@ Run three reviewers in parallel when the `simplify-reviewer` agent is available.
 - The diff command and changed-file list from step 2 (or the user-named scope).
 - The axis brief below, pasted in full — the reviewer has no other access to it.
 - The output contract from the subagent definition (one line per finding, confidence tag, under 400 words).
+- The complete contract below, with the approved simplification criteria, named written conventions (or none found), and real callers/input provenance/environment filled in. Do not rely on the reviewer loading an instruction file. The axis brief is a search lens, not permission to turn preferences into findings.
+
+<!-- reviewer-contract:start -->
+```text
+Review <base>..<head or exact user scope> against <approved simplification criteria and behavior-preservation constraints>.
+Written conventions: <named sources and relevant rules, or none found>.
+Real use: <callers, input provenance, environment, touched boundaries>.
+Priority: agreed feature, then correctness, then proven risk. Project written conventions are binding; violations are must-fix. Unwritten taste never blocks.
+Report only a violation of a named requirement or written rule that this change caused or worsened, reachable through real callers, inputs, and environment, with material impact and a proportionate response. Cite the rule, changed location, scenario, impact, and response. For explicit cleanup, name the authorized cleanup criterion and demonstrate the concrete duplication/cost; the criterion does not authorize behavior changes.
+Security activates only for touched boundaries: untrusted or external input (files, queries, network), credentials, auth, dependency changes. Require a named asset, realistic attacker, and an attack path through real use. Stories requiring stolen secrets, broken TLS, malicious admins, or generic extra hardening are not findings. No boundary touched: write "security: n/a". Security facts missing: mark the criterion unverified; never invent a threat model. Trusted internal callers and user-owned local files are not hostile by default; written safety guarantees still bind.
+Test requests are findings too: name a reachable real scenario or drop them. Coverage percentage is not a reason.
+Large or out-of-scope fixes: one line with the owner decision needed, not an automatic fix-first item. Unrelated issues: one line max, non-blocking. Do not fix, dispatch workers, or start re-reviews; the parent dispositions findings before repair.
+Finish when agreed criteria, real risks, and written rules are covered; zero findings is success. Verdict: pass or fix-first (small in-scope repairs), with any unverified criterion or required human decision explicitly stated. A pass does not clear those decisions or authorize acceptance/publication. Then stop.
+```
+<!-- reviewer-contract:end -->
 
 **Reuse brief:** Search the repo for existing utilities and helpers the new code duplicates. Flag: new functions that near-duplicate existing ones (cite the existing implementation — no citation, no finding); inline logic that could use an existing utility; diff code that reimplements a language standard-library or runtime primitive (only when behavior-equivalent — exclude UX-changing swaps); code that hand-maintains a guarantee the platform, framework, or a downstream layer already provides.
 
@@ -54,7 +69,7 @@ Run three reviewers in parallel when the `simplify-reviewer` agent is available.
 Read all three reports. Then, as orchestrator:
 
 - **Dedupe** overlapping findings across axes.
-- **Apply** fixes directly, in place. Skip false positives silently — note them in the summary, don't argue back.
+- **Disposition before repair:** reject any failed gate in one line; authorize and apply small in-scope fixes only after checking all gates; hand a large/out-of-scope repair to the human with one sentence. An unverified material criterion requires an answer, not invented certainty. Raw reviewer output is not a work order.
 - **Honor structure pins:** if the user, a plan, or project docs marked a structural decision as deliberate (an intentional duplication, a deliberate wrapper), it stays. A settled decision isn't collapsed just because it looks reducible in isolation.
 - **Pin risky structure:** before reshaping behavior-bearing code that current coverage cannot prove preserved, add the smallest behavior pin — a characterization test, snapshot, or equivalence check — and keep it green through the move.
 - **Split behavior changes out:** a discovered bug or missing behavior is its own change; a simplification that smuggles in a behavior change loses its safety net.
@@ -65,15 +80,13 @@ Read all three reports. Then, as orchestrator:
 
 Discover the project's check commands from its config (`package.json` scripts, `Makefile`, CI config, `pyproject.toml`, etc.):
 
-1. **Typecheck** — full project.
-2. **Lint** — full project.
-3. **Scoped tests** — the tests covering changed paths; broaden when the change has wide reach (e.g. a heavily-imported utility was rewritten).
+Run required repository checks and the smallest focused check proving behavior preservation. Name the real scenario each added check covers; no coverage targets or full-project typecheck/lint matrix unless project policy or the changed seam requires it. Broaden only for a distinct reachable risk (for example an affected consumer of a heavily-imported utility).
 
-On failure: fix the underlying break the simplification introduced, or **revert that specific simplification**. Never relax assertions, weaken type signatures, or skip tests to make checks pass. Surface any remaining failure with the check name and relevant output.
+On failure: fix the underlying break the simplification introduced, or **revert that specific simplification**. Never relax assertions, weaken type signatures, or skip tests to make checks pass. Surface any remaining failure with the check name and relevant output. One fix pass, one delta recheck, then ask the human; no third round. If a reviewer recheck is needed, only the parent starts it, pastes the full contract, and scopes it to the accepted fix and affected behavior, never the whole original change.
 
 ## 6. Summarize
 
-End with a compact report:
+Restate the approved task in one sentence, compare the result, and choose `accept / fix / hand back / ask` without restarting the correction limit. Extra ideas get one line, not code. End with a compact report:
 
 - **What was good as-is** — brief.
 - **What changed** — per fix: finding (axis), file, one-line description.

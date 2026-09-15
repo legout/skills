@@ -106,6 +106,31 @@ test -x "$review/mode.sh" || fail "mode lost"
 test -L "$review/link" || fail "symlink lost"
 test ! -e "$review/remove.txt" || fail "deletion lost"
 
+# A fix is transported as a full replacement from the original base. Preserve
+# the old materialized review and compare endpoints, not their merge-base:
+# otherwise settled binary/mode/deletion changes reappear in the re-review.
+prior_reviewed_sha=$reviewed_sha
+fix_worker="$TMP/fix-worker"
+git -C "$REPO" worktree add -q -b "orchestrator/$run/fix/$lane" "$fix_worker" "$base_ref"
+git -C "$fix_worker" apply --index "$patch"
+printf 'fix\n' >>"$fix_worker/keep.txt"
+git -C "$fix_worker" add keep.txt
+git -C "$fix_worker" commit -qm fix
+fix_sha=$(git -C "$fix_worker" rev-parse HEAD)
+expected_tree=$(git -C "$fix_worker" rev-parse 'HEAD^{tree}')
+patch="$TMP/replacement.patch"
+git -C "$REPO" diff --binary "$base_sha" "$fix_sha" >"$patch"
+patch_digest=$(git -C "$REPO" hash-object "$patch")
+git -C "$REPO" worktree remove "$fix_worker"
+git -C "$REPO" branch -D "orchestrator/$run/fix/$lane" >/dev/null
+review_path="$TMP/replacement-review"
+review_branch="orchestrator/$run/replacement/$lane"
+run_recipe "$RECIPE_DIR/block2.sh" || fail "replacement reconstruction failed"
+reviewed_sha=$(git -C "$review_path" rev-parse HEAD)
+test "$(git -C "$REPO" diff --name-only "$prior_reviewed_sha" "$reviewed_sha")" = keep.txt || fail "recheck included settled changes"
+test "$(git -C "$review" rev-parse HEAD)" = "$prior_reviewed_sha" || fail "prior review was discarded"
+test "$(git -C "$review_path" rev-parse 'HEAD^{tree}')" = "$expected_tree" || fail "replacement tree mismatch"
+
 # Candidate assembly consumes the reconstructed commit, not the vanished worker.
 export reviewed_sha candidate_path="$candidate"
 run_recipe "$RECIPE_DIR/block3.sh" || fail "candidate assembly failed"
