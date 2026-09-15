@@ -18,6 +18,28 @@ npx skills add legout/skills --skill '*' --global --agent pi --yes --copy
 
 The catalog uses nested categories; skill names and `/skill:<name>` commands remain unchanged.
 
+## Versioning
+
+The whole catalog shares one semantic version in [`VERSION`](VERSION), starting at `0.1.0`. Individual skills do not have independent versions. [`CHANGELOG.md`](CHANGELOG.md) records notable changes; entries stay under **Unreleased** until release preparation. `VERSION` is the prepared version, not proof of publication: only the matching immutable Git tag (`vMAJOR.MINOR.PATCH`) identifies a released snapshot.
+
+- **Patch:** corrections and clarifications that preserve supported workflows.
+- **Minor:** new skills or backward-compatible capabilities.
+- **Major:** incompatible skill names, invocation contracts, or required workflow changes. While the catalog is `0.x`, use a minor bump for incompatible changes and explain them in the changelog.
+
+This version is independent of `pi-implementation-orchestrator`, upstream pins in `sources.json`, that file's schema version, and any vendored tool versions. Do not synchronize those numbers. Installing from `main` continues to follow current catalog development.
+
+### Release a catalog version
+
+Use `make-release initial` for the first publication of the prepared `VERSION`; use `make-release patch|minor|major` thereafter. The skill requires a clean, synchronized default branch and approval of the exact release plan. Do not bundle unrelated local changes into a release.
+
+1. For the first release, keep `VERSION` at `0.1.0`; later releases bump it according to the policy above.
+2. Move Unreleased notes into `## <version> - <YYYY-MM-DD>` and leave an empty `## Unreleased` above it.
+3. Run `bash tests/skills_test.sh`, `bash tests/orchestrator_handoff_test.sh`, and `git diff --check`, plus any other required repository checks. No npm package or build step is needed for the catalog itself.
+4. Commit the release metadata, push `main`, then create and push an annotated `v<version>` tag at that exact commit. Never move an existing release tag. A GitHub Release can carry the changelog notes under the same approved release plan.
+5. Verify the remote branch and tag resolve to the intended commit before calling the version published.
+
+Until the first tag is published, `0.1.0` remains unreleased. To inspect any published snapshot, clone this repository and check out its `v<version>` tag; no per-skill version registry is required.
+
 ## Catalog
 
 ### Engineering

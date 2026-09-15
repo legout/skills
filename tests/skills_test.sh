@@ -14,6 +14,17 @@ skills_root = root / "skills"
 errors = []
 names = set()
 
+# Catch malformed catalog versions and missing release notes before publishing.
+try:
+    version = (root / "VERSION").read_text()
+    if not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\n?", version):
+        errors.append("VERSION: expected one stable MAJOR.MINOR.PATCH version without a v prefix")
+    changelog = (root / "CHANGELOG.md").read_text()
+    if "## Unreleased" not in changelog.splitlines():
+        errors.append("CHANGELOG.md: missing Unreleased section")
+except OSError as exc:
+    errors.append(f"catalog versioning: {exc}")
+
 for path in sorted(skills_root.rglob("SKILL.md")):
     relative = path.relative_to(skills_root)
     if len(relative.parts) != 3:
