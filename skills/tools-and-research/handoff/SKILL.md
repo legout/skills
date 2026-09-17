@@ -64,7 +64,7 @@ Phrase as status, not actions:
 ## 6. Relevant Files & Pointers
 <Files that matter, with line ranges and WHAT specifically is there — not just what the file is. Reference external artifacts instead of pasting them.
 - src/auth/oauth.ts:L40-L88 — provider config + token exchange
-- docs/adr/0007-auth.md — full rationale (do not duplicate here)
+- project/adr/0007-auth.md — full rationale (do not duplicate here)
 - PR #142 — in-progress session work
 - Issue #150 — logout requirements>
 

@@ -11,23 +11,36 @@ Contract version: 1. This is the single canonical contract for classifying plann
 
 | Destination | Owns |
 | --- | --- |
-| `docs/research/` | investigations, design studies, probe reports — evidence |
-| `docs/adr/` | architectural decision records — why |
-| `docs/specs/` | behavioral contracts — what and acceptance |
-| `docs/plans/` | execution maps — how, decomposed |
-| `docs/tickets/` | local work items |
-| `docs/agents/` | workflow configuration, including the protected project mapping |
+| `project/research/` | investigations, design studies, probe reports — evidence |
+| `project/adr/` | architectural decision records — why |
+| `project/specs/` | behavioral contracts — what and acceptance |
+| `project/plans/` | execution maps — how, decomposed |
+| `project/tickets/` | local work items |
+| `project/agents/` | workflow configuration, including the protected project mapping |
 | root `CONTEXT.md` | single-context vocabulary; explicit multi-context projects use their owning context glossaries |
+
+The default artifact namespace is `project/`, keeping delivery artifacts separate from product, library, or user documentation under `docs/`. Legacy installations configured before this default keep the `docs/` namespace: the installer detects existing legacy artifact directories (`docs/agents/`, `docs/research/`, `docs/adr/`, `docs/specs/`, `docs/plans/`, `docs/tickets/`) and keeps generating there. Never duplicate or migrate artifacts between namespaces automatically; the project mapping records which one a project uses.
 
 Directories are created lazily when real content exists for them. Setup never fabricates empty folders, placeholder glossaries, or fictional decisions.
 
+## Artifact filenames
+
+Specifications and plans use `YYYY-MM-DD-NNNN-slug.md` filenames:
+
+- `YYYY-MM-DD` is the local calendar date when the work item is first written.
+- `NNNN` is a zero-padded four-digit number from one shared sequence across the project's specs and plans directories (`project/specs/` and `project/plans/`; legacy `docs/specs/` and `docs/plans/`). Scan both directories for the highest existing numbered artifact and increment it; start at `0001` when none exists.
+- `slug` is a short, lowercase kebab-case summary of the work item.
+- A specification and its implementation plan for the same work item reuse the exact date-number-slug prefix; allocate the number once, not once per artifact.
+
+Existing unnumbered artifacts are legacy names: do not rename them automatically or break their links. New specifications and plans, including plans derived from legacy specifications, use the convention above.
+
 ## Project mapping
 
-The installer-managed project mapping lives in `docs/agents/artifacts.md`, linked from the project's root agent instructions.
+The installer-managed project mapping lives in `project/agents/artifacts.md` (legacy: `docs/agents/artifacts.md`), linked from the project's root agent instructions.
 
 - The mapping is declarative documentation read by humans and agents. It is never an executable configuration file; nothing interprets it as code or config.
 - Explicit project mappings override these defaults. A conflict between a mapping and established paths requires an owner decision; never resolve it silently.
-- A research document found under `docs/specs/` is evidence of misclassification, not an established rule to copy. Route its content to research and link it from the owning artifact.
+- A research document found under the specs directory is evidence of misclassification, not an established rule to copy. Route its content to research and link it from the owning artifact.
 - Directory membership never grants approval. A mixed document is separated into evidence, behavior, and rationale with links; moving or rewriting existing content requires owner approval. No setup rerun moves existing documents, manufactures ADRs, or rewrites user notes automatically.
 
 ## Scoped authority

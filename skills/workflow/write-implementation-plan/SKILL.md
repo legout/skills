@@ -14,6 +14,7 @@ Write for an implementer with no conversational context. Specifications own beha
 - For one bounded change under one owner, skip a plan file and pass the approved in-chat design directly to `orchestrate-implementation`; the capture-checkpoint outcome still applies proportionately.
 - For architectural or multi-step work, write the smallest plan that exposes dependencies, ownership, integration order, and verification.
 - Split independent subsystems into separate plans instead of producing one huge plan.
+- When a plan file is needed, use the [`planning-contract`](../planning-contract/SKILL.md) filename convention `YYYY-MM-DD-NNNN-slug.md`. Reuse the source specification's exact prefix for its plan; otherwise allocate the next number from the shared sequence across the project's specs and plans directories (`project/specs/` and `project/plans/`; legacy `docs/specs/` and `docs/plans/`).
 - Create tracker tickets only when the user asks for them, an established tracker requires them, or coordination must outlive the current run. Publish each task as a ticket; tickets own the canonical task bodies, and a thin overview may link to them, but never maintain duplicate editable task definitions.
 
 ADRs explain **why**, specifications define **what**, and plans or tickets define the executable next units.

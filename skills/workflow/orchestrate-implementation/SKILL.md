@@ -55,7 +55,7 @@ If the user does not specify a mode, use `supervised` and state that choice brie
 
 Load the [`planning-contract`](../planning-contract/SKILL.md) skill (Contract version: 1) before dispatch; it owns artifact classification, approval, and readiness. If it is not installed, refuse to dispatch and request installing `planning-contract` rather than proceeding on inherited or invented rules; never assume automatic dependency resolution.
 
-Read all supplied ADRs, specifications, issues, plans, and approved designs before dispatching a writer. Preserve them as source material. If `docs/agents/issue-tracker.md` selects Epiq, load the Epiq workflow skill before any board operation and use only its `epiq_*` MCP tools; do not use the `epiq` CLI, edit Epiq state files, or initialize a board/project implicitly. Extract:
+Read all supplied ADRs, specifications, issues, plans, and approved designs before dispatching a writer. Preserve them as source material. If `project/agents/issue-tracker.md` (legacy `docs/agents/issue-tracker.md`) selects Epiq, load the Epiq workflow skill before any board operation and use only its `epiq_*` MCP tools; do not use the `epiq` CLI, edit Epiq state files, or initialize a board/project implicitly. Extract:
 
 - constraints, invariants, and non-goals;
 - acceptance criteria and validation evidence;
