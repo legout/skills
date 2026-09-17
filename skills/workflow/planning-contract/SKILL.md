@@ -19,7 +19,7 @@ Contract version: 1. This is the single canonical contract for classifying plann
 | `project/agents/` | workflow configuration, including the protected project mapping |
 | root `CONTEXT.md` | single-context vocabulary; explicit multi-context projects use their owning context glossaries |
 
-The default artifact namespace is `project/`, keeping delivery artifacts separate from product, library, or user documentation under `docs/`. Legacy installations configured before this default keep the `docs/` namespace: the installer detects existing legacy artifact directories (`docs/agents/`, `docs/research/`, `docs/adr/`, `docs/specs/`, `docs/plans/`, `docs/tickets/`) and keeps generating there. Never duplicate or migrate artifacts between namespaces automatically; the project mapping records which one a project uses.
+The default artifact namespace is `project/`, keeping delivery artifacts separate from product, library, or user documentation under `docs/`. Legacy installations configured before this default keep the `docs/` namespace: the installer detects existing legacy artifact directories (`docs/agents/`, `docs/research/`, `docs/adr/`, `docs/specs/`, `docs/plans/`, `docs/tickets/`) and keeps generating there. Never duplicate or migrate artifacts between namespaces on your own; the installer offers an explicit owner-requested migration (`--migrate-namespace`) that moves the directories and regenerates the managed docs, and the project mapping records which namespace a project uses.
 
 Directories are created lazily when real content exists for them. Setup never fabricates empty folders, placeholder glossaries, or fictional decisions.
 
