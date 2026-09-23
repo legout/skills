@@ -1698,16 +1698,6 @@
       "mode": "adapted"
     },
     {
-      "local": "skills/visualization/archify/test/fixtures/v1-baseline/event-stream.dataflow.json",
-      "source": "archify/test/fixtures/v1-baseline/event-stream.dataflow.json",
-      "repository": "https://github.com/tt-a1i/archify",
-      "branch": "main",
-      "commit": "0b636d9f2f410ce7c617dbfd8818b775d42e9d4d",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 tt-a1i (Archify)",
-      "mode": "adapted"
-    },
-    {
       "local": "skills/visualization/archify/test/fixtures/v1-baseline/product-analytics.dataflow.json",
       "source": "archify/test/fixtures/v1-baseline/product-analytics.dataflow.json",
       "repository": "https://github.com/tt-a1i/archify",
@@ -3998,16 +3988,6 @@
       "mode": "adapted"
     },
     {
-      "local": "skills/tools-and-research/last30days/scripts/lib/skill_meta.py",
-      "source": "skills/last30days/scripts/lib/skill_meta.py",
-      "repository": "https://github.com/mvanhorn/last30days-skill",
-      "branch": "main",
-      "commit": "56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 Matt Van Horn",
-      "mode": "adapted"
-    },
-    {
       "local": "skills/tools-and-research/last30days/scripts/lib/snippet.py",
       "source": "skills/last30days/scripts/lib/snippet.py",
       "repository": "https://github.com/mvanhorn/last30days-skill",
@@ -4080,16 +4060,6 @@
     {
       "local": "skills/tools-and-research/last30days/scripts/lib/topic_shape.py",
       "source": "skills/last30days/scripts/lib/topic_shape.py",
-      "repository": "https://github.com/mvanhorn/last30days-skill",
-      "branch": "main",
-      "commit": "56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 Matt Van Horn",
-      "mode": "adapted"
-    },
-    {
-      "local": "skills/tools-and-research/last30days/scripts/lib/transcribe.py",
-      "source": "skills/last30days/scripts/lib/transcribe.py",
       "repository": "https://github.com/mvanhorn/last30days-skill",
       "branch": "main",
       "commit": "56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20",
@@ -4270,16 +4240,6 @@
     {
       "local": "skills/tools-and-research/last30days/scripts/lib/vendor/bird-search/package.json",
       "source": "skills/last30days/scripts/lib/vendor/bird-search/package.json",
-      "repository": "https://github.com/mvanhorn/last30days-skill",
-      "branch": "main",
-      "commit": "56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 Matt Van Horn",
-      "mode": "adapted"
-    },
-    {
-      "local": "skills/tools-and-research/last30days/scripts/lib/web_fetch_keyless.py",
-      "source": "skills/last30days/scripts/lib/web_fetch_keyless.py",
       "repository": "https://github.com/mvanhorn/last30days-skill",
       "branch": "main",
       "commit": "56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20",
@@ -5033,6 +4993,16 @@
       "commit": "93b00b89ef425a9c1bac0d0b317dfc49c930ac99",
       "license": "MIT",
       "copyright": "Copyright (c) 2026 Cursor",
+      "mode": "adapted"
+    },
+    {
+      "local": "skills/visualization/archify/test/fixtures/v1-baseline/event-stream.dataflow.json",
+      "source": "archify/test/fixtures/v1-baseline/event-stream.dataflow.json",
+      "repository": "https://github.com/tt-a1i/archify",
+      "branch": "main",
+      "commit": "0b636d9f2f410ce7c617dbfd8818b775d42e9d4d",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 tt-a1i (Archify)",
       "mode": "adapted"
     }
   ]
