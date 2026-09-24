@@ -3,11 +3,12 @@
 
 Stdlib only (codegraph shells out to ast-grep if installed). The bundle
 (default ~/second-brain) is the source of truth and a valid Open Knowledge
-Format v0.2 bundle; index.db inside it is derived state and can be deleted
-any time (`sb index`/`sb rebuild` rebuilds it).
+Format v0.2 bundle. Human-readable directory indexes and index.db are
+separate materialized views; `sb index` rebuilds both, and index.db contains FTS only.
 
 OKF v0.2 mapping:
   notes/*.md, topics/*.md  -> concepts (required frontmatter: type)
+  personal/**/*.md         -> handwritten source documents (type optional)
   index.md / log.md        -> reserved (listing / update history), not indexed
   type: <value>            -> OKF type (free-form, not centrally registered)
   status/stale_after/verified/generated/sources -> OKF lifecycle/trust/provenance
@@ -17,15 +18,15 @@ Claim updates are supersessions, never silent rewrites:
 
 Usage:
   sb [--vault PATH] init              create OKF bundle + print AGENTS.md hook
-  sb [--vault PATH] index | rebuild   (re)build the FTS5 index
+  sb [--vault PATH] index | rebuild   rebuild Markdown directory indexes + FTS5
   sb [--vault PATH] search QUERY [-n N] [--all]
-  sb [--vault PATH] add "Title" [-t TYPE] [-g TAGS] [-r RELEVANCE] [-b BODY]
-                      [--status draft] [--supersedes PATH] [--source URL]...
+  sb [--vault PATH] add "Title" [-t TYPE] [-g TAGS] [-r RELEVANCE] [-b BODY | --body-file FILE]
+                      [--related PATH]... [--status draft] [--supersedes PATH] [--source URL]...
                       (TYPE ist frei per OKF §4.1; ueblich: observation/decision/insight/failure/reference)
   sb [--vault PATH] verify PATH [--by ACTOR]   OKF-verified vermerken (Default human:$USER)
   sb [--vault PATH] idea "Text"       quick-capture as draft insight
-  sb [--vault PATH] lint [--fix]      broken links + OKF/health report
-  sb [--vault PATH] orphans           concepts without inbound links
+  sb [--vault PATH] lint [--fix]      links, index/FTS drift + OKF/health report
+  sb [--vault PATH] orphans           concepts without semantic Markdown inbound links
   sb [--vault PATH] dedup [-t 0.75]   near-duplicate concept pairs
   sb [--vault PATH] codegraph [--root DIR]  symbol/import map via ast-grep
   sb [--vault PATH] stats             bundle + index statistics
@@ -48,7 +49,9 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unicodedata
+import urllib.parse
 from pathlib import Path
 
 DB_NAME = "index.db"
@@ -58,8 +61,12 @@ VALID_TYPES = ("observation", "decision", "insight", "failure", "reference")
 VALID_RELEVANCE = ("low", "medium", "high", "critical")
 ACTOR = "second-brain/1.0"
 
-LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
-EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "#")
+LINK_RE = re.compile(
+    r"(?<!!)\[(?P<label>(?:\\.|[^\\\]])+)\]\(\s*"
+    r"(?P<destination><[^>]+>|[^\s)]+)(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)"
+)
+WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
+EXTERNAL_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 
 
 def vault_root() -> Path:
@@ -83,8 +90,8 @@ def db_path(vault: Path) -> Path:
     return vault / DB_NAME
 
 
-def connect(vault: Path) -> sqlite3.Connection:
-    con = sqlite3.connect(db_path(vault))
+def connect(vault: Path, target: Path | None = None) -> sqlite3.Connection:
+    con = sqlite3.connect(target or db_path(vault))
     try:
         con.execute(
             "CREATE VIRTUAL TABLE IF NOT EXISTS notes USING fts5("
@@ -140,45 +147,213 @@ def _verified_field(fields: dict[str, str], meta: str) -> str:
 
 
 def note_files(vault: Path) -> list[Path]:
-    # Jedes .md im Bundle ist ein Konzept (OKF), reservierte Dateien ausgenommen.
+    # Every Markdown content file is searchable; personal/ is source material, not a concept.
     files = [p for p in vault.rglob("*.md") if p.name not in RESERVED]
     return sorted(files)
 
 
 def md_links(text: str) -> list[tuple[str, str]]:
-    """Alle Markdown-Links (text, target); externe/Anker werden gefiltert."""
+    """Markdown file links outside code; external URLs and anchors are filtered."""
     out = []
-    for label, target in LINK_RE.findall(text):
-        if not target.startswith(EXTERNAL_PREFIXES):
-            out.append((label, target.split("#")[0]))
+    for line in markdown_outside_code(text).splitlines():
+        for match in LINK_RE.finditer(line):
+            target = match.group("destination").strip("<>")
+            if not target.startswith("#") and not EXTERNAL_SCHEME_RE.match(target):
+                out.append((match.group("label"), target.split("#", 1)[0]))
     return [(label, target) for label, target in out if target]
+
+
+def _mask_fenced_code(text: str) -> tuple[list[str], bool]:
+    fence: tuple[str, int] | None = None
+    out = []
+    for line in text.splitlines():
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if fence is None and marker:
+            fence = (marker.group(1)[0], len(marker.group(1)))
+            out.append("")
+            continue
+        if fence is not None:
+            closing = re.match(r"^ {0,3}(`+|~+)\s*$", line)
+            if closing and closing.group(1)[0] == fence[0] and len(closing.group(1)) >= fence[1]:
+                fence = None
+            out.append("")
+            continue
+        out.append(line)
+    return out, fence is not None
+
+
+def markdown_outside_code(text: str) -> str:
+    lines, _ = _mask_fenced_code(text)
+    return "\n".join(re.sub(r"`+[^`]*`+", "", line) for line in lines)
 
 
 def resolve_link(vault: Path, src: Path, target: str) -> Path:
     """OKF §6.1: '/x.md' ist bundle-relativ, sonst Pfad relativ zur verlinkenden Datei."""
+    target = urllib.parse.unquote(target.split("?", 1)[0])
     if target.startswith("/"):
         return vault / target.lstrip("/")
     return Path(os.path.normpath(src.parent / target))
 
 
+def format_markdown_body(text: str, title: str) -> str:
+    """Normalize a Markdown fragment without flattening its block structure."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not text:
+        return (
+            "## Summary\n\nAdd one concise, reusable fact.\n\n"
+            "## Details\n\n- Context:\n- Evidence:\n- Consequence:"
+        )
+
+    lines = text.splitlines()
+    _, unclosed_fence = _mask_fenced_code(text)
+    if unclosed_fence:
+        raise ValueError("unclosed fenced code block")
+
+    if lines and re.match(r"^#\s+", lines[0]):
+        heading = re.sub(r"^#\s+", "", lines[0]).strip()
+        if heading.casefold() != title.casefold():
+            raise ValueError("body must not start with a different H1; pass the title as the first argument")
+        lines = lines[1:]
+        text = "\n".join(lines).strip()
+
+    blocks = re.split(r"\n[ \t]*\n+", text)
+    formatted = []
+    block_line = re.compile(
+        r"^(?: {0,3}(?:#{1,6}\s|>\s?|[-+*]\s+|\d+[.)]\s+)"
+        r"|(?:---+|___+|\*\*\*+)\s*$| {4}|\t|\|.*\|$)"
+    )
+    inline_markup = re.compile(r"`|\[[^\]]+\]\(|\*\*|__|~~")
+    for block in blocks:
+        block_lines = [line.rstrip() for line in block.splitlines()]
+        if not any(line.strip() for line in block_lines):
+            continue
+        if any(block_line.match(line) for line in block_lines) or inline_markup.search(block):
+            formatted.append("\n".join(block_lines))
+        else:
+            paragraph = " ".join(line.strip() for line in block_lines)
+            formatted.append(textwrap.fill(
+                paragraph, width=88, break_long_words=False, break_on_hyphens=False,
+            ))
+    return "\n\n".join(formatted)
+
+
 # ── index / search ────────────────────────────────────────────────────────────
+
+INDEX_START = "<!-- sb:index:start -->"
+INDEX_END = "<!-- sb:index:end -->"
+
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.",
+            suffix=".tmp", delete=False,
+        ) as stream:
+            temp_path = Path(stream.name)
+            stream.write(text)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, path)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+
+
+def index_directories(vault: Path) -> list[Path]:
+    directories = {vault, *(vault / name for name in ("notes", "topics", "personal"))}
+    for note in note_files(vault):
+        directory = note.parent
+        while directory.is_relative_to(vault):
+            directories.add(directory)
+            if directory == vault:
+                break
+            directory = directory.parent
+    return sorted(directories, key=lambda path: (len(path.relative_to(vault).parts), path.as_posix()))
+
+
+def index_block(vault: Path, directory: Path, directories: list[Path]) -> str:
+    index = directory / "index.md"
+    notes = [path for path in note_files(vault) if path.parent == directory]
+    children = [path for path in directories if path.parent == directory]
+    lines = [INDEX_START, "## Documents", ""]
+    if notes:
+        for note in notes:
+            meta = parse_note(note, vault)
+            kind = f" — `{meta['type']}`" if meta["type"] else ""
+            lines.append(f"- {markdown_link(index, note, meta['title'])}{kind}")
+    else:
+        lines.append("_No documents yet._")
+    lines.extend(("", "## Folders", ""))
+    if children:
+        for child in children:
+            lines.append(f"- {markdown_link(index, child / 'index.md', child.name + '/')}")
+    else:
+        lines.append("_No subfolders._")
+    lines.append(INDEX_END)
+    return "\n".join(lines)
+
+
+def render_index(vault: Path, directory: Path, directories: list[Path]) -> str:
+    path = directory / "index.md"
+    title = f"{vault.name} — Knowledge Index" if directory == vault else f"{directory.name} — Index"
+    existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else f"# {title}\n"
+    existing = existing.replace("\r\n", "\n").replace("\r", "\n")
+    existing = existing.replace("* [Titel](notes/<slug>.md) - Einzeiler-Claim\n", "")
+    existing = existing.replace("Kuratierte Einstiegszeilen (OKF §8-Form):\n\n", "")
+    block = index_block(vault, directory, directories)
+    lines = existing.splitlines(keepends=True)
+    visible, _ = _mask_fenced_code(existing)
+    ranges = []
+    start = None
+    for i, line in enumerate(visible):
+        marker = line.strip()
+        if marker == INDEX_START and start is None:
+            start = i
+        elif marker == INDEX_END and start is not None:
+            ranges.append((start, i))
+            start = None
+    if len(ranges) == 1:
+        start, end = ranges[0]
+        return "".join(lines[:start]) + block + "\n" + "".join(lines[end + 1:])
+    remove = {i for first, last in ranges for i in range(first, last + 1)}
+    remove.update(i for i, line in enumerate(visible) if line.strip() in {INDEX_START, INDEX_END})
+    existing = "".join(line for i, line in enumerate(lines) if i not in remove)
+    return existing.rstrip() + "\n\n" + block + "\n"
+
 
 def cmd_index(vault: Path) -> int:
     vault = vault.resolve()
     ensure_bundle(vault)
-    # Index ist abgeleiteter Zustand: Datei wegwerfen und frisch aufbauen.
-    db_path(vault).unlink(missing_ok=True)
-    con = connect(vault)
     rows = [parse_note(p, vault) for p in note_files(vault)]
-    untyped = [r["path"] for r in rows if not r["type"]]
-    with con:
-        for r in rows:
-            con.execute(
-                "INSERT INTO notes(path, title, type, tags, relevance, status, stale_after, verified, body) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (r["path"], r["title"], r["type"], r["tags"], r["relevance"], r["status"], r["stale_after"], r["verified"], r["body"]),
-            )
-    con.close()
-    print(f"[sb] {len(rows)} Konzepte indexiert -> {db_path(vault)}")
+    untyped = [r["path"] for r in rows if not r["type"] and not r["path"].startswith("personal/")]
+    directories = index_directories(vault)
+    indexes = [(directory / "index.md", render_index(vault, directory, directories))
+               for directory in directories]
+    for path, text in indexes:
+        atomic_write_text(path, text)
+
+    fd, temp_name = tempfile.mkstemp(prefix=".index.db.", suffix=".tmp", dir=vault)
+    os.close(fd)
+    temp_db = Path(temp_name)
+    try:
+        con = connect(vault, temp_db)
+        try:
+            with con:
+                for row in rows:
+                    con.execute(
+                        "INSERT INTO notes(path, title, type, tags, relevance, status, stale_after, verified, body) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (row["path"], row["title"], row["type"], row["tags"], row["relevance"], row["status"], row["stale_after"], row["verified"], row["body"]),
+                    )
+        finally:
+            con.close()
+        os.replace(temp_db, db_path(vault))
+    finally:
+        temp_db.unlink(missing_ok=True)
+    print(f"[sb] {len(rows)} Markdown-Dateien in {len(indexes)} Verzeichnis-Indizes + FTS indexiert")
+    print(f"[sb] FTS: {db_path(vault)}")
     if untyped:
         print(f"[sb] OKF-WARNUNG: {len(untyped)} Datei(en) ohne 'type' (OKF verlangt type):")
         for p in untyped[:10]:
@@ -267,14 +442,14 @@ def ensure_bundle(vault: Path) -> bool:
     vault.mkdir(parents=True, exist_ok=True)
     (vault / "notes").mkdir(exist_ok=True)
     (vault / "topics").mkdir(exist_ok=True)
+    (vault / "personal").mkdir(exist_ok=True)
     index = vault / "index.md"
     created = not index.exists()
     if created:
         index.write_text(
             "---\nokf_version: \"0.2\"\n---\n\n"
             f"# {vault.name} — Knowledge Index\n\n"
-            "Kuratierte Einstiegszeilen (OKF §8-Form):\n\n"
-            "* [Titel](notes/<slug>.md) - Einzeiler-Claim\n",
+            "## Curated\n\n<!-- Keep human-written entry points here. -->\n",
             encoding="utf-8",
         )
     if not (vault / "log.md").exists():
@@ -308,6 +483,32 @@ def deprecate(vault: Path, target: Path, successor_rel: str, successor_title: st
     write_log(vault, "Deprecation", f"`{rel}` -> `{successor_rel}` — {now_utc()} by {ACTOR}")
 
 
+def markdown_link(source: Path, target: Path, label: str) -> str:
+    rel = os.path.relpath(target, source.parent).replace(os.sep, "/")
+    rel = urllib.parse.quote(rel, safe="/-._~")
+    label = label.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+    return f"[{label}]({rel})"
+
+
+def source_link(vault: Path, note: Path, source: str, number: int) -> str:
+    local = source[7:] if source.startswith("file://") else source
+    candidate = Path(urllib.parse.unquote(local)).expanduser()
+    if not candidate.is_absolute():
+        candidate = vault / candidate
+    try:
+        target = candidate.resolve()
+    except OSError:
+        target = None
+    if target and target.is_relative_to(vault) and target.is_file():
+        return markdown_link(note, target, parse_note(target, vault)["title"])
+    if target and target.is_file() and source.startswith("file://"):
+        return f"[Source {number}](<{source.replace(' ', '%20').replace('>', '%3E')}>)"
+    if EXTERNAL_SCHEME_RE.match(source) and not source.startswith("file://"):
+        url = source.replace(" ", "%20").replace(">", "%3E")
+        return f"[Source {number}](<{url}>)"
+    raise ValueError(f"[sb] --source local file must exist inside the bundle: {source}")
+
+
 def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     vault = vault.resolve()  # Einmal normalisieren: Target-Links sind resolved
     ensure_bundle(vault)
@@ -328,7 +529,36 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
         n += 1
     tags = [t.strip() for t in args.tags.split(",") if t.strip()]
     sources = [url.strip() for url in args.source if url.strip()]
-    supersedes_link = ""
+    raw_body = getattr(args, "body", "")
+    body_file = getattr(args, "body_file", None)
+    if body_file is not None:
+        if raw_body:
+            sys.exit("[sb] --body and --body-file cannot be used together")
+        try:
+            raw_body = sys.stdin.read() if body_file == "-" else Path(body_file).expanduser().read_text(encoding="utf-8")
+        except OSError as exc:
+            sys.exit(f"[sb] cannot read --body-file {body_file}: {exc}")
+    try:
+        body = format_markdown_body(raw_body, args.title)
+    except ValueError as exc:
+        sys.exit(f"[sb] invalid Markdown body: {exc}")
+    if args.status != "draft":
+        for label, target in md_links(body):
+            resolved = resolve_link(vault, note, target).resolve()
+            if not resolved.is_relative_to(vault) or not resolved.exists():
+                sys.exit(f"[sb] invalid Markdown body: link target not found in bundle: [{label}]({target})")
+
+    related: list[tuple[Path, str]] = []
+    seen_related: set[Path] = set()
+    for raw_path in getattr(args, "related", []) or []:
+        target = (vault / raw_path).resolve()
+        if (not target.is_relative_to(vault) or not target.is_file()
+                or target.name in RESERVED or target.suffix.lower() != ".md"):
+            sys.exit(f"[sb] --related must point to a Markdown note inside the bundle: {raw_path}")
+        if target not in seen_related:
+            related.append((target, parse_note(target, vault)["title"]))
+            seen_related.add(target)
+
     predecessor = None
     if args.supersedes:
         target = (vault / args.supersedes).resolve()
@@ -338,8 +568,6 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
         if not re.match(r"^---\s*\n.*?\n---\s*\n?", target.read_text(encoding="utf-8"), re.S):
             sys.exit(f"[sb] --supersedes: Konzept hat kein Frontmatter: {args.supersedes}")
         predecessor = target
-        # Datei-relativer Link (OKF §6.1): beide liegen i.d.R. in notes/ -> bloer Dateiname.
-        supersedes_link = f"\nSupersedes [{target.stem}]({os.path.relpath(target, note.parent)})."
     fm = f"type: {json.dumps(args.type, ensure_ascii=False)}\n"
     if args.status != "stable":
         fm += f"status: {args.status}\n"
@@ -352,12 +580,32 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
             for url in sources
         )
         fm += f"sources:\n{src}\n"
-    body = args.body if args.body else "(Hier Body ergaenzen: Was war der Sachverhalt? Pfade, Kommandos, Fehlertexte.)"
+    sections = [f"# {args.title}", body]
+    if predecessor is not None:
+        sections.extend((
+            "## Supersedes",
+            f"- {markdown_link(note, predecessor, parse_note(predecessor, vault)['title'])}",
+        ))
+    if related:
+        sections.extend((
+            "## Related",
+            "\n".join(f"- {markdown_link(note, target, title)}" for target, title in related),
+        ))
+    try:
+        source_links = [source_link(vault, note, source, i) for i, source in enumerate(sources, 1)]
+    except ValueError as exc:
+        sys.exit(str(exc))
+    if source_links:
+        sections.extend(("## Sources", "\n".join(f"- {link}" for link in source_links)))
     note.parent.mkdir(parents=True, exist_ok=True)
-    note.write_text(f"---\n{fm}---\n# {args.title}\n{supersedes_link}\n{body}\n", encoding="utf-8")
+    rendered_sections = "\n\n".join(sections)
+    note.write_text(f"---\n{fm}---\n\n{rendered_sections}\n", encoding="utf-8")
     if predecessor is not None:
         # Erst erfolgreich schreiben, dann deprecieren — kein verwaistes 'deprecated' ohne Nachfolger.
-        deprecate(vault, predecessor, os.path.relpath(note, predecessor.parent), args.title)
+        successor_rel = urllib.parse.quote(
+            os.path.relpath(note, predecessor.parent).replace(os.sep, "/"), safe="/-._~",
+        )
+        deprecate(vault, predecessor, successor_rel, args.title)
     print(f"[sb] Konzept angelegt: {note}")
     return cmd_index(vault)
 
@@ -409,8 +657,11 @@ def cmd_verify(vault: Path, rel: str, by: str) -> int:
 HOOK_BLOCK = """## Second Brain (project knowledge)
 - Projektwissen liegt in `{vault}` (OKF v0.2 Bundle, git-getrackt).
 - Vor nicht-trivialen Aufgaben: `uv run {sb} --vault "{vault}" search "<Begriffe>"` (Fallback: rg).
-- Dauerhafte Fakten festhalten: `… --vault "{vault}" add "Titel" -t decision -g tags` (niemals Secrets).
+- Vor dem Schreiben passende Konzepte suchen und echte Beziehungen mit wiederholtem `--related <Pfad>` als Standard-Markdown-Links setzen.
+- Dauerhafte Fakten festhalten: `… --vault "{vault}" add "Titel" -t decision -g tags --related notes/related.md` (niemals Secrets).
 - Claims nie stillschweigend umschreiben — superseden: `… --vault "{vault}" add "Neu" --supersedes notes/alt.md` (Pfad relativ zum Bundle); bei Recall status/stale_after beachten.
+- Handschriftliche Markdown-Dateien liegen in `personal/`; nur auf Anfrage unverändert als Quelle lesen und Fakten in `reference`-Konzepte destillieren.
+- Alle `index.md`-Dateien enthalten generierte Navigation; `index.db` dient ausschliesslich FTS. Nach manuellen Aenderungen `sb index`, fuer Drift/Links `sb lint` ausfuehren.
 """
 
 
@@ -435,15 +686,46 @@ def iter_concepts(vault: Path):
         yield p, p.read_text(encoding="utf-8", errors="replace")
 
 
+def index_drift(vault: Path) -> list[Path]:
+    directories = index_directories(vault)
+    return [directory / "index.md" for directory in directories
+            if not (directory / "index.md").exists()
+            or (directory / "index.md").read_text(encoding="utf-8", errors="replace")
+            != render_index(vault, directory, directories)]
+
+
+def fts_drift(vault: Path) -> bool:
+    db = db_path(vault)
+    if not db.exists():
+        return True
+    columns = ("path", "title", "type", "tags", "relevance", "status", "stale_after", "verified", "body")
+    try:
+        con = sqlite3.connect(db)
+        try:
+            indexed = {row[0]: tuple(row[1:]) for row in con.execute(
+                "SELECT " + ", ".join(columns) + " FROM notes"
+            )}
+        finally:
+            con.close()
+    except sqlite3.DatabaseError:
+        return True
+    current = {}
+    for path in note_files(vault):
+        note = parse_note(path, vault)
+        current[note["path"]] = tuple(note[column] for column in columns[1:])
+    return indexed != current
+
+
 def cmd_lint(vault: Path, fix: bool) -> int:
     vault = vault.resolve()
     broken: list[tuple[Path, str, str]] = []
-    untyped, drafts, deprecated, stale = [], 0, 0, 0
+    untyped, unsupported_wikilinks, drafts, deprecated, stale = [], [], 0, 0, 0
     now = dt.datetime.now(dt.timezone.utc)
     for p, text in iter_concepts(vault):
         meta = parse_note(p, vault)
-        if not meta.get("type"):
+        if not meta.get("type") and not p.relative_to(vault).parts[0] == "personal":
             untyped.append(p.relative_to(vault))
+        unsupported_wikilinks.extend((p, target) for target in WIKILINK_RE.findall(markdown_outside_code(text)))
         if meta.get("status") == "draft":
             drafts += 1
         if meta.get("status") == "deprecated":
@@ -453,44 +735,45 @@ def cmd_lint(vault: Path, fix: bool) -> int:
         if inst and now >= inst:
             stale += 1
         for label, target in md_links(text):
-            resolved = resolve_link(vault, p, target)
-            if not resolved.exists():
+            resolved = resolve_link(vault, p, target).resolve()
+            if not resolved.is_relative_to(vault) or not resolved.exists():
                 broken.append((p, label, target))
-        if fix and any(b[0] == p for b in broken):
-            def _neutralize(m: re.Match, _p: Path = p) -> str:
-                label, target = m.group(1), m.group(2)
-                if target.startswith(EXTERNAL_PREFIXES):
-                    return m.group(0)
-                if resolve_link(vault, _p, target).exists():
-                    return m.group(0)
-                return f"{label} <!-- broken-link: {target} -->"
-            new_text = LINK_RE.sub(_neutralize, text)
-            if new_text != text:
-                p.write_text(new_text, encoding="utf-8")
-    print(f"[sb] lint: {len(broken)} kaputte Links, {len(untyped)} ohne type, "
-          f"{drafts} draft, {deprecated} deprecated, {stale} stale")
+    for index in vault.rglob("index.md"):
+        text = index.read_text(encoding="utf-8", errors="replace")
+        for label, target in md_links(text):
+            resolved = resolve_link(vault, index, target).resolve()
+            if not resolved.is_relative_to(vault) or not resolved.exists():
+                broken.append((index, label, target))
+    drifted_indexes = index_drift(vault)
+    stale_fts = fts_drift(vault)
+    print(f"[sb] lint: {len(broken)} kaputte Links, {len(unsupported_wikilinks)} unsupported wikilinks, "
+          f"{len(drifted_indexes)} index drift, FTS {'drift' if stale_fts else 'current'}, "
+          f"{len(untyped)} ohne type, {drafts} draft, {deprecated} deprecated, {stale} stale")
     for p, label, target in broken:
         print(f"    kaputt: {p.relative_to(vault)} -> [{label}]({target})")
+    for p, target in unsupported_wikilinks:
+        print(f"    unsupported wikilink: {p.relative_to(vault)} -> [[{target}]]; use [text](path.md)")
     for rel in untyped:
         print(f"    ohne type: {rel}")
-    if fix and broken:
-        print("[sb] --fix: kaputte Links neutralisiert (Text bleibt, Link als Kommentar markiert)")
-    # OKF §6.1: kaputte Links sind tolerierbar ("not-yet-written knowledge"),
-    # deshalb ist lint nur Report; --fix ist bewusst konservativ.
+    for path in drifted_indexes:
+        print(f"    index drift: {path.relative_to(vault)}")
+    if stale_fts:
+        print(f"    FTS drift: {db_path(vault).name} missing or does not match Markdown files")
+    if fix and (drifted_indexes or stale_fts):
+        print("[sb] --fix: rebuilding generated indexes and FTS; source notes are unchanged")
+        cmd_index(vault)
     return 0
 
 
 def cmd_orphans(vault: Path) -> int:
     vault = vault.resolve()
     inbound: set[str] = set()
-    files = note_files(vault)
+    files = [p for p in note_files(vault) if p.relative_to(vault).parts[0] != "personal"]
     for p, text in iter_concepts(vault):
         for _, target in md_links(text):
-            inbound.add(os.path.realpath(resolve_link(vault, p, target)))
-    # Links aus jedem index.md zaehlen als Inbound (OKF §8: index auf jeder Ebene).
-    for idx in vault.rglob("index.md"):
-        for _, target in md_links(idx.read_text(encoding="utf-8", errors="replace")):
-            inbound.add(os.path.realpath(resolve_link(vault, idx, target)))
+            resolved = resolve_link(vault, p, target).resolve()
+            if resolved.is_relative_to(vault):
+                inbound.add(os.path.realpath(resolved))
     orphans = [p for p in files if os.path.realpath(p) not in inbound]
     print(f"[sb] {len(orphans)} Orphan(s) ohne Inbound-Links (Kandidaten fuer /dream):")
     for p in orphans:
@@ -713,10 +996,13 @@ def cmd_codegraph(vault: Path, root: Path) -> int:
 def cmd_stats(vault: Path) -> int:
     files = note_files(vault)
     # Frontmatter-basiert (parse_note), nicht Ganzdatei-Regex: Body-Zeilen wie 'status: …' faelschen sonst die Zahl.
-    deprecated = sum(1 for p in files if parse_note(p, vault).get("status") == "deprecated")
+    concepts = [p for p in files if p.relative_to(vault).parts[0] != "personal"]
+    deprecated = sum(1 for p in concepts if parse_note(p, vault).get("status") == "deprecated")
     print(f"Bundle:      {vault} (OKF v0.2)")
-    print(f"Konzepte:    {len(files)} ({deprecated} deprecated)")
-    print(f"Index:       {db_path(vault)} ({'vorhanden' if db_path(vault).exists() else 'fehlt - sb index'})")
+    print(f"Markdown:    {len(files)} Dateien ({len(concepts)} Konzepte, {len(files) - len(concepts)} personal)")
+    print(f"Navigation:  {len(index_directories(vault))} Verzeichnis-Indizes ({len(index_drift(vault))} drift)")
+    fts = "stale" if fts_drift(vault) else "current"
+    print(f"FTS only:    {db_path(vault)} ({fts})")
     return 0
 
 
@@ -742,7 +1028,12 @@ def cmd_selftest() -> int:
                                   body="Marimo batch reporting als Standardweg"))
         rc4 = cmd_add(vault, _ns(title="UV Duplikat", type="failure", tags="python",
                                  relevance="medium", status="stable", supersedes=None, source=["https://docs.astral.sh/uv/"],
-                                 body="uv sync ignoriert workspace-members ohne explicit source. Fix: tool.uv.sources setzen. Siehe [Doku](nicht-da.md)."))
+                                 body="uv sync ignoriert workspace-members ohne explicit source. Fix: tool.uv.sources setzen."))
+        manual_broken_link = vault / "notes" / "manual-broken-link.md"
+        manual_broken_link.write_text(
+            "---\ntype: observation\n---\n# Manual Broken Link\n\nSee [Doku](nicht-da.md).\n",
+            encoding="utf-8",
+        )
         final_note = next(vault.glob("notes/*uv-workspace-final*"))
         rc2v = cmd_verify(vault, str(final_note.relative_to(vault)), "human:test")
         block_note = vault / "notes" / "block-verified.md"
@@ -755,6 +1046,123 @@ def cmd_selftest() -> int:
         rc_t = cmd_add(vault, _ns(title="Custom Typ Test", type="code-graph", tags="",
                                   relevance="low", status="stable", supersedes=None, source=[],
                                   body="Freier OKF-Typ."))
+        long_body = "Plain prose should wrap into readable Markdown paragraphs. " * 4
+        rc_format = cmd_add(vault, _ns(title="Formatted Plain Body", type="observation", tags="",
+                                       relevance="medium", status="stable", supersedes=None,
+                                       source=[], related=[], body=long_body))
+        formatted_note = next(vault.glob("notes/*formatted-plain-body*"))
+        formatted_body = parse_note(formatted_note, vault)["body"]
+        body_file = Path(td) / "body.md"
+        body_file.write_text("## Context\n\n- first item\n- second item\n\n"
+                             "```python\nprint('ok')\n```\n", encoding="utf-8")
+        body_file_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
+             "add", "Body File Markdown", "--body-file", str(body_file),
+             "--related", str(old.relative_to(vault))],
+            capture_output=True, text=True,
+        )
+        body_file_note = next(vault.glob("notes/*body-file-markdown*"), None)
+        stdin_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
+             "add", "Stdin Body Markdown", "--body-file", "-",
+             "--related", str(old.relative_to(vault))],
+            input="A stdin body with enough words to verify Markdown input.\n",
+            capture_output=True, text=True,
+        )
+        stdin_note = next(vault.glob("notes/*stdin-body-markdown*"), None)
+        bad_fence_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
+             "add", "Malformed Fence", "--body-file", "-"],
+            input="## Unclosed\n\n```python\nprint('broken')\n",
+            capture_output=True, text=True,
+        )
+        bad_link_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
+             "add", "Broken Markdown Link", "-b", "See [missing](missing-note.md)."],
+            capture_output=True, text=True,
+        )
+        idea_vault = Path(td) / "idea-vault"
+        idea_link_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(idea_vault),
+             "idea", "Capture [draft link](later.md)"],
+            capture_output=True, text=True,
+        )
+        bad_source_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
+             "add", "Missing Local Source", "--source", "file://personal/missing.md"],
+            capture_output=True, text=True,
+        )
+        graph_vault = Path(td) / "graph-vault"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(graph_vault)
+        (graph_vault / "index.md").write_text(
+            "# Human index\n\nKeep root curation.\n\n```html\n"
+            "<!-- sb:index:start -->\nPreserve quoted markers.\n<!-- sb:index:end -->\n````\n\n"
+            "[Missing curated target](curated-missing.md)\n",
+            encoding="utf-8",
+        )
+        nested = graph_vault / "topics" / "research"
+        nested.mkdir(parents=True)
+        (nested / "index.md").write_text("# Research notes\n\nKeep folder curation.\n", encoding="utf-8")
+        nested_note = nested / "deep note.md"
+        nested_note.write_text("---\ntype: reference\n---\n# Deep Note\n\nNested index token.\n", encoding="utf-8")
+        node_a = graph_vault / "notes" / "node-a.md"
+        node_b = graph_vault / "notes" / "node-b.md"
+        node_a.write_text("---\ntype: observation\n---\n# Node A\n\nSee [Node B](node-b.md).\n", encoding="utf-8")
+        node_b.write_text(
+            "---\ntype: observation\n---\n# Node B\n\n```md\n[Not a real link](not-real.md)\n```\n",
+            encoding="utf-8",
+        )
+        broken_note = graph_vault / "notes" / "broken.md"
+        broken_note.write_text("---\ntype: observation\n---\n# Broken\n\n[Missing](missing.md)\n", encoding="utf-8")
+        wiki_note = graph_vault / "notes" / "wiki-syntax.md"
+        wiki_note.write_text("---\ntype: observation\n---\n# Wiki Syntax\n\n[[Node A]]\n", encoding="utf-8")
+        personal = graph_vault / "personal" / "handwritten.md"
+        personal.parent.mkdir(parents=True, exist_ok=True)
+        personal.write_text("# Handwritten\n\nquartzsource personal-only term.\n", encoding="utf-8")
+        personal_original = personal.read_bytes()
+        ingest_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(graph_vault),
+             "add", "Ingested Personal Source", "--source", "file://personal/handwritten.md",
+             "--related", "notes/node-a.md", "-b", "A durable fact distilled from the handwritten source."],
+            capture_output=True, text=True,
+        )
+        ingested_note = next(graph_vault.glob("notes/*ingested-personal-source*"), None)
+        untyped_concept = graph_vault / "notes" / "untyped.md"
+        untyped_concept.write_text("# Untyped concept\n\nThis still needs OKF type metadata.\n", encoding="utf-8")
+        index_output_buf = io.StringIO()
+        with contextlib.redirect_stdout(index_output_buf):
+            rc_graph_index = cmd_index(graph_vault)
+        index_report = index_output_buf.getvalue()
+        root_index = graph_vault / "index.md"
+        notes_index = graph_vault / "notes" / "index.md"
+        topics_index = graph_vault / "topics" / "index.md"
+        personal_index = graph_vault / "personal" / "index.md"
+        nested_index = nested / "index.md"
+        first_index = root_index.read_text(encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_index(graph_vault)
+        repeated_index = root_index.read_text(encoding="utf-8")
+        node_b.write_text(node_b.read_text(encoding="utf-8") + "\nManual edit that must make FTS stale.\n", encoding="utf-8")
+        root_index.write_text(repeated_index.replace("notes/index.md", "notes/missing-index.md", 1), encoding="utf-8")
+        lint_buf = io.StringIO()
+        with contextlib.redirect_stdout(lint_buf):
+            rc_graph_lint = cmd_lint(graph_vault, fix=False)
+        drift_report = lint_buf.getvalue()
+        original_broken_note = broken_note.read_bytes()
+        original_node_b = node_b.read_bytes()
+        fix_buf = io.StringIO()
+        with contextlib.redirect_stdout(fix_buf):
+            rc_graph_fix = cmd_lint(graph_vault, fix=True)
+        fix_report = fix_buf.getvalue()
+        orphan_buf = io.StringIO()
+        with contextlib.redirect_stdout(orphan_buf):
+            rc_graph_orphans = cmd_orphans(graph_vault)
+        graph_search_buf = io.StringIO()
+        with contextlib.redirect_stdout(graph_search_buf):
+            rc_personal_search = cmd_search(graph_vault, "quartzsource", 5, False)
+        graph_orphans = orphan_buf.getvalue()
+        personal_search = graph_search_buf.getvalue()
         proc = subprocess.run(  # Regression N1: idea via echtem CLI (argparse, nicht Namespace-Injektion)
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
              "idea", "Subprocess Idea Regression"],
@@ -796,6 +1204,60 @@ def cmd_selftest() -> int:
             "verify schreibt": rc2v == 0 and "human:test" in final_note.read_text(encoding="utf-8") and "verified:" in final_note.read_text(encoding="utf-8"),
             "verify behaelt Block-Mapping": rc2vb == 0 and "human:old" in block_note.read_text(encoding="utf-8") and "human:new" in block_note.read_text(encoding="utf-8"),
             "freier Typ": rc_t == 0 and parse_note(custom_type, vault)["type"] == "code-graph",
+            "plain body is wrapped": rc_format == 0 and max(map(len, formatted_body.splitlines())) <= 88,
+            "body-file preserves Markdown": body_file_proc.returncode == 0 and body_file_note is not None
+                and "## Context" in body_file_note.read_text(encoding="utf-8")
+                and "- first item\n- second item" in body_file_note.read_text(encoding="utf-8")
+                and "```python\nprint('ok')\n```" in body_file_note.read_text(encoding="utf-8"),
+            "related links use standard Markdown": body_file_note is not None
+                and ("UV Workspace Gotcha", old.name) in md_links(body_file_note.read_text(encoding="utf-8")),
+            "body-file stdin works": stdin_proc.returncode == 0 and stdin_note is not None
+                and "A stdin body with enough words" in stdin_note.read_text(encoding="utf-8"),
+            "unclosed fence rejected before write": bad_fence_proc.returncode != 0
+                and "unclosed fenced code block" in bad_fence_proc.stderr.lower()
+                and not any(vault.glob("notes/*malformed-fence*")),
+            "broken body links rejected before write": bad_link_proc.returncode != 0
+                and "link target not found" in bad_link_proc.stderr.lower()
+                and not any(vault.glob("notes/*broken-markdown-link*")),
+            "idea captures unresolved links": idea_link_proc.returncode == 0
+                and any(idea_vault.glob("notes/*capture-draft-link*")),
+            "missing local source rejected": bad_source_proc.returncode != 0
+                and "source" in bad_source_proc.stderr.lower()
+                and not any(vault.glob("notes/*missing-local-source*")),
+            "all content directories have indexes": all(path.exists() for path in (
+                root_index, notes_index, topics_index, personal_index, nested_index,
+            )),
+            "generated indexes preserve curation and link documents": "Keep root curation." in first_index
+                and "Preserve quoted markers." in first_index
+                and "Keep folder curation." in nested_index.read_text(encoding="utf-8")
+                and "notes/index.md" in first_index and "node-a.md" in notes_index.read_text(encoding="utf-8")
+                and "deep%20note.md" in nested_index.read_text(encoding="utf-8"),
+            "index rebuild is deterministic": first_index == repeated_index,
+            "lint detects index drift and broken links": rc_graph_lint == 0
+                and "index drift" in drift_report.lower() and "FTS drift" in drift_report
+                and "missing.md" in drift_report and "curated-missing.md" in drift_report
+                and "deep%20note.md" not in drift_report,
+            "lint fix repairs only generated artifacts": rc_graph_fix == 0
+                and broken_note.read_bytes() == original_broken_note
+                and node_b.read_bytes() == original_node_b
+                and "notes/index.md" in root_index.read_text(encoding="utf-8")
+                and "Keep root curation." in root_index.read_text(encoding="utf-8")
+                and "curated-missing.md" in root_index.read_text(encoding="utf-8")
+                and "missing-index.md" not in root_index.read_text(encoding="utf-8"),
+            "orphan check excludes catalogs and personal sources": rc_graph_orphans == 0
+                and "topics/research/deep note.md" in graph_orphans and "notes/node-b.md" not in graph_orphans
+                and "personal/handwritten.md" not in graph_orphans,
+            "personal sources are FTS searchable": rc_personal_search == 0
+                and "personal/handwritten.md" in personal_search,
+            "personal ingestion creates source and graph links": ingest_proc.returncode == 0
+                and ingested_note is not None
+                and ("Handwritten", "../personal/handwritten.md") in md_links(ingested_note.read_text(encoding="utf-8"))
+                and ("Node A", "node-a.md") in md_links(ingested_note.read_text(encoding="utf-8"))
+                and personal.read_bytes() == personal_original,
+            "personal source exempt but concepts still require type": rc_graph_index == 0
+                and "personal/handwritten.md" not in index_report and "notes/untyped.md" in index_report,
+            "lint reports unsupported wikilinks, not code samples": "[[Node A]]" in drift_report
+                and "not-real.md" not in drift_report,
             "idea via echtem CLI": proc.returncode == 0 and any(vault.glob("notes/*subprocess-idea-regression*")),
             "supersede-Links ganz": out.count("    kaputt:") == 1,  # nur der absichtliche nicht-da.md
             "log §9-Gruppen": f"## {dt.date.today().isoformat()}" in (vault / "log.md").read_text(encoding="utf-8"),
@@ -809,6 +1271,15 @@ def cmd_selftest() -> int:
             "meta_name parser": meta_name({"metaVariables": {"single": {"NAME": {"text": "my_fn"}}}}) == "my_fn",
             "date-only stale_after": date_only is not None and date_only.tzinfo is not None,
             "relativer Import": resolve_import("typescript", "./b", "src/a.ts", known) == Path("src/b.ts"),
+            "Markdown parser handles labels and excludes non-links": md_links(
+                "[Missing](missing.md) and [A \\[B\\]](node-b.md) "
+                "and [space](<space note.md>) and [web](https://example.com/a).\n"
+                "```md\n[Code](ignored.md)\n```"
+            ) == [
+                ("Missing", "missing.md"),
+                (r"A \[B\]", "node-b.md"),
+                ("space", "space note.md"),
+            ],
         }
         failed = [k for k, v in checks.items() if not v]
         if failed:
@@ -822,19 +1293,23 @@ def main() -> int:
     ap.add_argument("--vault", help="Bundle-Pfad (Default: $SECOND_BRAIN_DIR oder ~/second-brain)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("init", help="OKF-Bundle anlegen + AGENTS.md-Hook ausgeben")
-    sub.add_parser("index", help="FTS5-Index aus dem Bundle neu aufbauen")
+    sub.add_parser("index", help="Markdown-Verzeichnisindizes + FTS5-Index neu aufbauen")
     sub.add_parser("rebuild", help="Alias fuer index (kompletter Neuaufbau)")
     sp = sub.add_parser("search", help="Volltextsuche (FTS5 MATCH Syntax)")
     sp.add_argument("query")
     sp.add_argument("-n", "--limit", type=int, default=5)
     sp.add_argument("--all", action="store_true", help="auch deprecated zeigen")
-    ap_add = sub.add_parser("add", help="Konzept anlegen + indexieren (OKF)")
+    ap_add = sub.add_parser("add", help="formatiertes OKF-Konzept mit Quellen/Verknuepfungen anlegen")
     ap_add.add_argument("title")
     ap_add.add_argument("-t", "--type", default="observation",
                         help=f"OKF-Typ, frei (OKF §4.1); ueblich: {', '.join(VALID_TYPES)}")
     ap_add.add_argument("-g", "--tags", default="")
     ap_add.add_argument("-r", "--relevance", default="medium", choices=VALID_RELEVANCE)
-    ap_add.add_argument("-b", "--body", default="")
+    body_input = ap_add.add_mutually_exclusive_group()
+    body_input.add_argument("-b", "--body", default="")
+    body_input.add_argument("--body-file", help="Markdown fragment file, or '-' to read stdin")
+    ap_add.add_argument("--related", action="append", default=[],
+                        help="related Markdown path relative to the bundle (repeatable)")
     ap_add.add_argument("--status", default="stable", choices=VALID_STATUS)
     ap_add.add_argument("--supersedes", default="", help="Pfad des zu ersetzenden Konzepts (relativ zum Bundle)")
     ap_add.add_argument("--source", action="append", default=[], help="OKF-Quelle (URL), wiederholbar")
@@ -845,7 +1320,7 @@ def main() -> int:
     ap_v.add_argument("path", help="Konzept-Pfad relativ zum Bundle")
     ap_v.add_argument("--by", default="", help="Aktor (Default human:$USER, z.B. human:vse)")
     ap_lint = sub.add_parser("lint", help="Kaputte Links + OKF/Health-Report")
-    ap_lint.add_argument("--fix", action="store_true", help="kaputte Links neutralisieren")
+    ap_lint.add_argument("--fix", action="store_true", help="nur generierte Indizes und FTS neu aufbauen")
     sub.add_parser("orphans", help="Konzepte ohne Inbound-Links")
     ap_dd = sub.add_parser("dedup", help="Near-Duplicate-Paare finden")
     ap_dd.add_argument("-t", "--threshold", type=float, default=0.75)

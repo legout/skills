@@ -12,20 +12,27 @@ Markdown + YAML frontmatter, compatible with the
 
 ```text
 ~/second-brain/            # OKF bundle
-├── index.md               # hot index: curated pointers (OKF reserved name)
+├── index.md               # human-curated pointers + generated navigation (OKF reserved name)
 ├── log.md                 # update history: deprecations etc. (OKF reserved)
 ├── notes/                 # atomic concepts  YYYY-MM-DD-<slug>.md
 ├── topics/                # distilled topic pages (via retro)
-└── index.db               # derived FTS5 index — delete anytime, sb index rebuilds
+├── personal/              # handwritten Markdown source notes; never rewrite on ingest
+└── index.db               # SQLite FTS5 only; sb index rebuilds it independently of navigation
 ```
 
 OKF mapping: every note is a *concept* with required `type:`; `status`,
 `stale_after`, `generated`, `verified` follow OKF §5 (lifecycle/trust/
 provenance). `sb.py` CLI (stdlib-only) in `scripts/`.
 
+The knowledge graph is ordinary Markdown links plus `index.md` at the root
+and in each content directory. These and `index.db` are first-class, separate
+views: Markdown indexes provide human navigation; `index.db` is used only for
+FTS. Never use `[[wikilinks]]`.
+
 ## Recall — before any non-trivial task
 
-1. Read `index.md` (fast orientation, curated pointers).
+1. Read the root `index.md` (curated orientation and generated folder map).
+   Follow the relevant folder's `index.md` to browse local notes and links.
 2. Search the FTS5 index (ranked, snippet, ms at personal scale):
 
 ```bash
@@ -47,16 +54,25 @@ review via `sb verify <path> --by human:<id>`.
 
 ```bash
 uv run <skill-dir>/scripts/sb.py add "UV workspace gotcha" \
-  -t failure -g "python, uv" -r high -b "Fix: tool.uv.sources setzen."
+  -t failure -g "python, uv" -r high --body-file /path/to/body.md \
+  --related notes/2026-01-01-uv-workspace.md  # replace with an existing search hit
 ```
 
 Writes OKF frontmatter (`type`, `generated: {by: second-brain/1.0, at: …}`,
-optional `status: draft`) + reindexes. Hand-written notes need `type:` +
 an occasional `sb index` (warns about OKF violations).
+optional `status: draft`), normalizes Markdown, writes explicit related/source
+links, and rebuilds directory indexes plus FTS. `--body` remains supported;
+`--body-file -` reads multiline Markdown from stdin. Plain prose is wrapped;
+headings, lists, tables, links, and fenced code are preserved. Unclosed code
+fences are rejected before the note is written.
 
 Rules: one fact per note; title = noun phrase; keep specifics (paths,
-commands, errors); record failures with root cause; never secrets;
-update `index.md` pointers when a note is genuinely reusable.
+commands, errors); record failures with root cause; never secrets. Search for
+related notes first, then pass each real relationship with repeatable
+`--related PATH`; do not invent edges or rely on title/tag auto-matching.
+Handwritten Markdown belongs in `personal/`, not `notes/`; it needs no `type:`.
+Run `sb index` after manual edits. Generated index blocks are marked and
+replaced by the CLI; human-written text outside those blocks is preserved.
 
 ## Claims carefully — updates are supersessions, not rewrites
 
@@ -78,14 +94,16 @@ them as `[STALE]` instead of asserting them. After human review:
 
 ```text
 init                OKF-Bundle anlegen + AGENTS.md-Hook ausgeben (Projekt-Bootstrap)
-index | rebuild     FTS5-Index (neu) aufbauen — index.db ist wegwerfbar
+index | rebuild     directory index.md files + index.db (FTS only) rebuild
 search Q [-n N] [--all]   gerankte Volltextsuche; deprecated versteckt, [STALE] markiert
-add "Titel" [-t T] [-g tags] [-r rel] [-b body] [--status draft]
-                    [--supersedes notes/alt.md] [--source URL]   OKF-Konzept anlegen (Typ frei, §4.1)
+add "Titel" [-t T] [-g tags] [-r rel] [-b body | --body-file FILE]
+                    [--related PATH]... [--supersedes notes/alt.md] [--source URL]...
+                    formatted OKF concept + explicit standard Markdown links
 idea "Text"         Quick-Capture als draft-insight
 verify <pfad> [--by human:ich]  Verifikation vermerken (OKF §5.3 → human-reviewed)
-lint [--fix]        kaputte Links + Health-Report (drafts/deprecated/stale/ohne type)
-orphans             Konzepte ohne Inbound-Links (Kandidaten für Verknüpfung)
+lint [--fix]        broken links, unsupported wikilinks, index/FTS drift + health
+                    --fix rebuilds generated directory indexes and FTS only; notes are never rewritten
+orphans             concepts without semantic Markdown inbound links (indexes excluded)
 dedup [-t 0.75]     Near-Duplicate-Paare (Body-Shingle-Jaccard; Lösung: superseden)
 codegraph [--root .]  Symbol-/Import-Karte via ast-grep -> topics/code-graph.md
 stats / selftest    Statistik / Round-Trip-Checks
@@ -109,10 +127,13 @@ erzeugt ein regenerierbares `type: code-graph` Konzept.
 
 ## Workflows (Agent-Protokolle)
 
-- **Ingest:** Dokument mit passendem Skill lesen (pdf/docx/pptx/xlsx) -> pro
-  dauerhaftem Fakt ein `reference`-Konzept mit `--source file://…` -> `sb index`.
-  Wichtige Quelldokumente optional im Bundle spiegeln unter `references/`
-  (OKF §6.3) — schuetzt gegen Pointer-Rot, wenn das Original wandert.
+- **Ingest:** Only ingest personal notes when the user asks. Read originals in
+  `personal/` without moving or editing them; distill each durable fact into a
+  `reference` concept with `--source file://personal/<file>.md` (the CLI adds
+  a Markdown source link when the file is inside the bundle). Search first and
+  add other real relationships with `--related`; avoid duplicating facts.
+  For external PDF/DOCX/PPTX/XLSX sources, use the matching document skill,
+  preserve the original source reference, and create formatted concepts.
 - **Research:** Teilfragen -> multi-Winkel-Recherche -> nur belegte Aussagen,
   Widersprüche explizit -> EIN `reference`-Konzept als draft mit `--source`-URLs.
 - **Dream (periodisch):** `lint`/`orphans`/`dedup`/`stats` -> Vorschläge
@@ -122,8 +143,9 @@ erzeugt ein regenerierbares `type: code-graph` Konzept.
 ## Retro — distill, don't accumulate
 
 When 5+ notes cluster around one topic, write `topics/<topic>.md`
-(distilled page, links the notes, states current best practice),
-deprecate notes it fully replaces, point `index.md` at the topic page.
+(distilled page with standard Markdown links to the notes and current best
+practice), deprecate notes it fully replaces. `sb index` updates every
+directory catalog; keep any human-curated root pointers outside the generated block.
 
 ## Setup — "setup my project second brain"
 
@@ -133,8 +155,9 @@ When asked to set up a project second brain, the agent does exactly this:
 uv run <skill-dir>/scripts/sb.py --vault knowledge init
 ```
 
-`init` creates the OKF bundle (`notes/`, `topics/`, `index.md`, `log.md`),
-indexes it and **prints the ready-made AGENTS.md hook block** (with the
+`init` creates the OKF bundle (`notes/`, `topics/`, `personal/`, root and
+per-directory `index.md` files, `log.md`, and FTS-only `index.db`), and
+**prints the ready-made AGENTS.md hook block** (with the
 absolute script path filled in). Append that block to the project's
 `AGENTS.md`, commit, done. Optionally record the first concepts right away.
 
@@ -145,7 +168,9 @@ or add the same four lines manually).
 
 **Routing rule** (which brain gets a fact):
 - Project-specific (schemas, decisions, quirks of *this* repo) → project bundle `knowledge/`
-- Cross-project / personal (tool habits, recurring failures, preferences) → `~/second-brain/`
+- Cross-project durable facts (tool habits, recurring failures, preferences) → concepts in `~/second-brain/notes/`
+- Handwritten source documents → `personal/` in the relevant bundle (`~/second-brain/personal/` for global notes)
+- Distilled concepts from personal documents → `notes/`, only when ingestion is requested
 - Unsure → record in the project bundle; promote to global during retro
   (and supersede the project note with a link).
 
@@ -158,8 +183,10 @@ OKF's recommended distribution). Add to the project's `AGENTS.md`:
 ## Second Brain (project knowledge)
 - Project knowledge lives in `knowledge/` (OKF v0.2 bundle, git-tracked).
 - Before non-trivial tasks: `uv run ~/.agents/skills/second-brain/scripts/sb.py --vault knowledge search "<terms>"` (fallback: rg).
-- Record durable facts: `… sb.py --vault knowledge add "Title" -t decision -g tags` (never secrets).
+- Record durable facts: `… sb.py --vault knowledge add "Title" -t decision -g tags --related notes/related.md` (never secrets; search for links first).
 - Never silently rewrite claims — supersede: `… add "New" --supersedes notes/old.md` (path relative to the bundle); respect status/stale_after on recall.
+- Handwritten Markdown belongs in `knowledge/personal/`; ingest it only when asked, preserving the original and linking each distilled reference note to its source.
+- `index.md` files are generated navigation with preserved human text outside markers; `index.db` is FTS-only. Run `sb index` after manual edits and `sb lint` to audit links/drift.
 ```
 
 Personal cross-project memory stays in `~/second-brain/` (hooked via the
