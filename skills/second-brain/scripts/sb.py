@@ -290,9 +290,9 @@ def index_block(vault: Path, directory: Path, directories: list[Path]) -> str:
     notes = [path for path in note_files(vault) if path.parent == directory]
     children = [path for path in directories if path.parent == directory]
     lines = [INDEX_START, "## Documents", ""]
-    if directory == vault:
-        lines.append(f"- {markdown_link(index, vault / 'schema.md', 'Wiki schema')}")
-    if notes:
+    special = [f"- {markdown_link(index, vault / 'schema.md', 'Wiki schema')}"] if directory == vault else []
+    if notes or special:
+        lines.extend(special)
         for note in notes:
             meta = parse_note(note, vault)
             kind = f" — `{meta['type']}`" if meta["type"] else ""
