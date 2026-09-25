@@ -7,9 +7,10 @@ Format v0.2 bundle. Human-readable directory indexes and index.db are
 separate materialized views; `sb index` rebuilds both, and index.db contains FTS only.
 
 OKF v0.2 mapping:
-  notes/*.md, topics/*.md  -> concepts (required frontmatter: type)
+  notes/, sources/, concepts/, entities/, references/, topics/, playbooks/ -> OKF concepts
   personal/**/*.md         -> handwritten source documents (type optional)
-  index.md / log.md        -> reserved (listing / update history), not indexed
+  raw/**                  -> original source files, not indexed as concepts
+  index.md / log.md / schema.md -> navigation, history and owner conventions, not FTS
   type: <value>            -> OKF type (free-form, not centrally registered)
   status/stale_after/verified/generated/sources -> OKF lifecycle/trust/provenance
 
@@ -23,6 +24,10 @@ Usage:
   sb [--vault PATH] add "Title" [-t TYPE] [-g TAGS] [-r RELEVANCE] [-b BODY | --body-file FILE]
                       [--related PATH]... [--status draft] [--supersedes PATH] [--source URL]...
                       (TYPE ist frei per OKF §4.1; ueblich: observation/decision/insight/failure/reference)
+  sb [--vault PATH] page concept|entity|reference|topic|playbook "Title" --body-file FILE
+                       [--source URL]... [--related PATH]...
+                       [--expect-sha256 HASH --reason TEXT]  create/revise a canonical wiki page
+  sb [--vault PATH] capture "Title" --source URL --body-file FILE [--original FILE]
   sb [--vault PATH] verify PATH [--by ACTOR]   OKF-verified vermerken (Default human:$USER)
   sb [--vault PATH] idea "Text"       quick-capture as draft insight
   sb [--vault PATH] lint [--fix]      links, index/FTS drift + OKF/health report
@@ -39,6 +44,7 @@ import argparse
 import contextlib
 import datetime as dt
 import getpass
+import hashlib
 import io
 import json
 import os
@@ -55,7 +61,11 @@ import urllib.parse
 from pathlib import Path
 
 DB_NAME = "index.db"
-RESERVED = {"index.md", "log.md"}
+RESERVED = {"index.md", "log.md", "schema.md"}
+PAGE_FOLDERS = {
+    "concept": "concepts", "entity": "entities", "reference": "references",
+    "topic": "topics", "playbook": "playbooks",
+}
 VALID_STATUS = ("draft", "stable", "deprecated")
 VALID_TYPES = ("observation", "decision", "insight", "failure", "reference")
 VALID_RELEVANCE = ("low", "medium", "high", "critical")
@@ -147,8 +157,9 @@ def _verified_field(fields: dict[str, str], meta: str) -> str:
 
 
 def note_files(vault: Path) -> list[Path]:
-    # Every Markdown content file is searchable; personal/ is source material, not a concept.
-    files = [p for p in vault.rglob("*.md") if p.name not in RESERVED]
+    # raw/ originals stay byte-for-byte intact, even if they happen to be Markdown.
+    files = [p for p in vault.rglob("*.md") if p.name not in RESERVED
+             and p.relative_to(vault).parts[0] not in ("raw", ".history")]
     return sorted(files)
 
 
@@ -263,7 +274,7 @@ def atomic_write_text(path: Path, text: str) -> None:
 
 
 def index_directories(vault: Path) -> list[Path]:
-    directories = {vault, *(vault / name for name in ("notes", "topics", "personal"))}
+    directories = {vault, *(vault / name for name in ("notes", "sources", *PAGE_FOLDERS.values(), "personal"))}
     for note in note_files(vault):
         directory = note.parent
         while directory.is_relative_to(vault):
@@ -279,6 +290,8 @@ def index_block(vault: Path, directory: Path, directories: list[Path]) -> str:
     notes = [path for path in note_files(vault) if path.parent == directory]
     children = [path for path in directories if path.parent == directory]
     lines = [INDEX_START, "## Documents", ""]
+    if directory == vault:
+        lines.append(f"- {markdown_link(index, vault / 'schema.md', 'Wiki schema')}")
     if notes:
         for note in notes:
             meta = parse_note(note, vault)
@@ -412,7 +425,8 @@ def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
 def slugify(title: str) -> str:
     s = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode()
     s = re.sub(r"[^a-zA-Z0-9]+", "-", s).strip("-").lower()
-    return (s or "note")[:80]  # Cap: 255-Byte-Dateinamen-Limit, lange idea-Texte
+    # All-non-Latin titles must not all compete for the same canonical "note.md".
+    return (s or "note-" + hashlib.sha256(title.encode("utf-8")).hexdigest()[:10])[:80]
 
 
 def write_log(vault: Path, label: str, message: str) -> None:
@@ -437,12 +451,56 @@ def write_log(vault: Path, label: str, message: str) -> None:
     log.write_text(text, encoding="utf-8")
 
 
+DEFAULT_SCHEMA = """# Wiki-Schema
+
+Diese vom Besitzer anpassbaren Regeln steuern, wo Wissen landet. `sb init` und
+`sb index` ersetzen diese Datei nicht. Vor dem Einlesen oder Überarbeiten lesen.
+
+## Quellen und Geschichte
+
+- `raw/`: unveränderte Originaldateien (auch binäres Material). `sb capture
+  --original` kopiert die Datei hierher; keine Wiki-Behauptungen daraus ableiten,
+  ohne die Quelle zu lesen. Originale werden nicht als Konzepte indexiert.
+- `personal/`: handgeschriebene Originalnotizen des Besitzers, beim Einlesen
+  nicht ändern.
+- `sources/`: datierte, append-only Erfassungen von Quellentext oder ausdrücklich
+  als Auszug gekennzeichnetem Text; mit Original-URL und ggf. Link auf `raw/`.
+- `notes/`: atomare, datierte Beobachtungen, Entscheidungen, Fehler und
+  Recherche-Drafts. Sachliche Änderungen durch Supersession statt Umschreiben.
+
+## Gepflegtes Wiki
+
+- `entities/`: konkrete Personen, Unternehmen, Produkte, Orte oder Projekte.
+- `concepts/`: abstrakte Begriffe, Methoden, Muster und mentale Modelle.
+- `references/`: nachschlagbare, fortlaufend geprüfte Fakten, etwa API-Regeln,
+  Preislisten oder Spezifikationen; nicht mit einer einzelnen Quelle verwechseln.
+- `topics/`: lebende, quellenübergreifende Synthesen zu einem Themengebiet.
+  Kein zweiter Ordner `syntheses/` mit derselben Funktion.
+- `playbooks/`: wiederverwendbare Vorgehensweisen; beschreiben Arbeitsschritte,
+  sind aber keine ausführbaren Agent-Skills oder Befehlsautorität.
+
+Vor einer neuen Wiki-Seite nach vorhandenen Seiten und Aliasnamen suchen.
+Neue Belege mit bestehenden Aussagen vergleichen, Widersprüche und Unsicherheit
+sichtbar lassen, jede zentrale Aussage direkt an der Stelle mit Quelle belegen.
+Kanonische Seiten per `sb page` mit komplettem Body pflegen; Revisionen brauchen
+erwarteten Hash und Änderungsgrund. `draft` nicht ungeprüft als verifiziert lesen.
+`index.md` ist Navigation, `log.md` Änderungsverlauf, `.history/` enthält frühere
+Seitenfassungen und `index.db` ist ein erneuerbarer Suchindex.
+"""
+
+
 def ensure_bundle(vault: Path) -> bool:
     """Fehlende OKF-Bundle-Struktur anlegen; True nur bei neuem index.md."""
     vault.mkdir(parents=True, exist_ok=True)
     (vault / "notes").mkdir(exist_ok=True)
-    (vault / "topics").mkdir(exist_ok=True)
+    (vault / "sources").mkdir(exist_ok=True)
+    for folder in PAGE_FOLDERS.values():
+        (vault / folder).mkdir(exist_ok=True)
     (vault / "personal").mkdir(exist_ok=True)
+    (vault / "raw").mkdir(exist_ok=True)
+    schema = vault / "schema.md"
+    if not schema.exists():
+        schema.write_text(DEFAULT_SCHEMA, encoding="utf-8")
     index = vault / "index.md"
     created = not index.exists()
     if created:
@@ -610,6 +668,116 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     return cmd_index(vault)
 
 
+def cmd_page(vault: Path, args: argparse.Namespace) -> int:
+    """Create or explicitly revise one stable-path wiki page; synthesis is the agent's job."""
+    vault = vault.resolve()
+    ensure_bundle(vault)
+    title = args.title.strip()
+    if not title or any(c in title for c in "\r\n"):
+        sys.exit("[sb] page title must be a single nonempty line")
+    page = vault / PAGE_FOLDERS[args.kind] / f"{slugify(title)}.md"
+    old = page.read_bytes() if page.exists() else None
+    if old is None and (args.expect_sha256 or args.reason):
+        sys.exit("[sb] new page does not accept --expect-sha256 or --reason")
+    if old is not None:
+        digest = hashlib.sha256(old).hexdigest()
+        if not args.expect_sha256 or not args.reason or args.expect_sha256 != digest:
+            sys.exit(f"[sb] page exists; revision requires --expect-sha256 {digest} and --reason")
+        if parse_note(page, vault)["title"] != title:
+            sys.exit("[sb] slug collision: existing page has a different title")
+    if not args.source and not args.related:
+        sys.exit("[sb] page requires at least one --source or --related evidence path")
+    try:
+        raw_body = sys.stdin.read() if args.body_file == "-" else Path(args.body_file).expanduser().read_text(encoding="utf-8")
+        if not raw_body.strip():
+            raise ValueError("page body must not be empty")
+        body = format_markdown_body(raw_body, title)
+    except (OSError, ValueError) as exc:
+        sys.exit(f"[sb] page body: {exc}")
+    for label, target in md_links(body):
+        resolved = resolve_link(vault, page, target).resolve()
+        if not resolved.is_relative_to(vault) or not resolved.is_file():
+            sys.exit(f"[sb] page link target not found: [{label}]({target})")
+    related: list[str] = []
+    for rel in dict.fromkeys(args.related):
+        target = (vault / rel).resolve()
+        if (not target.is_relative_to(vault) or not target.is_file()
+                or target.name in RESERVED or target == page or target.suffix != ".md"):
+            sys.exit(f"[sb] page related target must be a different Markdown file in the bundle: {rel}")
+        related.append(markdown_link(page, target, parse_note(target, vault)["title"]))
+    try:
+        sources = [source_link(vault, page, source, i) for i, source in enumerate(args.source, 1)]
+    except ValueError as exc:
+        sys.exit(str(exc))
+    fm = f"type: {json.dumps(args.kind)}\nstatus: {args.status}\n"
+    fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\n"
+    if args.tags.strip():
+        fm += f"tags: {json.dumps([t.strip() for t in args.tags.split(',') if t.strip()], ensure_ascii=False)}\n"
+    if args.source:
+        fm += "sources:\n" + "".join(
+            f"  - {{ resource: {json.dumps(source, ensure_ascii=False)} }}\n" for source in args.source
+        )
+    sections = [f"# {title}", body]
+    if related:
+        sections.extend(("## Related", "\n".join(f"- {link}" for link in related)))
+    if sources:
+        sections.extend(("## Sources", "\n".join(f"- {link}" for link in sources)))
+    rendered = f"---\n{fm}---\n\n" + "\n\n".join(sections) + "\n"
+    if old is not None:
+        archive = vault / ".history" / page.parent.name / page.stem / f"{now_utc().replace(':', '')}-{digest[:12]}.txt"
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        archive.write_bytes(old)
+    atomic_write_text(page, rendered)
+    if old is not None:
+        write_log(vault, "Wiki revision", f"`{page.relative_to(vault)}`: {args.reason} — prior `{archive.relative_to(vault)}` (SHA-256 {digest})")
+    else:
+        write_log(vault, "Wiki page", f"`{page.relative_to(vault)}` created")
+    print(f"[sb] wiki page: {page}")
+    return cmd_index(vault)
+
+
+def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
+    """Keep the supplied source text as a new, append-only Markdown snapshot."""
+    vault = vault.resolve()
+    ensure_bundle(vault)
+    title = args.title.strip()
+    if not title or any(c in title for c in "\r\n"):
+        sys.exit("[sb] capture title must be a single nonempty line")
+    base = f"{dt.date.today().isoformat()}-{slugify(title)}"
+    snapshot = vault / "sources" / f"{base}.md"
+    number = 2
+    while snapshot.exists():
+        snapshot = vault / "sources" / f"{base}-{number}.md"
+        number += 1
+    original = Path(args.original).expanduser() if args.original else None
+    if original is not None and not original.is_file():
+        sys.exit(f"[sb] capture: original file not found: {original}")
+    try:
+        body = sys.stdin.read() if args.body_file == "-" else Path(args.body_file).expanduser().read_text(encoding="utf-8")
+        if not body.strip():
+            raise ValueError("source text must not be empty")
+        link = source_link(vault, snapshot, args.source, 1)
+    except (OSError, ValueError) as exc:
+        sys.exit(f"[sb] capture: {exc}")
+    frontmatter = (f'type: "source"\nstatus: draft\n'
+                   f'generated: {{ by: {ACTOR}, at: {now_utc()} }}\n'
+                   f'sources:\n  - {{ resource: {json.dumps(args.source, ensure_ascii=False)} }}\n')
+    original_links = [f"- {link}"]
+    if original is not None:
+        copy = vault / "raw" / snapshot.stem / original.name
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with original.open("rb") as source_file, copy.open("xb") as target_file:
+                shutil.copyfileobj(source_file, target_file)
+        except OSError as exc:
+            sys.exit(f"[sb] capture: cannot preserve original without overwriting: {exc}")
+        original_links.append(f"- {markdown_link(snapshot, copy, 'Preserved original')}")
+    snapshot.write_text(f"---\n{frontmatter}---\n\n# {title}\n\n{body.rstrip()}\n\n## Original\n\n" + "\n".join(original_links) + "\n", encoding="utf-8")
+    write_log(vault, "Source capture", f"`{snapshot.relative_to(vault)}` from {args.source}")
+    print(f"[sb] captured: {snapshot}")
+    return cmd_index(vault)
+
+
 def cmd_idea(vault: Path, text: str, args: argparse.Namespace) -> int:
     # argparse setzt Defaults nur des aufgerufenen Subparsers: fehlende Felder ergaenzen.
     args.title = text.strip().rstrip(".")
@@ -657,10 +825,11 @@ def cmd_verify(vault: Path, rel: str, by: str) -> int:
 HOOK_BLOCK = """## Second Brain (project knowledge)
 - Projektwissen liegt in `{vault}` (OKF v0.2 Bundle, git-getrackt).
 - Vor nicht-trivialen Aufgaben: `uv run {sb} --vault "{vault}" search "<Begriffe>"` (Fallback: rg).
-- Vor dem Schreiben passende Konzepte suchen und echte Beziehungen mit wiederholtem `--related <Pfad>` als Standard-Markdown-Links setzen.
-- Dauerhafte Fakten festhalten: `… --vault "{vault}" add "Titel" -t decision -g tags --related notes/related.md` (niemals Secrets).
+- `schema.md` lesen; Originale bei Bedarf mit `sb capture --original` in `raw/` bewahren, Quellentexte in `sources/` und Wissen in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/` pflegen.
+- `sb page` aktualisiert kanonische Seiten nur mit aktuellem `--expect-sha256` und `--reason`; alte Fassungen liegen in `.history/`.
+- Einzelne dauerhafte Fakten: `… --vault "{vault}" add "Titel" -t decision -g tags --related notes/related.md` (niemals Secrets).
 - Claims nie stillschweigend umschreiben — superseden: `… --vault "{vault}" add "Neu" --supersedes notes/alt.md` (Pfad relativ zum Bundle); bei Recall status/stale_after beachten.
-- Handschriftliche Markdown-Dateien liegen in `personal/`; nur auf Anfrage unverändert als Quelle lesen und Fakten in `reference`-Konzepte destillieren.
+- Handschriftliche Markdown-Dateien liegen in `personal/`; nur auf Anfrage unverändert als Quelle lesen.
 - Alle `index.md`-Dateien enthalten generierte Navigation; `index.db` dient ausschliesslich FTS. Nach manuellen Aenderungen `sb index`, fuer Drift/Links `sb lint` ausfuehren.
 """
 
@@ -738,7 +907,10 @@ def cmd_lint(vault: Path, fix: bool) -> int:
             resolved = resolve_link(vault, p, target).resolve()
             if not resolved.is_relative_to(vault) or not resolved.exists():
                 broken.append((p, label, target))
-    for index in vault.rglob("index.md"):
+    for directory in index_directories(vault):
+        index = directory / "index.md"
+        if not index.exists():
+            continue
         text = index.read_text(encoding="utf-8", errors="replace")
         for label, target in md_links(text):
             resolved = resolve_link(vault, index, target).resolve()
@@ -1187,10 +1359,161 @@ def cmd_selftest() -> int:
             rc0b = cmd_init(vault)
         init_entries_after = (vault / "log.md").read_text(encoding="utf-8").count("**Initialization**")
         known = {"src/b.ts": Path("src/b.ts")}
+        wiki_vault = Path(td) / "wiki-vault"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(wiki_vault)
+        schema = wiki_vault / "schema.md"
+        initial_schema = schema.read_text(encoding="utf-8") if schema.exists() else ""
+        if schema.exists():
+            schema.write_text(initial_schema + "\nOwner convention.\n", encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(wiki_vault)
+        source = wiki_vault / "personal" / "field-notes.md"
+        source.write_text("# Field notes\n\nA measured claim.\n", encoding="utf-8")
+        first_capture = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+             "capture", "Research agent study", "--source", "https://example.org/study",
+             "--body-file", "-"], input="Measured: bounded tasks succeed.",
+            capture_output=True, text=True,
+        )
+        captured = wiki_vault / "sources" / f"{dt.date.today().isoformat()}-research-agent-study.md"
+        original_capture = captured.read_bytes() if captured.exists() else b""
+        second_capture = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+             "capture", "Research agent counterstudy", "--source", "https://example.org/counterstudy",
+             "--body-file", "-"], input="Contrary finding: bounded tasks often fail.",
+            capture_output=True, text=True,
+        )
+        counterstudy = wiki_vault / "sources" / f"{dt.date.today().isoformat()}-research-agent-counterstudy.md"
+        original = Path(td) / "primary paper.md"
+        original.write_bytes(b"# Original\n\nUnmodified source bytes.\n")
+        original_capture_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+             "capture", "Primary paper", "--source", original.as_uri(),
+             "--original", str(original), "--body-file", "-"],
+            input="Extracted primary text.", capture_output=True, text=True,
+        )
+        copied_original = wiki_vault / "raw" / f"{dt.date.today().isoformat()}-primary-paper" / original.name
+        source_with_original = wiki_vault / "sources" / f"{dt.date.today().isoformat()}-primary-paper.md"
+        before_index = copied_original.read_bytes() if copied_original.exists() else b""
+        occupied_copy = wiki_vault / "raw" / f"{dt.date.today().isoformat()}-protected-original" / original.name
+        occupied_copy.parent.mkdir(parents=True)
+        occupied_copy.write_bytes(b"User-owned original bytes")
+        protected_capture = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+             "capture", "Protected original", "--source", original.as_uri(),
+             "--original", str(original), "--body-file", "-"],
+            input="Excerpt.", capture_output=True, text=True,
+        )
+        page_command = [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+                        "page", "concept", "Research agents"]
+        page_create = subprocess.run(
+            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md"],
+            input="Research agents assist with bounded tasks [Source](../personal/field-notes.md).",
+            capture_output=True, text=True,
+        )
+        page = wiki_vault / "concepts" / "research-agents.md"
+        first_page = page.read_bytes() if page.exists() else b""
+        digest = hashlib.sha256(first_page).hexdigest()
+        page_unchanged = subprocess.run(
+            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md"],
+            input="Another claim", capture_output=True, text=True,
+        )
+        page_wrong_digest = subprocess.run(
+            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md",
+             "--expect-sha256", "0" * 64, "--reason", "New evidence"],
+            input="Changed claim", capture_output=True, text=True,
+        )
+        unchanged_after_rejections = page.read_bytes() if page.exists() else b""
+        page_bad_link = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+             "page", "topic", "Broken topic", "--body-file", "-", "--related", f"sources/{captured.name}"],
+            input="Claim [without evidence](../sources/absent.md).", capture_output=True, text=True,
+        )
+        page_update = subprocess.run(
+            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md",
+             "--related", f"sources/{captured.name}", "--related", f"sources/{counterstudy.name}",
+             "--expect-sha256", digest, "--reason", "New field evidence"],
+            input=(f"One [study](../sources/{captured.name}) reports success; "
+                   f"another [study](../sources/{counterstudy.name}) reports failures.\n\n"
+                   "## Offen\n\nWhich conditions explain the difference?"),
+            capture_output=True, text=True,
+        )
+        page_after = page.read_text(encoding="utf-8") if page.exists() else ""
+        topic_create = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+             "page", "topic", "Research workflows", "--body-file", "-", "--related", "concepts/research-agents.md"],
+            input="A workflow summarized from [research agents](../concepts/research-agents.md).",
+            capture_output=True, text=True,
+        )
+        other_pages = []
+        for kind, folder, title in (
+            ("entity", "entities", "Research Lab"),
+            ("reference", "references", "Model Pricing"),
+            ("playbook", "playbooks", "Research Procedure"),
+        ):
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
+                 "page", kind, title, "--body-file", "-", "--related", f"sources/{captured.name}"],
+                input=f"{title} documented in [source](../sources/{captured.name}).",
+                capture_output=True, text=True,
+            )
+            other_pages.append((result.returncode, wiki_vault / folder / f"{slugify(title)}.md", kind))
+        wiki_search_buf = io.StringIO()
+        if topic_create.returncode == 0:
+            with contextlib.redirect_stdout(wiki_search_buf):
+                cmd_search(wiki_vault, "workflow", 5, False)
+        wiki_lint_buf = io.StringIO()
+        if topic_create.returncode == 0:
+            with contextlib.redirect_stdout(wiki_lint_buf):
+                cmd_lint(wiki_vault, fix=False)
         date_only = parse_instant("2000-01-01")
         uv_dup = next(vault.glob("notes/*uv-duplikat*"))
         custom_type = next(vault.glob("notes/*custom-typ-test*"))
         checks = {
+            "wiki schema and category directories": all((wiki_vault / name).is_dir() for name in
+                ("raw", "entities", "references", "playbooks"))
+                and all(label in initial_schema for label in ("raw/", "entities/", "references/", "playbooks/"))
+                and "Owner convention." in schema.read_text(encoding="utf-8")
+                and "schema.md" in (wiki_vault / "index.md").read_text(encoding="utf-8")
+                and schema not in note_files(wiki_vault),
+            "capture preserves original outside FTS": original_capture_proc.returncode == 0
+                and before_index == original.read_bytes()
+                and copied_original.read_bytes() == before_index
+                and urllib.parse.quote(copied_original.name) in source_with_original.read_text(encoding="utf-8")
+                and not any(p.is_relative_to(wiki_vault / "raw") for p in note_files(wiki_vault)),
+            "capture never overwrites a raw original": protected_capture.returncode != 0
+                and occupied_copy.read_bytes() == b"User-owned original bytes"
+                and not (wiki_vault / "sources" / f"{dt.date.today().isoformat()}-protected-original.md").exists(),
+            "source capture is a distinct immutable input": first_capture.returncode == 0
+                and second_capture.returncode == 0
+                and b"type: \"source\"" in original_capture
+                and b"Measured: bounded tasks succeed." in original_capture
+                and captured.read_bytes() == original_capture,
+            "wiki concept created with source": page_create.returncode == 0
+                and b"type: \"concept\"" in first_page and b"status: draft" in first_page
+                and b"field-notes.md" in first_page,
+            "wiki update requires revision": page_unchanged.returncode != 0
+                and page_wrong_digest.returncode != 0 and page_update.returncode == 0
+                and unchanged_after_rejections == first_page,
+            "invalid wiki link rejected before creation": page_bad_link.returncode != 0
+                and not (wiki_vault / "topics" / "broken-topic.md").exists(),
+            "wiki revision preserves old content": b"bounded tasks" in first_page
+                and "## Offen" in page_after and counterstudy.name in page_after
+                and "New field evidence" in (wiki_vault / "log.md").read_text(encoding="utf-8")
+                and any(p.read_bytes() == first_page for p in (wiki_vault / ".history" / "concepts" / "research-agents").glob("*.txt")),
+            "wiki topic navigable and searchable": topic_create.returncode == 0
+                and (wiki_vault / "topics" / "research-workflows.md").exists()
+                and (wiki_vault / "concepts" / "index.md").exists()
+                and (wiki_vault / "sources" / "index.md").exists()
+                and "topics/research-workflows.md" in wiki_search_buf.getvalue()
+                and "0 kaputte Links" in wiki_lint_buf.getvalue(),
+            "additional page kinds": all(rc == 0 and path.exists()
+                and parse_note(path, wiki_vault)["type"] == kind
+                and f"{path.parent.name}/index.md" in (wiki_vault / "index.md").read_text(encoding="utf-8")
+                for rc, path, kind in other_pages) and "0 kaputte Links" in wiki_lint_buf.getvalue(),
+            "non-Latin page slugs are distinct": slugify("知识") != slugify("研究")
+                and slugify("知识") == slugify("知识"),
             "init ok": rc0 == 0 and rc0b == 0 and (vault / "index.md").exists(),
             "init idempotent": init_entries == init_entries_after,
             "add ok": rc1 == 0 and rc2 == 0 and rc4 == 0,
@@ -1313,6 +1636,21 @@ def main() -> int:
     ap_add.add_argument("--status", default="stable", choices=VALID_STATUS)
     ap_add.add_argument("--supersedes", default="", help="Pfad des zu ersetzenden Konzepts (relativ zum Bundle)")
     ap_add.add_argument("--source", action="append", default=[], help="OKF-Quelle (URL), wiederholbar")
+    ap_page = sub.add_parser("page", help="kanonische Wiki-Seite anlegen oder begruendet ueberarbeiten")
+    ap_page.add_argument("kind", choices=tuple(PAGE_FOLDERS))
+    ap_page.add_argument("title")
+    ap_page.add_argument("--body-file", required=True, help="complete Markdown body; '-' reads stdin")
+    ap_page.add_argument("--source", action="append", default=[], help="source URL or file:// path (repeatable)")
+    ap_page.add_argument("--related", action="append", default=[], help="bundle-relative evidence/related note (repeatable)")
+    ap_page.add_argument("--tags", default="")
+    ap_page.add_argument("--status", choices=("draft", "stable"), default="draft")
+    ap_page.add_argument("--expect-sha256", default="", help="required to revise an existing page")
+    ap_page.add_argument("--reason", default="", help="required change reason for revisions")
+    ap_capture = sub.add_parser("capture", help="source text as a new, never overwritten Markdown snapshot")
+    ap_capture.add_argument("title")
+    ap_capture.add_argument("--source", required=True, help="original URL or existing file:// path")
+    ap_capture.add_argument("--body-file", required=True, help="captured source text, '-' reads stdin")
+    ap_capture.add_argument("--original", help="copy the original file unchanged into raw/")
     ap_idea = sub.add_parser("idea", help="Idee als draft-insight festhalten")
     ap_idea.add_argument("text")
     ap_idea.add_argument("-g", "--tags", default="")
@@ -1339,6 +1677,8 @@ def main() -> int:
         "rebuild": lambda: cmd_index(vault),
         "search": lambda: cmd_search(vault, args.query, args.limit, args.all),
         "add": lambda: cmd_add(vault, args),
+        "page": lambda: cmd_page(vault, args),
+        "capture": lambda: cmd_capture(vault, args),
         "idea": lambda: cmd_idea(vault, args.text, args),
         "verify": lambda: cmd_verify(vault, args.path, args.by),
         "lint": lambda: cmd_lint(vault, args.fix),
