@@ -126,4 +126,4 @@ if errors:
 print(f"validated {len(names)} skills")
 PY
 
-python3 "$skills_root/second-brain/scripts/sb.py" selftest
+python3 "$ROOT/skills/tools-and-research/second-brain/scripts/sb.py" selftest

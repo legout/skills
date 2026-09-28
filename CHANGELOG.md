@@ -6,6 +6,7 @@ matching Git tag exists.
 
 ## Unreleased
 
+- Moved `document-to-markdown` and `second-brain` into the `tools-and-research` category; skill names and invocations are unchanged.
 - Moved default planning-artifact paths from `docs/` to the `project/` namespace (`project/research|adr|specs|plans|tickets/`, `project/agents/`), separating delivery artifacts from product documentation; legacy `docs/` installations are grandfathered and never auto-migrated. `planning-contract` records the namespace rule; consumers reference both.
 - Standardized specification and plan filenames as `YYYY-MM-DD-NNNN-slug.md`, with shared work-item numbering for linked artifacts.
 - Added catalog-wide semantic versioning, with `0.1.0` prepared as the first version.

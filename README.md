@@ -59,9 +59,11 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 ### Tools and research
 
 - **`chrome-cdp`** — approved control of an existing local Chrome session.
+- **`document-to-markdown`** — local-first conversion of documents into agent-readable Markdown.
 - **`handoff`** — redacted handoff for a fresh agent session.
 - **`last30days`** — recent social, community, video, GitHub, and web research.
 - **`research`** — primary-source research captured in a repository note.
+- **`second-brain`** — source-grounded local knowledge wiki and memory.
 - **`marimo-notebook`** — file-based marimo notebooks.
 - **`marimo-pair`** — live marimo-kernel collaboration.
 - **`pi-custom-model`** — explicit custom Pi model registration.

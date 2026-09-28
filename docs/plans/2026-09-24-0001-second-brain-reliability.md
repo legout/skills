@@ -16,8 +16,8 @@ Make the second-brain CLI reliably create formatted Markdown, maintain its human
 
 ## Current context
 
-- `skills/second-brain/scripts/sb.py` is a standalone stdlib-only CLI. `cmd_add` writes the body verbatim; `cmd_index` rebuilds only SQLite FTS; `ensure_bundle` creates one placeholder root index; `lint` ignores wikilinks; `orphans` currently counts index links as graph edges.
-- `skills/second-brain/SKILL.md` describes `index.md` as curated-only, asks for an occasional FTS rebuild after manual notes, and does not require related-note links on normal adds.
+- `skills/tools-and-research/second-brain/scripts/sb.py` is a standalone stdlib-only CLI. `cmd_add` writes the body verbatim; `cmd_index` rebuilds only SQLite FTS; `ensure_bundle` creates one placeholder root index; `lint` ignores wikilinks; `orphans` currently counts index links as graph edges.
+- `skills/tools-and-research/second-brain/SKILL.md` describes `index.md` as curated-only, asks for an occasional FTS rebuild after manual notes, and does not require related-note links on normal adds.
 - `sb.py selftest` is the focused executable test seam. `tests/skills_test.sh` is the repository's established catalog check.
 - Baseline: `sb.py selftest` passes 26 checks; worktree was clean on `main`.
 
@@ -48,12 +48,12 @@ Make the second-brain CLI reliably create formatted Markdown, maintain its human
 
 ### Task 1 — Add regression checks for note formatting and explicit graph edges
 
-**Files:** `skills/second-brain/scripts/sb.py` (self-test section only initially).
+**Files:** `skills/tools-and-research/second-brain/scripts/sb.py` (self-test section only initially).
 
 **Validation unit:** `new-test`; catches the real CLI regression where one-line input is written as an unformatted one-line body and related links are omitted.
 
 - [ ] Extend `cmd_selftest` with expected failures for multiline body-file/stdin handling, plain-text wrapping, stable Markdown structure, malformed-fence rejection, and a resolving `--related` link.
-- [ ] Run `python3 skills/second-brain/scripts/sb.py selftest`; confirm the new checks fail for the missing behavior, not due to test setup.
+- [ ] Run `python3 skills/tools-and-research/second-brain/scripts/sb.py selftest`; confirm the new checks fail for the missing behavior, not due to test setup.
 - [ ] Implement a single body renderer/validator and wire `--body-file` (`-` means stdin) mutually exclusively with `--body`; retain the existing `--body` option.
 - [ ] Add repeatable `--related` paths, validate they resolve inside the vault, and render them as standard Markdown links in a `## Related` section. Keep automatic predecessor/successor links.
 - [ ] Rerun the focused self-test and confirm formatting, rejection, and link checks pass.
@@ -62,7 +62,7 @@ Make the second-brain CLI reliably create formatted Markdown, maintain its human
 
 ### Task 2 — Rebuild human indexes and FTS as separate first-class outputs
 
-**Files:** `skills/second-brain/scripts/sb.py`.
+**Files:** `skills/tools-and-research/second-brain/scripts/sb.py`.
 
 **Validation unit:** same focused self-test; distinct reachable failures are stale catalogs, lost curated content, structural links masking orphans, and destructive lint fixes.
 
@@ -78,7 +78,7 @@ Make the second-brain CLI reliably create formatted Markdown, maintain its human
 
 ### Task 3 — Define personal-source ingestion and update skill contract
 
-**Files:** `skills/second-brain/scripts/sb.py`, `skills/second-brain/SKILL.md`, `tests/skills_test.sh`.
+**Files:** `skills/tools-and-research/second-brain/scripts/sb.py`, `skills/tools-and-research/second-brain/SKILL.md`, `tests/skills_test.sh`.
 
 **Validation unit:** `new-test` for source-folder indexing/type behavior; existing catalog test for skill structure and links.
 
@@ -97,7 +97,7 @@ Make the second-brain CLI reliably create formatted Markdown, maintain its human
 
 **Validation unit:** `existing-check` plus candidate review.
 
-- [ ] Run `python3 skills/second-brain/scripts/sb.py selftest`.
+- [ ] Run `python3 skills/tools-and-research/second-brain/scripts/sb.py selftest`.
 - [ ] Run `bash -n tests/skills_test.sh`, `bash tests/skills_test.sh`, `bash tests/orchestrator_handoff_test.sh`, `bash scripts/check-skill-sources.sh`, and `git diff --check`.
 - [ ] Review the full diff against every acceptance criterion; inspect generated root/nested index samples in a disposable vault and verify FTS query results.
 - [ ] Confirm no generated index link is counted as a semantic edge and `lint --fix` leaves source note bytes unchanged.
