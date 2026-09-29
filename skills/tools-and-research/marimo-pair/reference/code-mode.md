@@ -176,6 +176,15 @@ Submit the code that belongs in the cell.
 - **Run cells deliberately** - `create_cell` and `edit_cell` change structure
   only. Queue `ctx.run_cell(...)` when the cell should execute.
 
+### Cell Boundaries
+
+A cell is also a rerun boundary. Put expensive or reusable computation
+upstream of presentation so UI edits stay cheap. Keep cheap,
+presentation-specific work with the view when that is easier to read.
+
+Use `mo.vstack` and `mo.hstack` only when the composition is part of the UI.
+Narrative often reads better in an adjacent markdown cell.
+
 ### Prefer `cm`-Managed Changes
 
 Use `cm` APIs when they exist. Avoid direct file edits, shell package commands,
