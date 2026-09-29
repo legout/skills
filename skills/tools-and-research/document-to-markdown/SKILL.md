@@ -1,16 +1,17 @@
 ---
 name: document-to-markdown
-description: "Convert or read any local document — PDF (text or scanned), Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, images, HTML, notebooks — into agent-optimized Markdown by routing to the best engine (anydoc, RapidOCR, camelot, markitdown), with a company-internal multimodal fallback (gpt-5.6-luna / qwen-3.8-27b) for very complex scans. Local-first: no public APIs. Use when asked to 'convert X to markdown', 'read/extract the content of this document/deck/workbook', 'what's in this PDF', to make any document agent-readable, or to OCR an image or scan. Do NOT use for: creating/editing native Office files (docx/pptx/xlsx skills), precise table extraction as data (table-extractor skill), or data analysis of CSV/Excel (read-file)."
+description: "Convert or read any local document — PDF (text or scanned), Word, PowerPoint, Excel, OpenDocument, RTF, EPUB, CSV, images, HTML, notebooks — into agent-optimized Markdown by routing to the best engine (anydoc, liteparse, RapidOCR, camelot, markitdown), with a company-internal multimodal fallback (gpt-5.6-luna / qwen-3.8-27b) for very complex scans. Local-first: no public APIs. Use when asked to 'convert X to markdown', 'read/extract the content of this document/deck/workbook', 'what's in this PDF', to make any document agent-readable, or to OCR an image or scan. Do NOT use for: creating/editing native Office files (docx/pptx/xlsx skills), precise table extraction as data (table-extractor skill), or data analysis of CSV/Excel (read-file)."
 ---
 
 # Document to Markdown
 
-One router, four engines — local by default, company-internal VLM for the hard pages. Any document in, agent-optimized Markdown out.
+One router, five engines — local by default, company-internal VLM for the hard pages. Any document in, agent-optimized Markdown out.
 
 ## Hard rule: data stays inside the company
 
 Default is fully local inference. The only exception is the OCR **VLM fallback tier** ([references/ocr.md](references/ocr.md)), which sends flagged page images to the company-internal multimodal endpoint (`gpt-5.6-luna` / `qwen-3.8-27b`) — never a public API. Never use:
 - `anydoc --ocr hosted` (uploads the document to Firecrawl)
+- liteparse `--ocr-server-url` at any public endpoint — its bundled Tesseract OCR is local
 - `markitdown --use-plugins`, `llm_client`, audio transcription, or YouTube URLs (public APIs)
 - MinerU or any other hosted conversion API
 
@@ -21,6 +22,7 @@ Package installs (`npx`, `uv`, ONNX model downloads) are fine.
 | Engine | Needs |
 | --- | --- |
 | anydoc | Node 20+ (`npx`) |
+| liteparse | `uv` (pure wheel — PDFium + bundled Tesseract; traineddata downloads on first OCR use) |
 | RapidOCR | `uv` (rapidocr + onnxruntime — pure wheels, ~50–80 MB total) |
 | camelot | `uv` + ghostscript for lattice mode (stream needs nothing) |
 | markitdown | `uv` |
@@ -34,7 +36,9 @@ Corporate network: `npx`/`uv` package downloads may need `HTTPS_PROXY` or intern
 | --- | --- | --- |
 | `.docx .doc .pptx .ppt .xlsx .xls .xlsb .odt .ods .odp .rtf .epub .csv` | anydoc | `npx -y @firecrawl/anydoc file -o file.md` |
 | `.pdf` (text-based) | anydoc | same — exit 0 means done |
-| `.pdf` (scanned) | RapidOCR | anydoc exits **3** → [references/ocr.md](references/ocr.md) |
+| `.pdf` (mixed text+scan) | liteparse | anydoc exits **3**, `lit is-complex` flags **some** pages → [references/liteparse.md](references/liteparse.md) |
+| `.pdf` (fully scanned) | RapidOCR | anydoc exits **3**, `lit is-complex` flags **all** pages → [references/ocr.md](references/ocr.md) |
+| PDF needing page ranges, per-page verdicts, screenshots, or bounding boxes | liteparse | [references/liteparse.md](references/liteparse.md) |
 | `.png .jpg .jpeg .webp .bmp` | RapidOCR | [references/ocr.md](references/ocr.md) |
 | Complex scan (tables/math/handwriting) | internal VLM | tier 2 in [references/ocr.md](references/ocr.md): `gpt-5.6-luna` / `qwen-3.8-27b` |
 | `.html .ipynb .msg .zip .json .xml` | markitdown | `uvx --from 'markitdown[all]' markitdown file -o file.md` |
@@ -46,7 +50,9 @@ The exit code IS the scanner — no separate detection step:
 ```text
 npx -y @firecrawl/anydoc report.pdf -o report.md
 # exit 0 → text PDF, done
-# exit 3 → pages need OCR → RapidOCR (references/ocr.md)
+# exit 3 → uvx --from liteparse lit is-complex report.pdf --compact
+#          some pages need OCR → liteparse (references/liteparse.md): text pages stay native, only scan pages get OCR
+#          all pages need OCR  → RapidOCR leg (references/ocr.md)
 # exit 1 → could not convert → try markitdown fallback, then report failure
 ```
 
@@ -67,7 +73,7 @@ npx -y @firecrawl/anydoc report.pdf -o report.md
 ## Known ceilings
 
 - `# ponytail: scanned tables — tier-1 OCR recovers text, not structure; the VLM tier in ocr.md is the in-house upgrade, Docling if a fully-local one is ever needed`
-- `# ponytail: mixed text/scan PDFs — whole document falls to the OCR leg`
+- `# ponytail: liteparse scan pages — bundled Tesseract only; complex scan pages still belong to the VLM tier in ocr.md`
 - `# ponytail: PP-OCRv6 models ship inside the rapidocr wheel — offline immediately after install`
 
 ## References — read on demand
@@ -75,6 +81,7 @@ npx -y @firecrawl/anydoc report.pdf -o report.md
 | File | Read when |
 | --- | --- |
 | [references/anydoc.md](references/anydoc.md) | Office/PDF conversion options, exit codes, format matrix, library bindings |
+| [references/liteparse.md](references/liteparse.md) | anydoc exits 3 on a mixed text/scan PDF, or you need page ranges, per-page verdicts, screenshots, or bounding boxes |
 | [references/ocr.md](references/ocr.md) | A PDF exits 3 or the input is an image — two tiers: RapidOCR script + internal-VLM fallback, languages, caveats |
 | [references/tables.md](references/tables.md) | The deliverable is extracted tables, not a markdown file |
 | [references/fallbacks.md](references/fallbacks.md) | Input is HTML/ipynb/msg/zip, or anydoc output looks mangled |
