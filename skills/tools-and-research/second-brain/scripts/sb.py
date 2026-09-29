@@ -937,12 +937,12 @@ def cmd_verify(vault: Path, rel: str, by: str) -> int:
 HOOK_BLOCK = """## Second Brain (project knowledge)
 - Projektwissen liegt in `{vault}` (OKF v0.2 Bundle, git-getrackt).
 - Vor nicht-trivialen Aufgaben: `uv run {sb} --vault "{vault}" search "<Begriffe>"` (Fallback: rg).
-- `schema.md` lesen; Originale bei Bedarf mit `sb capture --original` in `raw/` bewahren, Quellentexte in `sources/` und Wissen in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/` pflegen.
-- `sb page` aktualisiert kanonische Seiten nur mit aktuellem `--expect-sha256` und `--reason`; alte Fassungen liegen in `.history/`.
+- `schema.md` lesen; Originale bei Bedarf mit `uv run {sb} --vault "{vault}" capture "Titel" --source "<URI>" --body-file "<Textdatei>" --original "<Original>"` in `raw/` bewahren, Quellentexte in `sources/` und Wissen in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/` pflegen.
+- `uv run {sb} --vault "{vault}" page concept "Titel" --body-file "<vollstaendige-Seite>" --expect-sha256 "<Hash>" --reason "<Grund>"` aktualisiert bestehende kanonische Seiten; alte Fassungen liegen in `.history/`.
 - Einzelne dauerhafte Fakten: `… --vault "{vault}" add "Titel" -t decision -g tags --related notes/related.md` (niemals Secrets).
 - Claims nie stillschweigend umschreiben — superseden: `… --vault "{vault}" add "Neu" --supersedes notes/alt.md` (Pfad relativ zum Bundle); bei Recall status/stale_after beachten.
 - Handschriftliche Markdown-Dateien liegen in `personal/`; nur auf Anfrage unverändert als Quelle lesen.
-- Alle `index.md`-Dateien enthalten generierte Navigation; `index.db` dient ausschliesslich FTS. Nach manuellen Aenderungen `sb index`, fuer Drift/Links `sb lint` ausfuehren.
+- Alle `index.md`-Dateien enthalten generierte Navigation; `index.db` dient ausschliesslich FTS. Nach manuellen Aenderungen `uv run {sb} --vault "{vault}" index`, fuer Drift/Links `uv run {sb} --vault "{vault}" lint` ausfuehren.
 """
 
 
@@ -1656,6 +1656,10 @@ def cmd_selftest() -> int:
         uv_dup = next(vault.glob("notes/*uv-duplikat*"))
         custom_type = next(vault.glob("notes/*custom-typ-test*"))
         checks = {
+            "project hook scopes every documented CLI action": all(
+                f'--vault "{{vault}}" {verb}' in HOOK_BLOCK
+                for verb in ("search", "capture", "page", "add", "index", "lint")
+            ),
             "wiki schema and category directories": all((wiki_vault / name).is_dir() for name in
                 ("raw", "entities", "references", "playbooks"))
                 and all(label in initial_schema for label in ("raw/", "entities/", "references/", "playbooks/"))

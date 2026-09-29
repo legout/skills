@@ -27,13 +27,19 @@ description: Maintain a local, source-grounded LLM wiki and personal memory in a
 
 Read `schema.md` before ingesting: it defines placement and evidence rules and is not overwritten by indexing or reinitialization. `index.md` in each content folder is generated navigation with preserved human text outside its marked block. `raw/` originals and `personal/` documents are not wiki concepts; content Markdown elsewhere needs OKF `type:`. Use ordinary relative Markdown links, not `[[wikilinks]]`. Folder names express a page's role; OKF `type:` describes the document, not its destination. Existing files remain where they are; never reorganize a user's vault on initialization.
 
+## Choose the vault before every command
+
+- Explicit user choice wins. Project decisions, schemas and files belong in that project's initialized `knowledge/`; personal preferences and cross-project facts belong in the global bundle (`SECOND_BRAIN_DIR` or `~/second-brain/`). If project knowledge is requested but no project bundle exists, offer `uv run <skill-dir>/scripts/sb.py --vault knowledge init` and its printed AGENTS.md hook instead of silently writing to the global bundle.
+- Run from the project root (or use its absolute `knowledge/` path). **Every** project operation, including `add`, `capture`, `page`, `idea`, `index`, `lint`, `orphans`, `dedup`, `stats`, and `verify`, must put `--vault knowledge` *before* the subcommand: `uv run <skill-dir>/scripts/sb.py --vault knowledge add "Project decision" -t decision -b "…"`. For global operations omit `--vault` to honor `SECOND_BRAIN_DIR`.
+- Keep follow-up operations in the same bundle; paths supplied to `--related` and `--supersedes` are relative to that bundle. For recall, search an existing project bundle first (unless the user chose global only), then global if no relevant result; never use an implicit global write as a fallback for project knowledge.
+
 ## Recall
 
-1. Read the root `index.md` and relevant folder index. Search across `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/`, `notes/`, and `sources/`:
+1. Read the root `index.md` and relevant folder index. Search across `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/`, `notes/`, and `sources/`. In a project with `knowledge/`, search that first; if nothing relevant is found, search global:
 
    ```bash
-   uv run <skill-dir>/scripts/sb.py search "<terms>" -n 5
-   uv run <skill-dir>/scripts/sb.py --vault knowledge search "<terms>"
+   uv run <skill-dir>/scripts/sb.py --vault knowledge search "<terms>" -n 5  # existing project bundle
+   uv run <skill-dir>/scripts/sb.py search "<terms>" -n 5                    # global fallback
    ```
 
 2. If there is no index or match, use `rg -il '<terms>' <vault>`. Read the 1–3 best matches and follow evidence links. No match is not a reason to stall.
