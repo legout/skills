@@ -1059,7 +1059,7 @@ def cmd_orphans(vault: Path) -> int:
             if resolved.is_relative_to(vault):
                 inbound.add(os.path.realpath(resolved))
     orphans = [p for p in files if os.path.realpath(p) not in inbound]
-    print(f"[sb] {len(orphans)} Orphan(s) ohne Inbound-Links (Kandidaten fuer /dream):")
+    print(f"[sb] {len(orphans)} Orphan(s) ohne Inbound-Links (Kandidaten fuer Verknuepfungen):")
     for p in orphans:
         print(f"    {p.relative_to(vault)}")
     return 0
