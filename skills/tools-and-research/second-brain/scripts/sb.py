@@ -21,13 +21,14 @@ Usage:
   sb [--vault PATH] init              create OKF bundle + print AGENTS.md hook
   sb [--vault PATH] index | rebuild   rebuild Markdown directory indexes + FTS5
   sb [--vault PATH] search QUERY [-n N] [--all]
+  sb [--vault PATH] eval CASES.jsonl   measure current FTS5 ranking (read-only)
   sb [--vault PATH] add "Title" [-t TYPE] [-g TAGS] [-r RELEVANCE] [-b BODY | --body-file FILE]
                       [--related PATH]... [--status draft] [--supersedes PATH] [--source URL]...
                       (TYPE ist frei per OKF §4.1; ueblich: observation/decision/insight/failure/reference)
   sb [--vault PATH] page concept|entity|reference|topic|playbook "Title" --body-file FILE
                        [--source URL]... [--related PATH]...
                        [--expect-sha256 HASH --reason TEXT]  create/revise a canonical wiki page
-  sb [--vault PATH] capture "Title" --source URL --body-file FILE [--original FILE]
+  sb [--vault PATH] capture "Title" --source URL --body-file FILE [--original FILE] [--scope full|excerpt]
   sb [--vault PATH] verify PATH [--by ACTOR]   OKF-verified vermerken (Default human:$USER)
   sb [--vault PATH] idea "Text"       quick-capture as draft insight
   sb [--vault PATH] lint [--fix]      links, index/FTS drift + OKF/health report
@@ -116,12 +117,9 @@ def connect(vault: Path, target: Path | None = None) -> sqlite3.Connection:
 
 # ── concept parsing (tolerant frontmatter, no yaml dep) ─────────────────────
 
-def parse_note(path: Path, vault: Path) -> dict:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    m = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", text, re.S)
-    meta, body = (m.group(1), m.group(2)) if m else ("", text)
+def _frontmatter_fields(lines: list[str]) -> dict[str, str]:
     fields: dict[str, str] = {}
-    for line in meta.splitlines():
+    for line in lines:
         km = re.match(r"^(\w[\w-]*):\s*(.*)$", line.strip())
         if km:
             raw = km.group(2).strip()
@@ -132,6 +130,26 @@ def parse_note(path: Path, vault: Path) -> dict:
             if isinstance(parsed, list):
                 parsed = ", ".join(str(value) for value in parsed)
             fields[km.group(1)] = str(parsed)
+    return fields
+
+
+def _capture_fields(path: Path) -> dict[str, str]:
+    with path.open(encoding="utf-8", errors="replace") as stream:
+        if stream.readline().strip() != "---":
+            return {}
+        header = []
+        for line in stream:
+            if line.strip() == "---":
+                return _frontmatter_fields(header)
+            header.append(line)
+    return {}
+
+
+def parse_note(path: Path, vault: Path) -> dict:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    m = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", text, re.S)
+    meta, body = (m.group(1), m.group(2)) if m else ("", text)
+    fields = _frontmatter_fields(meta.splitlines())
     title_m = re.search(r"^#\s+(.+)$", body, re.M)
     return {
         "path": str(path.relative_to(vault)),
@@ -142,6 +160,10 @@ def parse_note(path: Path, vault: Path) -> dict:
         "status": fields.get("status") or "stable",
         "stale_after": fields.get("stale_after", ""),
         "verified": _verified_field(fields, meta),
+        "capture_scope": fields.get("capture_scope", "unknown"),
+        "source_uri": fields.get("source_uri", ""),
+        "content_sha256": fields.get("content_sha256", ""),
+        "original_sha256": fields.get("original_sha256", ""),
         "body": body.strip(),
     }
 
@@ -374,6 +396,16 @@ def cmd_index(vault: Path) -> int:
     return 0
 
 
+def ranked_rows(con: sqlite3.Connection, query: str, limit: int, show_all: bool) -> list[tuple]:
+    # One ranking/filter path for interactive search and evaluation.
+    return con.execute(
+        "SELECT path, title, type, tags, relevance, status, stale_after, verified,"
+        " snippet(notes, 8, '>>', '<<', '…', 12)"
+        " FROM notes WHERE notes MATCH ? AND status != ? ORDER BY rank LIMIT ?",
+        (query, "" if show_all else "deprecated", limit),
+    ).fetchall()
+
+
 def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
     if limit < 1:
         sys.exit("[sb] --limit muss mindestens 1 sein")
@@ -382,16 +414,8 @@ def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
         print(f"[sb] Kein Index. Erst 'sb index' ausfuehren (oder rg -i {query!r} {vault}).")
         return 1
     con = sqlite3.connect(db)
-    # Deprecated-Filter in SQL (nicht limit*3 + Python-Filter: sonst silently < -n Treffer).
-    # show_all umgeht den Filter via Sentinel '' — status ist nie leer.
-    status_filter = "" if show_all else "deprecated"
     try:
-        rows = con.execute(
-            "SELECT path, title, type, tags, relevance, status, stale_after, verified,"
-            " snippet(notes, 8, '>>', '<<', '…', 12)"
-            " FROM notes WHERE notes MATCH ? AND status != ? ORDER BY rank LIMIT ?",
-            (query, status_filter, limit),
-        ).fetchall()
+        rows = ranked_rows(con, query, limit, show_all)
     except sqlite3.OperationalError as exc:
         con.close()
         sys.exit(f"[sb] Suchfehler ({exc}). Index veraltet? 'sb index' ausfuehren.")
@@ -417,6 +441,56 @@ def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
         print(f"[sb] Keine Treffer fuer {query!r}.{extra}")
         return 1
     con.close()
+    return 0
+
+
+def cmd_eval(vault: Path, cases_file: Path) -> int:
+    """Evaluate the current non-deprecated FTS ranking without modifying the vault."""
+    cases = []
+    try:
+        lines = cases_file.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        sys.exit(f"[sb] eval: cannot read cases: {exc}")
+    for line_no, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        try:
+            case = json.loads(line)
+        except json.JSONDecodeError as exc:
+            sys.exit(f"[sb] eval line {line_no}: invalid JSON: {exc}")
+        if not isinstance(case, dict) or not isinstance(case.get("q"), str) or not case["q"].strip():
+            sys.exit(f"[sb] eval line {line_no}: expected nonempty q string")
+        gold = case.get("gold")
+        if (not isinstance(gold, list) or not gold or any(
+                not isinstance(p, str) or not p.endswith(".md") or Path(p).is_absolute()
+                or ".." in Path(p).parts or Path(p).as_posix() != p for p in gold)):
+            sys.exit(f"[sb] eval line {line_no}: gold must be nonempty vault-relative Markdown paths")
+        cases.append((line_no, case["q"], set(gold)))
+    if not cases:
+        sys.exit("[sb] eval: no cases")
+    db = db_path(vault)
+    if not db.exists():
+        sys.exit("[sb] eval: no index; run 'sb index' first")
+    ranks = []
+    try:
+        con = sqlite3.connect(f"file:{urllib.parse.quote(str(db.resolve()))}?mode=ro", uri=True)
+        try:
+            for line_no, query, gold in cases:
+                try:
+                    paths = [row[0] for row in ranked_rows(con, query, 10, False)]
+                except sqlite3.OperationalError as exc:
+                    sys.exit(f"[sb] eval line {line_no}: search error: {exc}")
+                ranks.append(next((i for i, path in enumerate(paths, 1) if path in gold), None))
+        finally:
+            con.close()
+    except sqlite3.Error as exc:
+        sys.exit(f"[sb] eval: cannot read index: {exc}")
+    for (line_no, query, _), rank in zip(cases, ranks, strict=True):
+        print(f"[sb] eval line {line_no}: {'rank=' + str(rank) if rank else 'MISS'} q={json.dumps(query, ensure_ascii=False)}")
+    score = " ".join(f"recall@{k}={sum(rank is not None and rank <= k for rank in ranks) / len(ranks):.1%}"
+                     for k in (1, 3, 5, 10))
+    mrr = sum(1 / rank for rank in ranks if rank is not None) / len(ranks)
+    print(f"[sb] eval: {len(ranks)} cases, {score} MRR@10={mrr:.3f}")
     return 0
 
 
@@ -736,8 +810,16 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
     return cmd_index(vault)
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
-    """Keep the supplied source text as a new, append-only Markdown snapshot."""
+    """Keep supplied source text as an immutable, repeat-safe Markdown snapshot."""
     vault = vault.resolve()
     ensure_bundle(vault)
     title = args.title.strip()
@@ -745,10 +827,6 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
         sys.exit("[sb] capture title must be a single nonempty line")
     base = f"{dt.date.today().isoformat()}-{slugify(title)}"
     snapshot = vault / "sources" / f"{base}.md"
-    number = 2
-    while snapshot.exists():
-        snapshot = vault / "sources" / f"{base}-{number}.md"
-        number += 1
     original = Path(args.original).expanduser() if args.original else None
     if original is not None and not original.is_file():
         sys.exit(f"[sb] capture: original file not found: {original}")
@@ -757,10 +835,37 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
         if not body.strip():
             raise ValueError("source text must not be empty")
         link = source_link(vault, snapshot, args.source, 1)
+        original_hash = file_sha256(original) if original is not None else ""
     except (OSError, ValueError) as exc:
         sys.exit(f"[sb] capture: {exc}")
+    body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    previous = None
+    for path in (vault / "sources").glob("*.md"):
+        if path.name in RESERVED:
+            continue
+        meta = _capture_fields(path)
+        if (meta.get("source_uri") != args.source or meta.get("capture_scope") not in ("full", "excerpt")
+                or not re.fullmatch(r"[0-9a-f]{64}", meta.get("content_sha256", ""))):
+            continue  # Ignore unrelated and unmarked or malformed captures.
+        if previous is None or path.stat().st_mtime_ns > previous.stat().st_mtime_ns:
+            previous = path
+        if (meta["content_sha256"] == body_hash and meta["capture_scope"] == args.scope
+                and meta.get("original_sha256", "") == original_hash):
+            raw_dir = vault / "raw" / path.stem
+            if original is None or (raw_dir.is_dir() and any(
+                    file_sha256(copy) == original_hash for copy in raw_dir.iterdir() if copy.is_file())):
+                print(f"[sb] existing capture: {path}")
+                return 0
+    number = 2
+    while snapshot.exists():
+        snapshot = vault / "sources" / f"{base}-{number}.md"
+        number += 1
     frontmatter = (f'type: "source"\nstatus: draft\n'
                    f'generated: {{ by: {ACTOR}, at: {now_utc()} }}\n'
+                   f'capture_scope: {json.dumps(args.scope)}\n'
+                   f'source_uri: {json.dumps(args.source, ensure_ascii=False)}\n'
+                   f'content_sha256: {body_hash}\n'
+                   f'original_sha256: {original_hash}\n'
                    f'sources:\n  - {{ resource: {json.dumps(args.source, ensure_ascii=False)} }}\n')
     original_links = [f"- {link}"]
     if original is not None:
@@ -772,7 +877,14 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
         except OSError as exc:
             sys.exit(f"[sb] capture: cannot preserve original without overwriting: {exc}")
         original_links.append(f"- {markdown_link(snapshot, copy, 'Preserved original')}")
-    snapshot.write_text(f"---\n{frontmatter}---\n\n# {title}\n\n{body.rstrip()}\n\n## Original\n\n" + "\n".join(original_links) + "\n", encoding="utf-8")
+    sections = [f"# {title}", body, "## Original", "\n".join(original_links)]
+    if previous is not None:
+        sections.extend(("## Previous capture", f"- {markdown_link(snapshot, previous, parse_note(previous, vault)['title'])}"))
+    try:
+        with snapshot.open("x", encoding="utf-8") as output:
+            output.write(f"---\n{frontmatter}---\n\n" + "\n\n".join(sections) + "\n")
+    except OSError as exc:
+        sys.exit(f"[sb] capture: cannot create snapshot: {exc}")
     write_log(vault, "Source capture", f"`{snapshot.relative_to(vault)}` from {args.source}")
     print(f"[sb] captured: {snapshot}")
     return cmd_index(vault)
@@ -1405,6 +1517,79 @@ def cmd_selftest() -> int:
              "--original", str(original), "--body-file", "-"],
             input="Excerpt.", capture_output=True, text=True,
         )
+        capture_vault = Path(td) / "capture-vault"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(capture_vault)
+        capture_original = Path(td) / "capture-original.txt"
+        capture_original.write_bytes(b"original revision one")
+        capture_url = "https://example.org/evidence"
+
+        def capture_case(body: str, *, title: str = "Evidence", source: str = capture_url,
+                         scope: str = "full", body_file: str = "-") -> subprocess.CompletedProcess:
+            return subprocess.run(
+                [sys.executable, str(Path(__file__).resolve()), "--vault", str(capture_vault),
+                 "capture", title, "--source", source, "--body-file", body_file,
+                 "--original", str(capture_original), "--scope", scope],
+                input=body if body_file == "-" else None, capture_output=True, text=True,
+            )
+
+        first_body = "first source text\n\n"
+        captured_first = capture_case(first_body)
+        capture_first_path = capture_vault / "sources" / f"{dt.date.today().isoformat()}-evidence.md"
+        capture_first_bytes = capture_first_path.read_bytes() if capture_first_path.exists() else b""
+        capture_log_before = (capture_vault / "log.md").read_bytes()
+        capture_index_before = (capture_vault / "index.db").stat().st_ino
+        captured_repeat = capture_case(first_body, title="Another title")
+        capture_repeat_unchanged = (
+            (capture_vault / "log.md").read_bytes() == capture_log_before
+            and (capture_vault / "index.db").stat().st_ino == capture_index_before
+            and len([p for p in (capture_vault / "sources").glob("*.md") if p.name not in RESERVED]) == 1
+        )
+        captured_changed = capture_case("second source text")
+        capture_second_path = capture_vault / "sources" / f"{dt.date.today().isoformat()}-evidence-2.md"
+        captured_other_uri = capture_case(first_body, source="https://other.example/evidence")
+        captured_excerpt = capture_case(first_body, scope="excerpt")
+        capture_original.write_bytes(b"original revision two")
+        captured_new_original = capture_case(first_body)
+        captured_bad_body = capture_case("", body_file=str(Path(td) / "no-such-body.md"))
+        capture_pages = [p for p in (capture_vault / "sources").glob("*.md") if p.name not in RESERVED]
+        legacy_capture = capture_vault / "sources" / "legacy.md"
+        legacy_capture.write_text("---\ntype: source\nstatus: draft\n---\n\n# Legacy\n\nOld capture.\n", encoding="utf-8")
+        eval_vault = Path(td) / "eval-vault"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(eval_vault)
+        alpha = eval_vault / "notes" / "alpha.md"
+        beta = eval_vault / "notes" / "beta.md"
+        retired = eval_vault / "notes" / "retired.md"
+        alpha.write_text("---\ntype: reference\n---\n# Alpha\n\nfirsttoken cobalt cobalt cobalt cobalt cobalt.\n", encoding="utf-8")
+        beta.write_text("---\ntype: reference\n---\n# Beta\n\ncobalt.\n", encoding="utf-8")
+        retired.write_text("---\ntype: reference\nstatus: deprecated\n---\n# Retired\n\nretiredtoken.\n", encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_index(eval_vault)
+        eval_cases = Path(td) / "cases.jsonl"
+        eval_cases.write_text("\n".join(json.dumps(case) for case in (
+            {"q": "firsttoken", "gold": ["notes/alpha.md"]},
+            {"q": "cobalt", "gold": ["notes/beta.md"]},
+            {"q": "missingtoken", "gold": ["notes/alpha.md"]},
+            {"q": "retiredtoken", "gold": ["notes/retired.md"]},
+        )) + "\n", encoding="utf-8")
+        eval_before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in
+                       (alpha, beta, retired, eval_vault / "index.md", eval_vault / "log.md", eval_vault / "index.db")}
+        eval_proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(eval_vault),
+             "eval", str(eval_cases)], capture_output=True, text=True,
+        )
+        eval_search = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(eval_vault),
+             "search", "cobalt", "-n", "10"], capture_output=True, text=True,
+        )
+        eval_unchanged = all((p.read_bytes(), p.stat().st_mtime_ns) == old for p, old in eval_before.items())
+        bad_cases = Path(td) / "bad-cases.jsonl"
+        bad_cases.write_text('{"q":"cobalt","gold":[]}\n', encoding="utf-8")
+        eval_bad = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(eval_vault),
+             "eval", str(bad_cases)], capture_output=True, text=True,
+        )
         page_command = [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
                         "page", "concept", "Research agents"]
         page_create = subprocess.run(
@@ -1490,6 +1675,34 @@ def cmd_selftest() -> int:
                 and b"type: \"source\"" in original_capture
                 and b"Measured: bounded tasks succeed." in original_capture
                 and captured.read_bytes() == original_capture,
+            "capture is repeat-safe and retains honest source revisions": captured_first.returncode == 0
+                and captured_repeat.returncode == 0 and captured_changed.returncode == 0
+                and captured_other_uri.returncode == 0 and captured_excerpt.returncode == 0
+                and captured_new_original.returncode == 0 and captured_bad_body.returncode != 0
+                and capture_repeat_unchanged and len(capture_pages) == 5
+                and str(capture_first_path) in captured_repeat.stdout
+                and capture_first_path.read_bytes() == capture_first_bytes
+                and b'capture_scope: "full"' in capture_first_bytes
+                and hashlib.sha256(first_body.encode("utf-8")).hexdigest().encode() in capture_first_bytes
+                and b"first source text\n\n\n\n## Original" in capture_first_bytes
+                and b'capture_scope: "excerpt"' in b"".join(p.read_bytes() for p in capture_pages)
+                and capture_second_path.exists()
+                and any(target == capture_first_path.name for _, target in md_links(
+                    capture_second_path.read_text(encoding="utf-8")))
+                and (capture_vault / "raw" / capture_first_path.stem / capture_original.name).read_bytes()
+                    == b"original revision one"
+                and parse_note(legacy_capture, capture_vault)["capture_scope"] == "unknown",
+            "eval measures real search ranking without writes": eval_proc.returncode == 0
+                and eval_search.returncode == 0
+                and [line for line in eval_search.stdout.splitlines() if line.startswith(str(eval_vault))]
+                    == [str(alpha), str(beta)]
+                and eval_unchanged and eval_proc.stdout.count("rank=1") == 1
+                and eval_proc.stdout.count("rank=2") == 1
+                and "recall@1=25.0%" in eval_proc.stdout
+                and "recall@10=50.0%" in eval_proc.stdout
+                and "MRR@10=0.375" in eval_proc.stdout,
+            "eval rejects empty gold instead of scoring a miss": eval_bad.returncode != 0
+                and "gold" in eval_bad.stderr,
             "wiki concept created with source": page_create.returncode == 0
                 and b"type: \"concept\"" in first_page and b"status: draft" in first_page
                 and b"field-notes.md" in first_page,
@@ -1607,7 +1820,7 @@ def cmd_selftest() -> int:
         failed = [k for k, v in checks.items() if not v]
         if failed:
             sys.exit(f"[sb] selftest FEHLGESCHLAGEN: {failed}\n{out}")
-    print(f"[sb] selftest OK ({len(checks)} Checks: init/add/idea/verify/freetyp/cli/source/supersede/search/lint/orphans/dedup/log)")
+    print(f"[sb] selftest OK ({len(checks)} Checks: init/add/idea/verify/cli/capture/supersede/search/eval/lint/orphans/dedup/log)")
     return 0
 
 
@@ -1622,6 +1835,8 @@ def main() -> int:
     sp.add_argument("query")
     sp.add_argument("-n", "--limit", type=int, default=5)
     sp.add_argument("--all", action="store_true", help="auch deprecated zeigen")
+    ap_eval = sub.add_parser("eval", help="read-only recall@k and MRR@10 for current FTS ranking")
+    ap_eval.add_argument("cases", help="JSONL with q and gold vault-relative Markdown paths")
     ap_add = sub.add_parser("add", help="formatiertes OKF-Konzept mit Quellen/Verknuepfungen anlegen")
     ap_add.add_argument("title")
     ap_add.add_argument("-t", "--type", default="observation",
@@ -1646,11 +1861,13 @@ def main() -> int:
     ap_page.add_argument("--status", choices=("draft", "stable"), default="draft")
     ap_page.add_argument("--expect-sha256", default="", help="required to revise an existing page")
     ap_page.add_argument("--reason", default="", help="required change reason for revisions")
-    ap_capture = sub.add_parser("capture", help="source text as a new, never overwritten Markdown snapshot")
+    ap_capture = sub.add_parser("capture", help="repeat-safe source snapshot; never overwrite older captures")
     ap_capture.add_argument("title")
     ap_capture.add_argument("--source", required=True, help="original URL or existing file:// path")
     ap_capture.add_argument("--body-file", required=True, help="captured source text, '-' reads stdin")
     ap_capture.add_argument("--original", help="copy the original file unchanged into raw/")
+    ap_capture.add_argument("--scope", choices=("full", "excerpt"), default="excerpt",
+                            help="attested completeness of supplied text (default: excerpt)")
     ap_idea = sub.add_parser("idea", help="Idee als draft-insight festhalten")
     ap_idea.add_argument("text")
     ap_idea.add_argument("-g", "--tags", default="")
@@ -1676,6 +1893,7 @@ def main() -> int:
         "index": lambda: cmd_index(vault),
         "rebuild": lambda: cmd_index(vault),
         "search": lambda: cmd_search(vault, args.query, args.limit, args.all),
+        "eval": lambda: cmd_eval(vault, Path(args.cases).expanduser()),
         "add": lambda: cmd_add(vault, args),
         "page": lambda: cmd_page(vault, args),
         "capture": lambda: cmd_capture(vault, args),

@@ -38,6 +38,7 @@ Read `schema.md` before ingesting: it defines placement and evidence rules and i
 
 2. If there is no index or match, use `rg -il '<terms>' <vault>`. Read the 1–3 best matches and follow evidence links. No match is not a reason to stall.
 3. Treat `status: draft` as unreviewed, `status: deprecated` as historical (`search --all`), and expired `stale_after` as stale. A human `verified` stamp is stronger than an agent-generated statement. Do not silently treat a synthesized wiki page as its own independent source.
+4. For an answer about the vault, follow relevant pages to their original evidence. Cite the source beside each material claim, note draft/stale/unknown evidence and disagreements, and separate any general model knowledge from what the vault establishes. If the evidence does not support an answer, say so instead of guessing. Keep recall bounded to the relevant pages; do not inject vault content into every prompt.
 
 ## Integrate new knowledge
 
@@ -48,10 +49,10 @@ Read `schema.md` before ingesting: it defines placement and evidence rules and i
    ```bash
    uv run <skill-dir>/scripts/sb.py capture "Source title" \
      --source https://example.org/paper --body-file /path/to/extracted-source.md \
-     --original /path/to/original.pdf
+     --scope excerpt --original /path/to/original.pdf
    ```
 
-   `capture` always creates a new source page; it does not modify older captures. A `sources/` page records what that source says, not what the wiki currently believes. A `--source` URL alone records a pointer, not a local copy of its contents.
+   `capture` returns an existing source page for the same exact source URI, supplied text, scope, and optional original bytes; it does not recopy, log, or reindex a duplicate. Changed inputs create a new page linked to the preceding capture; older snapshots are not modified. It stores SHA-256 identities for supplied text and original-file bytes, not a fetched or verified completeness claim. The default `--scope excerpt` is conservative; use `--scope full` only when you know the supplied text is complete. A `sources/` page records what that source says, not what the wiki currently believes. A `--source` URL alone records a pointer, not a local copy of its contents. The CLI cannot prove completeness, and old captures without a scope label remain unknown. For an unread URL, create a clearly marked draft pointer through the existing note workflow, not an empty source capture or a claim that the page was read.
 
 2. **Find affected pages.** Search titles, aliases in prose, and claims. Route concrete things to `entities/`, abstract ideas to `concepts/`, current factual lookups to `references/`, thematic synthesis to `topics/`, and repeatable procedures to `playbooks/`. `sources/` holds what a particular source said; `references/` holds the current cross-source lookup. A time-limited investigation or requested single research draft remains a `notes/` entry. One new source does not automatically warrant a topic. Do not create `syntheses/` as a second name for `topics/`, or `skills/` as a second name for `playbooks/`.
 3. **Compare evidence.** For each relevant claim, classify the new material as supporting, narrowing, contradicting, or unrelated. Date time-sensitive observations. Distinguish the source's assertion from independently established fact; name opposing evidence and unresolved questions. Keep source URLs or links adjacent to substantive claims in the page body, not just in frontmatter or a `Sources` footer.
@@ -67,7 +68,7 @@ Read `schema.md` before ingesting: it defines placement and evidence rules and i
    ```
 
    On an **existing** page, calculate the current SHA-256 (`shasum -a 256 <page>` on macOS), review its full content, then pass `--expect-sha256 <hash> --reason "what evidence changed"`. A mismatch aborts instead of overwriting another edit. The CLI archives the exact previous bytes under `.history/` and records the revision in `log.md`; the new page is `draft` by default and does not inherit the old verification stamp. Existing factual atomic notes are different: supersede rather than rewrite their claims.
-5. **Verify navigation and evidence.** `sb index` after manual edits; `sb lint` checks links, generated index/FTS drift, untyped concepts, drafts and stale notes. Inspect changed pages and their cited sources; `lint` checks structure, not whether a citation proves a sentence. `lint --fix` only rebuilds generated indexes/FTS. Update a small human-curated root pointer when useful, outside the generated block.
+5. **Verify navigation and evidence.** `sb index` after manual edits; `sb lint` checks links, generated index/FTS drift, untyped concepts, drafts and stale notes. Inspect changed pages and their cited sources; `lint` checks structure, not whether a citation proves a sentence. `lint --fix` only rebuilds generated indexes/FTS. Update a small human-curated root pointer when useful, outside the generated block. Report the captured source, pages created or revised, meaningful links, conflicts, skipped material and open gaps in the response; do not create a separate report file.
 
 ## Quick capture and corrections
 
@@ -85,7 +86,17 @@ uv run <skill-dir>/scripts/sb.py add "Research: <topic>" -t reference \
 
 ## Ongoing maintenance
 
-Run `sb lint`, `sb orphans`, `sb dedup`, `sb stats` when needed. Check for draft/stale claims, unsourced central assertions, source captures not integrated into a wiki page, missing backlinks, conflicting claims, and topics whose synthesis is no longer supported. Suggest content changes with their evidence; do not silently change disputed facts. Keep search and navigation deterministic by running `sb index` after hand edits. `codegraph` remains an optional generated `topics/code-graph.md` artifact.
+Run `sb lint`, `sb orphans`, `sb dedup`, `sb stats` when needed. Check for draft/stale claims, unsourced central assertions, source captures not integrated into a wiki page, missing backlinks, conflicting claims, and topics whose synthesis is no longer supported. Recheck changeable facts (prices, APIs, ownership, project status) against their sources when relevant; keep stable concepts alone. Date the observation or point to the live system rather than guessing an expiry; unavailable evidence is not proof a claim is false. Suggest content changes with their evidence; do not silently change disputed facts. Keep search and navigation deterministic by running `sb index` after hand edits. `codegraph` remains an optional generated `topics/code-graph.md` artifact.
+
+## Measure retrieval
+
+For a few **real** questions you expect to ask, keep a JSONL file outside the vault with one `q` and at least one acceptable vault-relative `gold` Markdown path per line:
+
+```jsonl
+{"q":"research agents","gold":["concepts/research-agents.md"]}
+```
+
+Use the same FTS5-compatible terms as `search`. Run `sb index` after hand edits, then `uv run <skill-dir>/scripts/sb.py eval /path/to/cases.jsonl` (add `--vault knowledge` before `eval` for a project bundle). The read-only command reports each case's first acceptable gold rank, recall@1/3/5/10 (any acceptable page counts), and MRR@10 using the same FTS5 ranking and deprecated filter as `search`. A miss suggests inspecting the query, sources, and index; these scores measure retrieval of chosen pages, **not** whether their claims are correct. Temporary selftest fixtures verify the arithmetic, not real-world retrieval quality. Do not create cases, reindex a real vault, or claim improved search quality without the owner's approval.
 
 ## Scope and setup
 
