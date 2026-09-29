@@ -520,7 +520,7 @@
       "source": "SKILL.md",
       "repository": "https://github.com/blader/humanizer",
       "branch": "main",
-      "commit": "e2e92e7b4b8229253ed5c8e81dc65463fdeddda5",
+      "commit": "225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8",
       "license": "MIT",
       "copyright": "Copyright (c) 2025 Siqi Chen",
       "mode": "adapted"
@@ -4502,7 +4502,7 @@
       "source": "skills/marimo-pair/reference/gotchas.md",
       "repository": "https://github.com/marimo-team/marimo-pair",
       "branch": "main",
-      "commit": "de98ee4e268df1b44fa777f360aa58e241a7a635",
+      "commit": "2f1d7fffa50607dc9d8660cb931f4470707f8697",
       "license": "Apache-2.0",
       "copyright": "marimo contributors",
       "mode": "adapted"
@@ -4512,7 +4512,7 @@
       "source": "skills/marimo-pair/reference/notebook-improvements.md",
       "repository": "https://github.com/marimo-team/marimo-pair",
       "branch": "main",
-      "commit": "de98ee4e268df1b44fa777f360aa58e241a7a635",
+      "commit": "2f1d7fffa50607dc9d8660cb931f4470707f8697",
       "license": "Apache-2.0",
       "copyright": "marimo contributors",
       "mode": "adapted"
@@ -4642,7 +4642,7 @@
       "source": "skills/marimo-pair/SKILL.md",
       "repository": "https://github.com/marimo-team/marimo-pair",
       "branch": "main",
-      "commit": "de98ee4e268df1b44fa777f360aa58e241a7a635",
+      "commit": "2f1d7fffa50607dc9d8660cb931f4470707f8697",
       "license": "Apache-2.0",
       "copyright": "marimo contributors",
       "mode": "adapted"
@@ -4905,9 +4905,7 @@
       "commit": "3cca18b368ae95cdbdebbff572ccafa662551015",
       "license": "MIT",
       "copyright": "Copyright (c) 2026 Matt Pocock",
-      "mode": "vendored",
-      "upstream_sha256": "944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0",
-      "local_sha256": "944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0"
+      "mode": "adapted"
     },
     {
       "local": "skills/workflow/domain-modeling/agents/openai.yaml",

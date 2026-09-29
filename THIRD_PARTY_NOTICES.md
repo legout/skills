@@ -38,7 +38,7 @@ Vendored or adapted material appears in `handoff`, `effective-agent-skills`, `pi
 
 Source: [mattpocock/skills](https://github.com/mattpocock/skills), pinned to [`3cca18b`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015).
 
-Vendored or adapted material appears in `agent-md-refactor`, `domain-modeling`, `grilling`, `orchestrate-implementation`, `prototype-question`, `research`, `review-codebase-architecture`, `shape-design`, and `systematic-debugging`. The visual-report material formerly packaged separately is now a reference within `review-codebase-architecture`. The `domain-modeling` context-format reference is adapted locally (tracked as `adapted` in `sources.json`) to resolve structure from configured context ownership before any glossary creation; the upstream pin and license are unchanged.
+Vendored or adapted material appears in `agent-md-refactor`, `domain-modeling`, `grilling`, `orchestrate-implementation`, `prototype-question`, `research`, `review-codebase-architecture`, `shape-design`, and `systematic-debugging`. The visual-report material formerly packaged separately is now a reference within `review-codebase-architecture`. The `domain-modeling` context-format and ADR-format references are adapted locally (tracked as `adapted` in `sources.json`) to follow configured context ownership and the project's ADR directory respectively; the upstream pin and license are unchanged.
 
 > MIT License
 >
@@ -146,11 +146,11 @@ These entries are citations only. No Herdr or GPL-licensed cmux source text is r
 The following packages were copied from the pinned revisions listed in `sources.json`. Their support files remain alongside each `SKILL.md`.
 
 - `chrome-cdp` from [pasky/chrome-cdp-skill](https://github.com/pasky/chrome-cdp-skill/tree/ffea76a24b0471663ddd9d9f24335bbc442b6266), commit `ffea76a24b0471663ddd9d9f24335bbc442b6266`. MIT; Copyright (c) 2026 pasky.
-- `humanizer` from [blader/humanizer](https://github.com/blader/humanizer/tree/e2e92e7b4b8229253ed5c8e81dc65463fdeddda5), commit `e2e92e7b4b8229253ed5c8e81dc65463fdeddda5`. MIT; Copyright (c) 2025 Siqi Chen.
+- `humanizer` from [blader/humanizer](https://github.com/blader/humanizer/tree/e2e92e7b4b8229253ed5c8e81dc65463fdeddda5), initially pinned at `e2e92e7b4b8229253ed5c8e81dc65463fdeddda5`; its `SKILL.md` also adapts [commit `225a6f3`](https://github.com/blader/humanizer/tree/225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8). MIT; Copyright (c) 2025 Siqi Chen.
 - `last30days` from [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill/tree/56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20), commit `56ba5ace27e4697aedc60aa0b1e1bfdcd592ff20`. MIT; Copyright (c) 2026 Matt Van Horn.
 - `archify` from [tt-a1i/archify](https://github.com/tt-a1i/archify/tree/0b636d9f2f410ce7c617dbfd8818b775d42e9d4d), commit `0b636d9f2f410ce7c617dbfd8818b775d42e9d4d`. MIT; Copyright (c) 2026 tt-a1i (Archify).
 - `drawio-skill` and `excalidraw` from [Agents365-ai/365-skills](https://github.com/Agents365-ai/365-skills/tree/08f4791bbe21f42ef8e4013c7bd15c92347b916f), commit `08f4791bbe21f42ef8e4013c7bd15c92347b916f`. Their skill metadata declares MIT; copyright attribution is Agents365-ai.
-- `marimo-pair` from [marimo-team/marimo-pair](https://github.com/marimo-team/marimo-pair/tree/de98ee4e268df1b44fa777f360aa58e241a7a635), commit `de98ee4e268df1b44fa777f360aa58e241a7a635`, and `marimo-notebook` from [marimo-team/skills](https://github.com/marimo-team/skills/tree/6454470960d3cd57151aaeffb1176dd55f598b18), commit `6454470960d3cd57151aaeffb1176dd55f598b18`. Apache-2.0; marimo contributors.
+- `marimo-pair` from [marimo-team/marimo-pair](https://github.com/marimo-team/marimo-pair/tree/de98ee4e268df1b44fa777f360aa58e241a7a635), initially pinned at `de98ee4e268df1b44fa777f360aa58e241a7a635`; three references also adapt [commit `2f1d7ff`](https://github.com/marimo-team/marimo-pair/tree/2f1d7fffa50607dc9d8660cb931f4470707f8697). `marimo-notebook` comes from [marimo-team/skills](https://github.com/marimo-team/skills/tree/6454470960d3cd57151aaeffb1176dd55f598b18), commit `6454470960d3cd57151aaeffb1176dd55f598b18`. Apache-2.0; marimo contributors.
 
 `deslop`, `workflow-from-chats`, and part of `humanizer`'s pattern catalog are adapted from the MIT-licensed Cursor plugins repository, [cursor/plugins](https://github.com/cursor/plugins), pinned to commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (Copyright (c) 2026 Cursor).
 
