@@ -8,6 +8,8 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge init
 
 `init` creates missing folders, `schema.md` and indexes, and prints a project AGENTS.md hook. It does not rewrite an existing owner schema or migrate existing documents. Global commands omit `--vault knowledge` to honor `SECOND_BRAIN_DIR` or `~/second-brain/`. Do not silently create global knowledge when a requested project bundle is missing.
 
+New bundles use `_raw/` for explicitly preserved acquired originals; existing local sources are referenced in place, not copied. Legacy `raw/` directories remain unchanged. Both archives, including Markdown assets and their subdirectories, are excluded from knowledge indexes; initialization and rebuilding do not migrate originals or rewrite old archive links.
+
 `index.md` contains navigation, `log.md` records changes and `.history/` preserves prior maintained-page bytes. Keep human-curated text outside generated index blocks; prefer current maintained pages as entry points. `index.db` is generated FTS5 and can be rebuilt from Markdown.
 
 New atomic notes use `notes/YYYY-MM-DD/slug.md`. Indexing creates navigation for day folders and continues to include legacy flat notes. Initialization and rebuilding do not relocate existing notes or change their links.

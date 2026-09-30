@@ -6,7 +6,7 @@ Use these patterns for normal persistence and when maintaining host-specific sho
 
 - **Remember a finding:** search first. Update the relevant maintained page when the finding changes reusable knowledge. Add a dated note only when a distinct decision, event or original observation deserves its own history. A confirmation of unchanged knowledge needs neither a duplicate note nor a cosmetic page revision.
 - **Save a session:** extract at most 3–5 durable outcomes, not a turn-by-turn diary. Reuse existing captures. Compile related outcomes into the affected pages; several notes may support one page. Leave genuine open questions as `idea` drafts.
-- **Ingest a source:** read it with the appropriate document/web tool, preserve a labeled capture and original when applicable, compare against the wiki, then compile supported findings. One source does not automatically require a new topic or a page in every folder.
+- **Ingest a source:** read it with the appropriate document/web tool, compare against the wiki, then compile supported findings. Existing files/directories remain in place: keep original URIs, hashes and dates, with selective source excerpts/summaries when useful, not an archive copy per file. Preserve an acquired attachment/download in `_raw/` only when it needs a managed permanent home, explicitly using `--original` plus `--archive-original`. One source does not automatically require a new topic or a page in every folder.
 - **Compile existing captures:** read current and superseded versions as evidence/history, identify the current supported claims and update their owning pages. Cite original evidence; do not treat another agent's synthesis as independent corroboration.
 - **Explore connections:** propose evidence-grounded links, possible topics or gaps. Ask for approval where the exploration contract requires it; do not equate a proposed connection with confirmed knowledge.
 - **Capture only / one research draft:** write only the requested capture and state the integration deferral. Open questions are not established facts. **Read-only lint** stays read-only and performs no synthesis.
@@ -54,6 +54,19 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge page reference "Data schema" 
 ```
 
 Retain the full existing source/related set alongside new evidence. Keep uncertainty and disagreements visible; `page` defaults to `draft`. Compilation is not verification or automatic promotion to `stable`.
+
+## Record project origin without changing scope
+
+For a transferable finding from a project without its own bundle, keep the global folder schema and supply its known ID explicitly:
+
+```bash
+uv run <skill-dir>/scripts/sb.py add "Reusable finding" --origin-project featherbi \
+  --body-file /path/to/finding.md
+uv run <skill-dir>/scripts/sb.py page concept "Reusable concept" --origin-project featherbi \
+  --body-file /path/to/complete-concept.md --related notes/YYYY-MM-DD/existing-evidence.md
+```
+
+These are global commands, not a fallback for project-only facts. The same flag works with `--vault knowledge`, `capture` and `idea`. Repeat it for several contributing projects; duplicates are removed. On revisions, `page` retains existing origins even if the flag is omitted. Add a new project only when its evidence contributes substantive knowledge, not merely because the edit happened there. Keep normal hash/reason safeguards and inline citations.
 
 ## Finish at a meaningful boundary
 

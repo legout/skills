@@ -9,7 +9,7 @@ separate materialized views; `sb index` rebuilds both, and index.db contains FTS
 OKF v0.2 mapping:
   notes/, sources/, concepts/, entities/, references/, topics/, playbooks/ -> OKF concepts
   personal/**/*.md         -> handwritten source documents (type optional)
-  raw/**                  -> original source files, not indexed as concepts
+  _raw/**, legacy raw/**  -> acquired original assets, not indexed as concepts
   index.md / log.md / schema.md -> navigation, history and owner conventions, not FTS
   type: <value>            -> OKF type (free-form, not centrally registered)
   status/stale_after/verified/generated/sources -> OKF lifecycle/trust/provenance
@@ -28,7 +28,8 @@ Usage:
   sb [--vault PATH] page concept|entity|reference|topic|playbook "Title" --body-file FILE
                        [--source URL]... [--related PATH]...
                        [--expect-sha256 HASH --reason TEXT]  create/revise a canonical wiki page
-  sb [--vault PATH] capture "Title" --source URL --body-file FILE [--original FILE] [--scope full|excerpt]
+  sb [--vault PATH] capture "Title" --source URL --body-file FILE [--original FILE]
+                             [--archive-original] [--scope full|excerpt]
   sb [--vault PATH] verify PATH [--by ACTOR]   record OKF verification (default human:$USER)
   sb [--vault PATH] idea "Text"       quick-capture as draft insight
   sb [--vault PATH] lint [--fix]      links, index/FTS drift + OKF/health report
@@ -119,10 +120,18 @@ def connect(vault: Path, target: Path | None = None) -> sqlite3.Connection:
 
 def _frontmatter_fields(lines: list[str]) -> dict[str, str]:
     fields: dict[str, str] = {}
-    for line in lines:
+    for index, line in enumerate(lines):
         km = re.match(r"^(\w[\w-]*):\s*(.*)$", line.strip())
         if km:
             raw = km.group(2).strip()
+            if km.group(1) == "origin_projects" and not raw:
+                items = []
+                for entry in lines[index + 1:]:
+                    item = re.fullmatch(r"\s*-\s+(.+)", entry.rstrip("\r\n"))
+                    if not item:
+                        break
+                    items.append(item.group(1).strip().strip("'\""))
+                raw = json.dumps(items)
             try:
                 parsed = json.loads(raw)
             except json.JSONDecodeError:
@@ -179,9 +188,9 @@ def _verified_field(fields: dict[str, str], meta: str) -> str:
 
 
 def note_files(vault: Path) -> list[Path]:
-    # raw/ originals stay byte-for-byte intact, even if they happen to be Markdown.
+    # Current and legacy original archives stay intact and outside knowledge indexes.
     files = [p for p in vault.rglob("*.md") if p.name not in RESERVED
-             and p.relative_to(vault).parts[0] not in ("raw", ".history")]
+             and p.relative_to(vault).parts[0] not in ("_raw", "raw", ".history")]
     return sorted(files)
 
 
@@ -533,12 +542,15 @@ do not replace this file. Read it before ingesting or revising content.
 
 ## Sources and history
 
-- `raw/`: unchanged originals, including binary assets. `sb capture --original`
-  copies them here; read the source before deriving wiki claims. Originals are
-  not indexed as concepts.
+- `_raw/`: originals newly received as attachments or downloads that need a
+  managed permanent home. Use `--original` plus `--archive-original` to preserve
+  them here. Existing local files/directories stay
+  at their original paths; do not archive a duplicate. Reuse known originals.
+  Legacy `raw/` remains supported without migration. Both archives are excluded
+  from knowledge indexes.
 - `personal/`: owner-authored original notes; never change them during ingestion.
 - `sources/`: dated, append-only source text or explicitly labeled excerpts,
-  with the original URI and, when available, a link to `raw/`.
+  with the original URI and, when applicable, a link to a preserved original.
 - `notes/YYYY-MM-DD/slug.md`: new atomic observations, decisions, failures and
   research drafts, grouped by local creation day. Leave legacy flat notes in
   place. Correct factual claims by supersession, not silent rewriting.
@@ -559,6 +571,18 @@ claims inline. Use `sb page` with a complete body for maintained pages; revision
 require the current hash and a reason. A draft is not verified knowledge.
 `index.md` is navigation, `log.md` is change history, `.history/` preserves prior
 page bytes, and `index.db` is a rebuildable search index.
+
+## Project provenance
+
+Use `origin_projects: ["project-id"]` for the projects where knowledge arose,
+not where it applies. Supply known stable lowercase IDs with repeatable
+`--origin-project` on `add`, `idea`, `capture` and `page`; never use local paths
+or URLs. Tags remain topical. A maintained page preserves existing origins
+and merges explicitly supplied origins from evidence that contributed to its
+claims, not merely from the current editing project. Capture provenance is
+immutable; different origin sets create linked snapshots. Do not create a
+parallel per-project folder schema or bulk-retag existing pages. Provenance
+never changes project/global vault routing.
 
 ## Capture and compilation
 
@@ -601,7 +625,7 @@ def ensure_bundle(vault: Path) -> bool:
     for folder in PAGE_FOLDERS.values():
         (vault / folder).mkdir(exist_ok=True)
     (vault / "personal").mkdir(exist_ok=True)
-    (vault / "raw").mkdir(exist_ok=True)
+    (vault / "_raw").mkdir(exist_ok=True)
     schema = vault / "schema.md"
     if not schema.exists():
         schema.write_text(DEFAULT_SCHEMA, encoding="utf-8")
@@ -671,6 +695,17 @@ def source_link(vault: Path, note: Path, source: str, number: int) -> str:
     raise ValueError(f"[sb] --source local file must exist inside the bundle: {source}")
 
 
+def project_origins(args: argparse.Namespace, existing: str = "") -> list[str]:
+    """Explicit provenance only; never infer scope or project identity from cwd."""
+    projects = list(dict.fromkeys(
+        [p.strip() for p in existing.split(",") if p.strip()]
+        + list(getattr(args, "origin_project", []) or [])
+    ))
+    if any(not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", p) for p in projects):
+        sys.exit("[sb] --origin-project must be a stable lowercase project ID, not a path or URL")
+    return projects
+
+
 def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     vault = vault.resolve()  # Normalize once; target links are resolved paths.
     ensure_bundle(vault)
@@ -691,6 +726,7 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
         note = daily_notes / f"{stem}-{n}.md"
         n += 1
     tags = [t.strip() for t in args.tags.split(",") if t.strip()]
+    origins = project_origins(args)
     sources = [url.strip() for url in args.source if url.strip()]
     raw_body = getattr(args, "body", "")
     body_file = getattr(args, "body_file", None)
@@ -737,6 +773,8 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\nrelevance: {args.relevance}\n"
     if tags:
         fm += f"tags: {json.dumps(tags, ensure_ascii=False)}\n"
+    if origins:
+        fm += f"origin_projects: {json.dumps(origins)}\n"
     if sources:
         src = "\n".join(
             f"  - {{ resource: {json.dumps(url, ensure_ascii=False)} }}"
@@ -790,6 +828,7 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
             sys.exit(f"[sb] page exists; revision requires --expect-sha256 {digest} and --reason")
         if parse_note(page, vault)["title"] != title:
             sys.exit("[sb] slug collision: existing page has a different title")
+    origins = project_origins(args, _capture_fields(page).get("origin_projects", "") if old is not None else "")
     if not args.source and not args.related:
         sys.exit("[sb] page requires at least one --source or --related evidence path")
     try:
@@ -818,6 +857,8 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
     fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\n"
     if args.tags.strip():
         fm += f"tags: {json.dumps([t.strip() for t in args.tags.split(',') if t.strip()], ensure_ascii=False)}\n"
+    if origins:
+        fm += f"origin_projects: {json.dumps(origins)}\n"
     if args.source:
         fm += "sources:\n" + "".join(
             f"  - {{ resource: {json.dumps(source, ensure_ascii=False)} }}\n" for source in args.source
@@ -849,6 +890,23 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def preserved_original(vault: Path, capture: Path, fields: dict[str, str], checksum: str) -> Path | None:
+    """Find a verified current or legacy archived original without relocating it."""
+    candidates = []
+    if fields.get("preserved_original"):
+        candidates.append(vault / fields["preserved_original"])
+    for folder in ("_raw", "raw"):
+        directory = vault / folder / capture.stem
+        if directory.is_dir():
+            candidates.extend(directory.iterdir())
+    for candidate in dict.fromkeys(candidates):
+        resolved = candidate.resolve()
+        if (any(resolved.is_relative_to(vault / folder) for folder in ("_raw", "raw"))
+                and resolved.is_file() and file_sha256(resolved) == checksum):
+            return resolved
+    return None
+
+
 def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
     """Keep supplied source text as an immutable, repeat-safe Markdown snapshot."""
     vault = vault.resolve()
@@ -858,7 +916,14 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
         sys.exit("[sb] capture title must be a single nonempty line")
     base = f"{dt.date.today().isoformat()}-{slugify(title)}"
     snapshot = vault / "sources" / f"{base}.md"
-    original = Path(args.original).expanduser() if args.original else None
+    origins = project_origins(args)
+    archive_original = getattr(args, "archive_original", False)
+    if archive_original and not args.original:
+        sys.exit("[sb] capture: --archive-original requires --original")
+    original = Path(args.original).expanduser().resolve() if args.original else None
+    if original is None and args.source.startswith("file://"):
+        original = Path(urllib.parse.unquote(args.source[7:])).expanduser()
+        original = (original if original.is_absolute() else vault / original).resolve()
     if original is not None and not original.is_file():
         sys.exit(f"[sb] capture: original file not found: {original}")
     try:
@@ -871,20 +936,23 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
         sys.exit(f"[sb] capture: {exc}")
     body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
     previous = None
+    archived_copy = (original if archive_original and original is not None
+                     and any(original.is_relative_to(vault / folder) for folder in ("_raw", "raw")) else None)
     for path in (vault / "sources").glob("*.md"):
         if path.name in RESERVED:
             continue
         meta = _capture_fields(path)
+        if archive_original and archived_copy is None and meta.get("original_sha256") == original_hash:
+            archived_copy = preserved_original(vault, path, meta, original_hash)
         if (meta.get("source_uri") != args.source or meta.get("capture_scope") not in ("full", "excerpt")
                 or not re.fullmatch(r"[0-9a-f]{64}", meta.get("content_sha256", ""))):
             continue  # Ignore unrelated and unmarked or malformed captures.
         if previous is None or path.stat().st_mtime_ns > previous.stat().st_mtime_ns:
             previous = path
         if (meta["content_sha256"] == body_hash and meta["capture_scope"] == args.scope
-                and meta.get("original_sha256", "") == original_hash):
-            raw_dir = vault / "raw" / path.stem
-            if original is None or (raw_dir.is_dir() and any(
-                    file_sha256(copy) == original_hash for copy in raw_dir.iterdir() if copy.is_file())):
+                and meta.get("original_sha256", "") == original_hash
+                and set(meta.get("origin_projects", "").split(", ") if meta.get("origin_projects") else []) == set(origins)):
+            if not archive_original or preserved_original(vault, path, meta, original_hash) is not None:
                 print(f"[sb] existing capture: {path}")
                 return 0
     number = 2
@@ -898,16 +966,24 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
                    f'content_sha256: {body_hash}\n'
                    f'original_sha256: {original_hash}\n'
                    f'sources:\n  - {{ resource: {json.dumps(args.source, ensure_ascii=False)} }}\n')
+    if origins:
+        frontmatter += f"origin_projects: {json.dumps(origins)}\n"
     original_links = [f"- {link}"]
     if original is not None:
-        copy = vault / "raw" / snapshot.stem / original.name
-        copy.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            with original.open("rb") as source_file, copy.open("xb") as target_file:
-                shutil.copyfileobj(source_file, target_file)
-        except OSError as exc:
-            sys.exit(f"[sb] capture: cannot preserve original without overwriting: {exc}")
-        original_links.append(f"- {markdown_link(snapshot, copy, 'Preserved original')}")
+        frontmatter += f'original_uri: {json.dumps(original.as_uri(), ensure_ascii=False)}\n'
+        if archive_original:
+            if archived_copy is None:
+                archived_copy = vault / "_raw" / snapshot.stem / original.name
+                archived_copy.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    with original.open("rb") as source_file, archived_copy.open("xb") as target_file:
+                        shutil.copyfileobj(source_file, target_file)
+                except OSError as exc:
+                    sys.exit(f"[sb] capture: cannot preserve original without overwriting: {exc}")
+            frontmatter += f'preserved_original: {json.dumps(archived_copy.relative_to(vault).as_posix(), ensure_ascii=False)}\n'
+            original_links.append(f"- {markdown_link(snapshot, archived_copy, 'Preserved original')}")
+        elif original.as_uri() != args.source:
+            original_links.append(f"- {source_link(vault, snapshot, original.as_uri(), 2)}")
     sections = [f"# {title}", body, "## Original", "\n".join(original_links)]
     if previous is not None:
         sections.extend(("## Previous capture", f"- {markdown_link(snapshot, previous, parse_note(previous, vault)['title'])}"))
@@ -968,7 +1044,8 @@ def cmd_verify(vault: Path, rel: str, by: str) -> int:
 HOOK_BLOCK = """## Second Brain (project knowledge)
 - Project knowledge belongs in `{vault}` (OKF v0.2 bundle).
 - Before non-trivial work: `uv run {sb} --vault "{vault}" search "<terms>"` (fallback: rg).
-- Read `schema.md`; preserve originals with `uv run {sb} --vault "{vault}" capture "Title" --source "<URI>" --body-file "<text-file>" --original "<original>"` when applicable. Keep originals in `raw/`, captures in `sources/` and maintained knowledge in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/`.
+- Read `schema.md`; analyze existing local files in place and compile their supported findings, without copying them. Use `uv run {sb} --vault "{vault}" capture "Title" --source "<URI>" --body-file "<text-file>"` for a useful excerpt/summary; local file sources are hashed. Keep captures in `sources/` and maintained knowledge in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/`.
+- Only archive newly attached/downloaded originals needing a permanent home: `uv run {sb} --vault "{vault}" capture "Title" --source "<URI>" --body-file "<text-file>" --original "<file>" --archive-original`. Reuse preserved originals in `_raw/` or legacy `raw/`; never migrate old files or links implicitly.
 - `uv run {sb} --vault "{vault}" page concept "Title" --body-file "<complete-page>" --expect-sha256 "<hash>" --reason "<reason>"` revises maintained pages; prior bytes remain in `.history/`.
 - Preserve distinct durable facts with `… --vault "{vault}" add "Title" -t decision -g tags --related notes/YYYY-MM-DD/related.md` (never secrets). New notes use day folders; do not move existing flat notes.
 - Capture is not compilation: `add`/`idea` write to `notes/`; so does `add -t reference`. `page` selects the maintained folder. Do not recapture confirmations of unchanged claims.
@@ -1334,6 +1411,7 @@ def cmd_selftest() -> int:
         vault = Path(td) / "vault"
         rc0 = cmd_init(vault)
         rc1 = cmd_add(vault, _ns(title="UV Workspace Gotcha", type="failure", tags="python, uv",
+                                 origin_project=["featherbi", "featherbi"],
                                  relevance="high", status="stable", supersedes=None, source=[],
                                  body="uv sync ignores workspace members without an explicit source. Fix: set tool.uv.sources."))
         old = next(vault.glob("notes/*/uv-workspace*"))
@@ -1341,7 +1419,7 @@ def cmd_selftest() -> int:
                                  relevance="high", status="stable",
                                  supersedes=str(old.relative_to(vault)), source=[],
                                  body="Final solution: tool.uv.sources + workspace members."))
-        rc3 = cmd_idea(vault, "Marimo batch reporting as the default", _ns(tags="", relevance="low", supersedes=None, source=[]))
+        rc3 = cmd_idea(vault, "Marimo batch reporting as the default", _ns(tags="", relevance="low", supersedes=None, source=[], origin_project=["featherbi"]))
         rc3b = cmd_add(vault, _ns(title="Marimo Batch Reporting Copy", type="insight", tags="",
                                   relevance="low", status="stable", supersedes=None, source=[],
                                   body="Marimo batch reporting as the default"))
@@ -1537,19 +1615,21 @@ def cmd_selftest() -> int:
         original_capture_proc = subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
              "capture", "Primary paper", "--source", original.as_uri(),
-             "--original", str(original), "--body-file", "-"],
+             "--original", str(original), "--archive-original", "--body-file", "-"],
             input="Extracted primary text.", capture_output=True, text=True,
         )
-        copied_original = wiki_vault / "raw" / f"{dt.date.today().isoformat()}-primary-paper" / original.name
+        copied_original = wiki_vault / "_raw" / f"{dt.date.today().isoformat()}-primary-paper" / original.name
         source_with_original = wiki_vault / "sources" / f"{dt.date.today().isoformat()}-primary-paper.md"
         before_index = copied_original.read_bytes() if copied_original.exists() else b""
-        occupied_copy = wiki_vault / "raw" / f"{dt.date.today().isoformat()}-protected-original" / original.name
+        protected_original = Path(td) / "protected-original.md"
+        protected_original.write_bytes(b"A distinct incoming original for the collision test.")
+        occupied_copy = wiki_vault / "_raw" / f"{dt.date.today().isoformat()}-protected-original" / protected_original.name
         occupied_copy.parent.mkdir(parents=True)
         occupied_copy.write_bytes(b"User-owned original bytes")
         protected_capture = subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
-             "capture", "Protected original", "--source", original.as_uri(),
-             "--original", str(original), "--body-file", "-"],
+             "capture", "Protected original", "--source", protected_original.as_uri(),
+             "--original", str(protected_original), "--archive-original", "--body-file", "-"],
             input="Excerpt.", capture_output=True, text=True,
         )
         capture_vault = Path(td) / "capture-vault"
@@ -1560,11 +1640,13 @@ def cmd_selftest() -> int:
         capture_url = "https://example.org/evidence"
 
         def capture_case(body: str, *, title: str = "Evidence", source: str = capture_url,
-                         scope: str = "full", body_file: str = "-") -> subprocess.CompletedProcess:
+                         scope: str = "full", body_file: str = "-",
+                         origin_project: str | None = None) -> subprocess.CompletedProcess:
             return subprocess.run(
                 [sys.executable, str(Path(__file__).resolve()), "--vault", str(capture_vault),
                  "capture", title, "--source", source, "--body-file", body_file,
-                 "--original", str(capture_original), "--scope", scope],
+                  "--original", str(capture_original), "--archive-original", "--scope", scope,
+                  *(["--origin-project", origin_project] if origin_project is not None else [])],
                 input=body if body_file == "-" else None, capture_output=True, text=True,
             )
 
@@ -1588,6 +1670,16 @@ def cmd_selftest() -> int:
         captured_new_original = capture_case(first_body)
         captured_bad_body = capture_case("", body_file=str(Path(td) / "no-such-body.md"))
         capture_pages = [p for p in (capture_vault / "sources").glob("*.md") if p.name not in RESERVED]
+        origin_url = "https://example.org/project-evidence"
+        origin_capture = capture_case("Project evidence.", title="Project evidence", source=origin_url,
+                                      origin_project="featherbi")
+        origin_path = capture_vault / "sources" / f"{dt.date.today().isoformat()}-project-evidence.md"
+        origin_bytes = origin_path.read_bytes() if origin_path.exists() else b""
+        origin_repeat = capture_case("Project evidence.", source=origin_url, origin_project="featherbi")
+        origin_other = capture_case("Project evidence.", title="Project evidence", source=origin_url,
+                                    origin_project="skills")
+        origin_other_path = origin_path.with_stem(origin_path.stem + "-2")
+        origin_invalid = capture_case("Project evidence.", source=origin_url, origin_project="/local/project")
         legacy_capture = capture_vault / "sources" / "legacy.md"
         legacy_capture.write_text("---\ntype: source\nstatus: draft\n---\n\n# Legacy\n\nOld capture.\n", encoding="utf-8")
         eval_vault = Path(td) / "eval-vault"
@@ -1628,12 +1720,17 @@ def cmd_selftest() -> int:
         page_command = [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
                         "page", "concept", "Research agents"]
         page_create = subprocess.run(
-            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md"],
+            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md",
+             "--origin-project", "featherbi"],
             input="Research agents assist with bounded tasks [Source](../personal/field-notes.md).",
             capture_output=True, text=True,
         )
         page = wiki_vault / "concepts" / "research-agents.md"
         first_page = page.read_bytes() if page.exists() else b""
+        # Owner-authored block lists must survive CLI revisions too.
+        first_page = first_page.replace(b'origin_projects: ["featherbi"]', b'origin_projects:\n  - featherbi')
+        if page.exists():
+            page.write_bytes(first_page)
         digest = hashlib.sha256(first_page).hexdigest()
         page_unchanged = subprocess.run(
             [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md"],
@@ -1653,13 +1750,23 @@ def cmd_selftest() -> int:
         page_update = subprocess.run(
             [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md",
              "--related", f"sources/{captured.name}", "--related", f"sources/{counterstudy.name}",
-             "--expect-sha256", digest, "--reason", "New field evidence"],
+             "--expect-sha256", digest, "--reason", "New field evidence",
+             "--origin-project", "skills", "--origin-project", "featherbi"],
             input=(f"One [study](../sources/{captured.name}) reports success; "
                    f"another [study](../sources/{counterstudy.name}) reports failures.\n\n"
                    "## Offen\n\nWhich conditions explain the difference?"),
             capture_output=True, text=True,
         )
         page_after = page.read_text(encoding="utf-8") if page.exists() else ""
+        origin_page_revision = subprocess.run(
+            [*page_command, "--body-file", "-", "--source", "file://personal/field-notes.md",
+             "--related", f"sources/{captured.name}", "--related", f"sources/{counterstudy.name}",
+             "--expect-sha256", hashlib.sha256(page_after.encode()).hexdigest(),
+             "--reason", "Clarified wording without new origin"],
+            input=(f"One [study](../sources/{captured.name}) reports success; "
+                   f"another [study](../sources/{counterstudy.name}) reports failures under other conditions."),
+            capture_output=True, text=True,
+        )
         topic_create = subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(wiki_vault),
              "page", "topic", "Research workflows", "--body-file", "-", "--related", "concepts/research-agents.md"],
@@ -1735,9 +1842,93 @@ def cmd_selftest() -> int:
                 and reserved_note in note_files(reserved_vault)
                 and rc_reserved_search == 0 and str(reserved_note) in reserved_search.getvalue())
         date_only = parse_instant("2000-01-01")
+        local_vault = Path(td) / "local-original-vault"
+        local_document = Path(td) / "existing-document.txt"
+        local_document.write_bytes(b"Existing local version one.")
+        local_original_hash = file_sha256(local_document)
+        local_capture = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(local_vault),
+             "capture", "Local original", "--source", local_document.as_uri(),
+             "--original", str(local_document), "--body-file", "-"],
+            input="Source excerpt.", capture_output=True, text=True,
+        )
+        local_sources = [p for p in (local_vault / "sources").glob("*.md") if p.name not in RESERVED]
+        implicit_local_capture = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(local_vault),
+             "capture", "Local file URI", "--source", local_document.as_uri(), "--body-file", "-"],
+            input="Source excerpt.", capture_output=True, text=True,
+        )
+        missing_archive_original = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(local_vault),
+             "capture", "Invalid archive", "--source", local_document.as_uri(),
+             "--archive-original", "--body-file", "-"],
+            input="Source excerpt.", capture_output=True, text=True,
+        )
+        implicit_local_source_count = len([p for p in (local_vault / "sources").glob("*.md") if p.name not in RESERVED])
+        local_first_bytes = local_sources[0].read_bytes() if local_sources else b""
+        local_document.write_bytes(b"Existing local version two.")
+        changed_local_capture = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(local_vault),
+             "capture", "Local version update", "--source", local_document.as_uri(), "--body-file", "-"],
+            input="Source excerpt.", capture_output=True, text=True,
+        )
+        changed_local_sources = [p for p in (local_vault / "sources").glob("*.md") if p.name not in RESERVED]
+        local_archive_files = [p for name in ("raw", "_raw") for p in (local_vault / name).rglob("*") if p.is_file()]
+        archive_vault = Path(td) / "archive-exclusion-vault"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(archive_vault)
+        for archive_name in ("raw", "_raw"):
+            archive_dir = archive_vault / archive_name
+            archive_dir.mkdir(exist_ok=True)
+            (archive_dir / "original.md").write_text("Unchanged original bytes.\n", encoding="utf-8")
+        legacy_asset_vault = Path(td) / "legacy-original-vault"
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_init(legacy_asset_vault)
+        legacy_asset_source = legacy_asset_vault / "sources" / "2000-01-01-legacy-asset.md"
+        legacy_asset = legacy_asset_vault / "raw" / legacy_asset_source.stem / original.name
+        legacy_asset.parent.mkdir(parents=True)
+        legacy_asset.write_bytes(original.read_bytes())
+        legacy_body = "Previously captured source text."
+        legacy_asset_uri = "https://example.org/legacy-asset"
+        legacy_asset_source.write_text(
+            f'---\ntype: source\nstatus: draft\ncapture_scope: excerpt\nsource_uri: {json.dumps(legacy_asset_uri)}\n'
+            f'content_sha256: {hashlib.sha256(legacy_body.encode()).hexdigest()}\noriginal_sha256: {file_sha256(original)}\n---\n'
+            f'\n# Legacy asset\n\n{legacy_body}\n\n[Original](../raw/{legacy_asset_source.stem}/{urllib.parse.quote(original.name)})\n',
+            encoding="utf-8",
+        )
+        legacy_asset_before = legacy_asset_source.read_bytes()
+        reused_legacy_asset = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--vault", str(legacy_asset_vault),
+             "capture", "Legacy asset", "--source", legacy_asset_uri,
+             "--original", str(original), "--archive-original", "--body-file", "-"],
+            input=legacy_body, capture_output=True, text=True,
+        )
         uv_dup = next(vault.glob("notes/*/uv-duplicate*"))
         custom_type = next(vault.glob("notes/*/custom-type-test*"))
         checks = {
+            "provided original paths are hashed without copying by default": local_capture.returncode == 0
+                and len(local_sources) == 1 and not local_archive_files
+                and _capture_fields(local_sources[0]).get("original_sha256") == local_original_hash,
+            "local file URIs preserve provenance without extra original flags": implicit_local_capture.returncode == 0
+                and str(local_sources[0]) in implicit_local_capture.stdout
+                and _capture_fields(local_sources[0]).get("original_uri") == local_document.resolve().as_uri()
+                and implicit_local_source_count == 1,
+            "local version changes create honest captures without archived copies": changed_local_capture.returncode == 0
+                and len(changed_local_sources) == 2 and not local_archive_files
+                and local_sources[0].read_bytes() == local_first_bytes
+                and any(_capture_fields(p).get("original_sha256") == file_sha256(local_document) for p in changed_local_sources),
+            "archiving requires an explicitly supplied original": missing_archive_original.returncode != 0
+                and "--archive-original requires --original" in missing_archive_original.stderr,
+            "recaptures reuse stored bytes across excerpts and source URIs":
+                len([p for p in (capture_vault / "_raw").rglob("*") if p.is_file()]) == 2
+                and len(capture_pages) == 5,
+            "legacy raw originals and source links are reused without migration": reused_legacy_asset.returncode == 0
+                and legacy_asset_source.read_bytes() == legacy_asset_before
+                and legacy_asset.read_bytes() == original.read_bytes()
+                and not any(p.is_file() for p in (legacy_asset_vault / "_raw").rglob("*")),
+            "new and legacy original archives are excluded from knowledge indexes": not note_files(archive_vault)
+                and archive_vault / "_raw" not in index_directories(archive_vault)
+                and archive_vault / "raw" not in index_directories(archive_vault),
             "add and idea use day folders without dating their titles":
                 old.parent == vault / "notes" / dt.date.today().isoformat()
                 and old.name == "uv-workspace-gotcha.md"
@@ -1773,9 +1964,9 @@ def cmd_selftest() -> int:
                 for verb in ("search", "capture", "page", "add", "index", "lint")
             ),
             "wiki schema and category directories": all((wiki_vault / name).is_dir() for name in
-                ("raw", "entities", "references", "playbooks"))
+                ("_raw", "entities", "references", "playbooks"))
                 and all(label in initial_schema for label in (
-                    "raw/", "entities/", "references/", "playbooks/",
+                    "_raw/", "entities/", "references/", "playbooks/",
                     "## Write for people and agents", "reading views",
                 ))
                 and schema.read_text(encoding="utf-8") == initial_schema + "\nOwner convention.\n"
@@ -1785,7 +1976,7 @@ def cmd_selftest() -> int:
                 and before_index == original.read_bytes()
                 and copied_original.read_bytes() == before_index
                 and urllib.parse.quote(copied_original.name) in source_with_original.read_text(encoding="utf-8")
-                and not any(p.is_relative_to(wiki_vault / "raw") for p in note_files(wiki_vault)),
+                and not any(p.is_relative_to(wiki_vault / "_raw") for p in note_files(wiki_vault)),
             "capture never overwrites a raw original": protected_capture.returncode != 0
                 and occupied_copy.read_bytes() == b"User-owned original bytes"
                 and not (wiki_vault / "sources" / f"{dt.date.today().isoformat()}-protected-original.md").exists(),
@@ -1808,7 +1999,7 @@ def cmd_selftest() -> int:
                 and capture_second_path.exists()
                 and any(target == capture_first_path.name for _, target in md_links(
                     capture_second_path.read_text(encoding="utf-8")))
-                and (capture_vault / "raw" / capture_first_path.stem / capture_original.name).read_bytes()
+                and (capture_vault / "_raw" / capture_first_path.stem / capture_original.name).read_bytes()
                     == b"original revision one"
                 and parse_note(legacy_capture, capture_vault)["capture_scope"] == "unknown",
             "eval measures real search ranking without writes": eval_proc.returncode == 0
@@ -1848,6 +2039,24 @@ def cmd_selftest() -> int:
                 and slugify("知识") == slugify("知识"),
             "init ok": rc0 == 0 and rc0b == 0 and (vault / "index.md").exists(),
             "init idempotent": init_entries == init_entries_after,
+            "project source captures retain immutable provenance": origin_capture.returncode == 0
+                and origin_repeat.returncode == 0 and str(origin_path) in origin_repeat.stdout
+                and origin_other.returncode == 0 and origin_path.read_bytes() == origin_bytes
+                and _capture_fields(origin_path).get("origin_projects") == "featherbi"
+                and origin_other_path.exists()
+                and _capture_fields(origin_other_path).get("origin_projects") == "skills"
+                and origin_path.name in origin_other_path.read_text(encoding="utf-8")
+                and origin_invalid.returncode != 0 and "stable lowercase project ID" in origin_invalid.stderr,
+            "wiki revisions merge and retain project origins": page_create.returncode == 0
+                and page_update.returncode == 0 and origin_page_revision.returncode == 0
+                and 'origin_projects: ["featherbi", "skills"]' in page_after
+                and _capture_fields(page).get("origin_projects") == "featherbi, skills",
+            "ideas accept project provenance": rc3 == 0
+                and _capture_fields(next(vault.glob("notes/*/marimo-batch-reporting-as-the-default*"))).get("origin_projects") == "featherbi",
+            "project origin is distinct from tags and deduplicated":
+                _capture_fields(old).get("origin_projects") == "featherbi"
+                and _capture_fields(old).get("tags") == "python, uv"
+                and "origin_projects" not in _capture_fields(final_note),
             "add ok": rc1 == 0 and rc2 == 0 and rc4 == 0,
             "idea ok": rc3 == 0 and any(vault.glob("notes/*/marimo-batch-reporting-as-the-default*")),
             "idea is draft": "status: draft" in next(vault.glob("notes/*/marimo-batch-reporting-as-the-default*")).read_text(encoding="utf-8"),
@@ -1984,7 +2193,9 @@ def main() -> int:
     ap_capture.add_argument("title")
     ap_capture.add_argument("--source", required=True, help="original URL or existing file:// path")
     ap_capture.add_argument("--body-file", required=True, help="captured source text, '-' reads stdin")
-    ap_capture.add_argument("--original", help="copy the original file unchanged into raw/")
+    ap_capture.add_argument("--original", help="original file for hashing/linking; left in place by default")
+    ap_capture.add_argument("--archive-original", action="store_true",
+                            help="preserve an attached/downloaded original in _raw/; requires --original")
     ap_capture.add_argument("--scope", choices=("full", "excerpt"), default="excerpt",
                             help="attested completeness of supplied text (default: excerpt)")
     ap_idea = sub.add_parser("idea", help="capture an idea as a dated draft insight")
@@ -2002,6 +2213,9 @@ def main() -> int:
     ap_cg.add_argument("--root", default=".", help="code project root")
     sub.add_parser("stats", help="bundle and index statistics")
     sub.add_parser("selftest", help="round-trip checks in a temporary bundle")
+    for writer in (ap_add, ap_page, ap_capture, ap_idea):
+        writer.add_argument("--origin-project", action="append", default=[],
+                            help="origin project ID, not applicability or vault scope (repeatable)")
     args = ap.parse_args()
 
     if args.cmd == "selftest":

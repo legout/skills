@@ -6,6 +6,7 @@ matching Git tag exists.
 
 ## Unreleased
 
+- Added `origin_projects` provenance to `second-brain` through repeatable `--origin-project` on `add`, `idea`, `capture` and `page`. Page revisions retain and merge origins; different capture origins create linked immutable snapshots. Project/global routing and folder layouts remain unchanged.
 - Moved `document-to-markdown` and `second-brain` into the `tools-and-research` category; skill names and invocations are unchanged.
 - Moved default planning-artifact paths from `docs/` to the `project/` namespace (`project/research|adr|specs|plans|tickets/`, `project/agents/`), separating delivery artifacts from product documentation; legacy `docs/` installations are grandfathered and never auto-migrated. `planning-contract` records the namespace rule; consumers reference both.
 - Standardized specification and plan filenames as `YYYY-MM-DD-NNNN-slug.md`, with shared work-item numbering for linked artifacts.
@@ -16,3 +17,4 @@ matching Git tag exists.
 - Made ordinary `second-brain` persistence require maintained-page compilation or a justified deferral, preserving explicit capture-only and read-only scopes. Split advanced workflows, capture/history safeguards and retrieval maintenance into directly linked references; new-vault schemas and project hooks carry the same contract. CLI commands and existing owner schemas are unchanged.
 - Standardized `second-brain` script comments, docstrings, CLI help/output and new-bundle guidance in English without changing existing owner schemas, captured content or configured wiki languages.
 - Changed new `second-brain` notes created by `add` and `idea` to `notes/YYYY-MM-DD/slug.md`, with numbered same-day collisions. Legacy flat notes stay in place and remain valid search, link and supersession targets; source captures and maintained-page layouts are unchanged. Callers that glob only flat note filenames must adapt to the daily layout.
+- Changed new original-asset storage to `_raw/` while retaining unindexed legacy `raw/` archives. Existing local sources are hashed/referenced in place; `--original` no longer copies by itself. Acquired attachments/downloads needing preservation require `--archive-original`, which reuses verified stored originals rather than duplicating them across captures. Existing schemas, assets and links are not migrated.
