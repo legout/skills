@@ -36,7 +36,9 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge capture "Downloaded paper" \
 
 `capture` returns an existing page when the source URI, supplied text, scope and known original bytes match. An explicit archive request also needs that capture to reference a verified preserved original; otherwise a linked capture is created without changing the old one. Duplicate captures with the same `origin_projects` set are not recopied, logged or reindexed. Supply provenance with repeatable `--origin-project <id>`; a different origin set creates a linked new snapshot instead of mutating the old capture. Changed inputs also create a linked new snapshot; older captures remain unchanged.
 
-`original_uri` records a known original location and `original_sha256` its observed bytes. `preserved_original` appears only when an explicitly archived copy is referenced. Local source changes can therefore create a new capture without copying the original. These fields identify observed bytes and locations, not verified authenticity or present availability.
+Let `capture` calculate the functional hashes: `content_sha256` identifies the exact supplied UTF-8 text, not the complete rendered Markdown file; `original_sha256` identifies known original file bytes and is empty when no original file is known. Together they support repeat-safe capture identity; the original hash also verifies archived assets before reuse. `original_uri` records the original location and `preserved_original` an explicitly archived copy. These fields do not prove authenticity or present availability.
+
+Do not add `original_capture_sha256` or `captured_content_sha256` to new captures or reading views: the CLI does not use these historical hash fields. This is a future-write default, not permission to remove or rename metadata in existing vaults. `lint` does not validate hash integrity; a file-version check requires comparing the recorded hash against the actual bytes.
 
 Hashes identify supplied text and original bytes, not fetched content or proven completeness. The default `excerpt` scope is conservative; use `full` only when the supplied content is complete. Older unlabeled captures have unknown scope. A `--source` URI records a pointer, not a local copy. For an unread URL, preserve an explicitly labeled draft pointer with `add`, not an empty capture or a claim that it was read.
 
@@ -46,7 +48,7 @@ Source captures have no lifecycle `status`: they are evidence snapshots, not mut
 
 ## Reading views and language
 
-Owner language rules govern authored prose, not the skill's instruction language. Preserve numbers, units, identifiers, stable paths and original quotations. Label derived summaries, translations and reading views and link their evidence. These labels do not authorize rewriting append-only captures; never present an original capture's hash as a translated view's hash.
+Owner language rules govern authored prose, not the skill's instruction language. Preserve numbers, units, identifiers, stable paths and original quotations. Label derived summaries, translations and reading views and link their evidence. These labels do not authorize rewriting append-only captures; never present an original capture's hash as a translated view's hash. A newly authored reading view must not inherit an earlier text's `content_sha256`; omit it rather than renaming it to a historical hash field, or let `capture` calculate it for a new text snapshot.
 
 ## Revise the appropriate surface
 

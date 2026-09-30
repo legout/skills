@@ -1702,6 +1702,21 @@ def cmd_selftest() -> int:
         origin_invalid = capture_case("Project evidence.", source=origin_url, origin_project="/local/project")
         legacy_capture = capture_vault / "sources" / "legacy.md"
         legacy_capture.write_text("---\ntype: source\nstatus: draft\n---\n\n# Legacy\n\nOld capture.\n", encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_index(capture_vault)
+        index_con = sqlite3.connect(db_path(capture_vault))
+        try:
+            indexed_origin_status = index_con.execute(
+                "SELECT status FROM notes WHERE path = ?", (origin_path.relative_to(capture_vault).as_posix(),)
+            ).fetchone()[0]
+            indexed_legacy_status = index_con.execute(
+                "SELECT status FROM notes WHERE path = ?", (legacy_capture.relative_to(capture_vault).as_posix(),)
+            ).fetchone()[0]
+        finally:
+            index_con.close()
+        source_lint_output = io.StringIO()
+        with contextlib.redirect_stdout(source_lint_output):
+            cmd_lint(capture_vault, fix=False)
         legacy_capture_vault = Path(td) / "legacy-capture-vault"
         with contextlib.redirect_stdout(io.StringIO()):
             cmd_init(legacy_capture_vault)
@@ -2112,7 +2127,9 @@ def cmd_selftest() -> int:
                 and "status" not in _capture_fields(origin_path)
                 and "human:test" in parse_note(origin_path, capture_vault)["verified"]
                 and parse_note(origin_path, capture_vault)["status"] == ""
-                and parse_note(legacy_capture, capture_vault)["status"] == "",
+                and parse_note(legacy_capture, capture_vault)["status"] == ""
+                and indexed_origin_status == indexed_legacy_status == ""
+                and "0 draft" in source_lint_output.getvalue(),
             "wiki revisions merge and retain project origins": page_create.returncode == 0
                 and page_update.returncode == 0 and origin_page_revision.returncode == 0
                 and 'origin_projects: ["featherbi", "skills"]' in page_after
