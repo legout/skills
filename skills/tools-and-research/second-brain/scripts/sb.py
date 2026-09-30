@@ -497,7 +497,10 @@ def cmd_eval(vault: Path, cases_file: Path) -> int:
             con.close()
     except sqlite3.Error as exc:
         sys.exit(f"[sb] eval: cannot read index: {exc}")
-    for (line_no, query, _), rank in zip(cases, ranks, strict=True):
+    if len(cases) != len(ranks):
+        sys.exit("[sb] eval: internal case/rank count mismatch")
+    for i, (line_no, query, _) in enumerate(cases):
+        rank = ranks[i]
         print(f"[sb] eval line {line_no}: {'rank=' + str(rank) if rank else 'MISS'} q={json.dumps(query, ensure_ascii=False)}")
     score = " ".join(f"recall@{k}={sum(rank is not None and rank <= k for rank in ranks) / len(ranks):.1%}"
                      for k in (1, 3, 5, 10))
