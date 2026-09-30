@@ -30,7 +30,7 @@ Respect `draft`, `deprecated` and expired `stale_after`; prefer human-verified c
 **Capture is not integration.** Normal knowledge persistence ends with maintained wiki pages or a named, justified deferral. An explicit capture-only, one-note, open-question or read-only request retains its narrower scope.
 
 1. **Search and route.** Find existing pages before creating files. Choose the role:
-   - `notes/`: dated events, original decisions, bounded research drafts and unresolved questions.
+   - `notes/YYYY-MM-DD/slug.md`: dated events, original decisions, bounded research drafts and unresolved questions. Existing flat notes stay at their paths.
    - `sources/`: what a source says; `raw/`: unchanged originals; `personal/`: owner-authored material, read only on request.
    - `concepts/`: definitions and distinctions; `entities/`: concrete things actually tracked.
    - `references/`: current factual lookups and rules; `topics/`: cross-source thematic synthesis; `playbooks/`: repeatable procedures, not executable agent skills.
@@ -41,9 +41,11 @@ Respect `draft`, `deprecated` and expired `stale_after`; prefer human-verified c
 
 `add` and `idea` always write to `notes/`. In particular, `add -t reference` does not write to `references/`. Folder roles and OKF types are separate. **`page` selects the maintained folder**:
 
+New notes use the local creation day as a directory, not a filename/title prefix. Same-day collisions and reserved filenames (`index.md`, `log.md`, `schema.md`) receive `-2`, `-3`, etc. Existing flat and daily layouts remain readable together; no automatic migration occurs.
+
 ```bash
 uv run <skill-dir>/scripts/sb.py --vault knowledge page reference "Current rules" \
-  --body-file /path/to/complete-page.md --related notes/existing-evidence.md
+  --body-file /path/to/complete-page.md --related notes/YYYY-MM-DD/existing-evidence.md
 ```
 
 Read [workflow and invocation examples](references/workflows.md) when saving a session, remembering findings, ingesting sources or compiling existing captures. Read [capture and revision details](references/capture-and-revisions.md) before source capture or page/claim revision.

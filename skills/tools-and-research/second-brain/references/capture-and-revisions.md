@@ -34,4 +34,6 @@ Owner language rules govern authored prose, not the skill's instruction language
 
 Use standard relative Markdown links, not `[[wikilinks]]`. Keep existing paths stable; title changes must not silently create a replacement page or break links. Do not reorganize existing documents during initialization or compilation without explicit authorization.
 
+New atomic notes live in `notes/YYYY-MM-DD/slug.md`; old flat notes remain valid `--supersedes`, `--related` and search targets. CLI-generated links account for the source page's depth, including cross-day supersession. For authored note bodies, remember that `../../sources/example.md` reaches `sources/` from a day folder; `--related` and `--supersedes` arguments remain bundle-relative, not note-relative. Source captures and maintained pages keep their existing layouts.
+
 An uncertain or contested page stays `draft`. Promotion to `stable` is an explicit choice; a revision does not inherit a prior human verification stamp. Record human review with `verify <path> --by human:<id>` only when such review actually occurred. For time-sensitive claims respect `stale_after`, date observations and review before reuse.

@@ -21,6 +21,8 @@ For host shortcuts such as `/sb-remember`, `/sb-session` and `/sb-ingest`, docum
 
 Folder roles are separate from OKF `type`. `add -t reference` creates a dated note, not a maintained reference page. Use `page reference`, `page concept`, `page entity`, `page topic` or `page playbook` for maintained knowledge. Do not invent `syntheses/` or another `skills/` folder inside the wiki.
 
+`add` and `idea` create `notes/YYYY-MM-DD/slug.md`, using the local creation day. A same-day title collision or a reserved filename (`index.md`, `log.md`, `schema.md`) gets a numbered suffix without overwriting earlier captures or navigation. The title itself is unchanged. Existing `notes/YYYY-MM-DD-slug.md` files remain supported and are not moved; migration requires explicit authorization.
+
 ## Capture only when it adds evidence
 
 Commands below target project knowledge. Omit `--vault knowledge` for global knowledge. Paths supplied to `--related` must already exist inside the selected bundle; examples are placeholders, not files to manufacture.
@@ -39,7 +41,7 @@ Choose its owner, preserve valid claims and citations, and submit the complete c
 
 ```bash
 uv run <skill-dir>/scripts/sb.py --vault knowledge page reference "Data schema" \
-  --body-file /path/to/complete-schema.md --related notes/existing-decision.md
+  --body-file /path/to/complete-schema.md --related notes/YYYY-MM-DD/existing-decision.md
 ```
 
 For an existing page, read it and calculate its current hash first:
@@ -47,7 +49,7 @@ For an existing page, read it and calculate its current hash first:
 ```bash
 shasum -a 256 knowledge/references/data-schema.md
 uv run <skill-dir>/scripts/sb.py --vault knowledge page reference "Data schema" \
-  --body-file /path/to/complete-schema.md --related notes/existing-decision.md \
+  --body-file /path/to/complete-schema.md --related notes/YYYY-MM-DD/existing-decision.md \
   --expect-sha256 <current-hash> --reason "Confirmed field mapping"
 ```
 

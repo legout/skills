@@ -15,7 +15,7 @@ OKF v0.2 mapping:
   status/stale_after/verified/generated/sources -> OKF lifecycle/trust/provenance
 
 Claim updates are supersessions, never silent rewrites:
-  sb add "New title" --supersedes notes/2026-01-01-old.md ...
+  sb add "New title" --supersedes notes/2026-01-01/old.md ...
 
 Usage:
   sb [--vault PATH] init              create OKF bundle + print AGENTS.md hook
@@ -539,8 +539,9 @@ do not replace this file. Read it before ingesting or revising content.
 - `personal/`: owner-authored original notes; never change them during ingestion.
 - `sources/`: dated, append-only source text or explicitly labeled excerpts,
   with the original URI and, when available, a link to `raw/`.
-- `notes/`: atomic, dated observations, decisions, failures and research drafts.
-  Correct factual claims by supersession, not silent rewriting.
+- `notes/YYYY-MM-DD/slug.md`: new atomic observations, decisions, failures and
+  research drafts, grouped by local creation day. Leave legacy flat notes in
+  place. Correct factual claims by supersession, not silent rewriting.
 
 ## Maintained wiki
 
@@ -671,7 +672,7 @@ def source_link(vault: Path, note: Path, source: str, number: int) -> str:
 
 
 def cmd_add(vault: Path, args: argparse.Namespace) -> int:
-    vault = vault.resolve()  # Einmal normalisieren: Target-Links sind resolved
+    vault = vault.resolve()  # Normalize once; target links are resolved paths.
     ensure_bundle(vault)
     args.title = args.title.strip()
     args.type = args.type.strip()
@@ -682,11 +683,12 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     if args.status not in VALID_STATUS:
         sys.exit(f"[sb] --status must be one of {VALID_STATUS}")
     date = dt.date.today().isoformat()
-    stem = f"{date}-{slugify(args.title)}"
-    note = vault / "notes" / f"{stem}.md"
+    stem = slugify(args.title)
+    daily_notes = vault / "notes" / date
+    note = daily_notes / f"{stem}.md"
     n = 2  # Same-day slug collisions use a suffix, including non-ASCII slugs.
-    while note.exists():
-        note = vault / "notes" / f"{stem}-{n}.md"
+    while note.exists() or note.name in RESERVED:
+        note = daily_notes / f"{stem}-{n}.md"
         n += 1
     tags = [t.strip() for t in args.tags.split(",") if t.strip()]
     sources = [url.strip() for url in args.source if url.strip()]
@@ -968,11 +970,11 @@ HOOK_BLOCK = """## Second Brain (project knowledge)
 - Before non-trivial work: `uv run {sb} --vault "{vault}" search "<terms>"` (fallback: rg).
 - Read `schema.md`; preserve originals with `uv run {sb} --vault "{vault}" capture "Title" --source "<URI>" --body-file "<text-file>" --original "<original>"` when applicable. Keep originals in `raw/`, captures in `sources/` and maintained knowledge in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/`.
 - `uv run {sb} --vault "{vault}" page concept "Title" --body-file "<complete-page>" --expect-sha256 "<hash>" --reason "<reason>"` revises maintained pages; prior bytes remain in `.history/`.
-- Preserve distinct durable facts with `… --vault "{vault}" add "Title" -t decision -g tags --related notes/related.md` (never secrets).
+- Preserve distinct durable facts with `… --vault "{vault}" add "Title" -t decision -g tags --related notes/YYYY-MM-DD/related.md` (never secrets). New notes use day folders; do not move existing flat notes.
 - Capture is not compilation: `add`/`idea` write to `notes/`; so does `add -t reference`. `page` selects the maintained folder. Do not recapture confirmations of unchanged claims.
 - Normal completion requires compilation or justified deferral after a topic block. Integrate supported reusable outcomes into maintained pages, or state the deferral's reason and target. Report captures, compiled pages and open questions separately; focus the hot index on current maintained pages.
 - Explicit capture-only/open-question requests retain their scope; read-only checks authorize neither writes nor synthesis. Preserve historical notes; compilation is not verification or automatic status promotion.
-- Never silently rewrite factual claims; supersede with `… --vault "{vault}" add "Replacement" --supersedes notes/old.md` (bundle-relative path). Respect status and stale_after during recall.
+- Never silently rewrite factual claims; supersede with `… --vault "{vault}" add "Replacement" --supersedes notes/YYYY-MM-DD/old.md` (bundle-relative path; legacy flat paths also work). Respect status and stale_after during recall.
 - Owner-authored Markdown belongs in `personal/`; read it only on request and leave it unchanged.
 - Follow the owner's wiki language; English skill instructions do not determine content language.
 - Preserve human-curated text outside generated index blocks; `index.db` is FTS only. After manual edits run `uv run {sb} --vault "{vault}" index`; check links and drift with `uv run {sb} --vault "{vault}" lint`.
@@ -1334,7 +1336,7 @@ def cmd_selftest() -> int:
         rc1 = cmd_add(vault, _ns(title="UV Workspace Gotcha", type="failure", tags="python, uv",
                                  relevance="high", status="stable", supersedes=None, source=[],
                                  body="uv sync ignores workspace members without an explicit source. Fix: set tool.uv.sources."))
-        old = next(vault.glob("notes/*uv-workspace*"))
+        old = next(vault.glob("notes/*/uv-workspace*"))
         rc2 = cmd_add(vault, _ns(title="UV Workspace Final", type="decision", tags="python, uv",
                                  relevance="high", status="stable",
                                  supersedes=str(old.relative_to(vault)), source=[],
@@ -1351,7 +1353,7 @@ def cmd_selftest() -> int:
             "---\ntype: observation\n---\n# Manual Broken Link\n\nSee [Documentation](not-there.md).\n",
             encoding="utf-8",
         )
-        final_note = next(vault.glob("notes/*uv-workspace-final*"))
+        final_note = next(vault.glob("notes/*/uv-workspace-final*"))
         rc2v = cmd_verify(vault, str(final_note.relative_to(vault)), "human:test")
         block_note = vault / "notes" / "block-verified.md"
         block_note.write_text(
@@ -1367,7 +1369,7 @@ def cmd_selftest() -> int:
         rc_format = cmd_add(vault, _ns(title="Formatted Plain Body", type="observation", tags="",
                                        relevance="medium", status="stable", supersedes=None,
                                        source=[], related=[], body=long_body))
-        formatted_note = next(vault.glob("notes/*formatted-plain-body*"))
+        formatted_note = next(vault.glob("notes/*/formatted-plain-body*"))
         formatted_body = parse_note(formatted_note, vault)["body"]
         body_file = Path(td) / "body.md"
         body_file.write_text("## Context\n\n- first item\n- second item\n\n"
@@ -1378,7 +1380,7 @@ def cmd_selftest() -> int:
              "--related", str(old.relative_to(vault))],
             capture_output=True, text=True,
         )
-        body_file_note = next(vault.glob("notes/*body-file-markdown*"), None)
+        body_file_note = next(vault.glob("notes/*/body-file-markdown*"), None)
         stdin_proc = subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
              "add", "Stdin Body Markdown", "--body-file", "-",
@@ -1386,7 +1388,7 @@ def cmd_selftest() -> int:
             input="A stdin body with enough words to verify Markdown input.\n",
             capture_output=True, text=True,
         )
-        stdin_note = next(vault.glob("notes/*stdin-body-markdown*"), None)
+        stdin_note = next(vault.glob("notes/*/stdin-body-markdown*"), None)
         bad_fence_proc = subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
              "add", "Malformed Fence", "--body-file", "-"],
@@ -1444,7 +1446,7 @@ def cmd_selftest() -> int:
              "--related", "notes/node-a.md", "-b", "A durable fact distilled from the handwritten source."],
             capture_output=True, text=True,
         )
-        ingested_note = next(graph_vault.glob("notes/*ingested-personal-source*"), None)
+        ingested_note = next(graph_vault.glob("notes/*/ingested-personal-source*"), None)
         untyped_concept = graph_vault / "notes" / "untyped.md"
         untyped_concept.write_text("# Untyped concept\n\nThis still needs OKF type metadata.\n", encoding="utf-8")
         index_output_buf = io.StringIO()
@@ -1685,10 +1687,78 @@ def cmd_selftest() -> int:
         if topic_create.returncode == 0:
             with contextlib.redirect_stdout(wiki_lint_buf):
                 cmd_lint(wiki_vault, fix=False)
+        # Daily writers must coexist with legacy flat notes and older day folders.
+        def add_note_fixture(target: Path, title: str, body: str, *, note_type: str = "observation",
+                             supersedes: str | None = None) -> int:
+            with contextlib.redirect_stdout(io.StringIO()):
+                return cmd_add(target, _ns(
+                    title=title, type=note_type, tags="", relevance="low", status="stable",
+                    supersedes=supersedes, source=[], body=body))
+
+        legacy = vault / "notes" / "2000-01-01-legacy.md"
+        legacy_bytes = b"---\ntype: observation\n---\n# Legacy\n\nKeep this original note.\n"
+        legacy.write_bytes(legacy_bytes)
+        prior = vault / "notes" / "2000-01-01-prior.md"
+        prior.write_text("---\ntype: observation\n---\n# Prior\n\nOriginal flat claim.\n", encoding="utf-8")
+        prior_day = vault / "notes" / "2000-01-02" / "prior.md"
+        prior_day.parent.mkdir(parents=True)
+        prior_day.write_text("---\ntype: observation\n---\n# Prior day\n\nOriginal daily claim.\n", encoding="utf-8")
+        daily_notes = vault / "notes" / dt.date.today().isoformat()
+        rc_collision1 = add_note_fixture(vault, "Daily collision", "First observation.")
+        collision = daily_notes / "daily-collision.md"
+        collision_original = collision.read_bytes() if collision.exists() else b""
+        rc_collision2 = add_note_fixture(vault, "Daily collision", "Second observation.")
+        rc_legacy_replace = add_note_fixture(
+            vault, "Flat replacement", "Current flat successor.",
+            note_type="decision", supersedes=str(prior.relative_to(vault)))
+        rc_day_replace = add_note_fixture(
+            vault, "Daily replacement", "Current daily successor.",
+            note_type="decision", supersedes=str(prior_day.relative_to(vault)))
+        compatibility_lint = io.StringIO()
+        with contextlib.redirect_stdout(compatibility_lint):
+            cmd_lint(vault, fix=False)
+        legacy_search = io.StringIO()
+        with contextlib.redirect_stdout(legacy_search):
+            rc_legacy_search = cmd_search(vault, "legacy", 5, False)
+        reserved_notes_preserved = []
+        for title in ("Index", "Log", "Schema"):
+            reserved_vault = Path(td) / f"reserved-{title.lower()}"
+            add_note_fixture(reserved_vault, title, "Preserve this captured content.")
+            reserved_note = reserved_vault / "notes" / dt.date.today().isoformat() / f"{title.lower()}-2.md"
+            before = reserved_note.read_bytes() if reserved_note.exists() else b""
+            add_note_fixture(reserved_vault, "Ordinary note", "A subsequent capture.")
+            reserved_search = io.StringIO()
+            with contextlib.redirect_stdout(reserved_search):
+                rc_reserved_search = cmd_search(reserved_vault, title.lower(), 5, False)
+            reserved_notes_preserved.append(
+                bool(before) and reserved_note.read_bytes() == before
+                and reserved_note in note_files(reserved_vault)
+                and rc_reserved_search == 0 and str(reserved_note) in reserved_search.getvalue())
         date_only = parse_instant("2000-01-01")
-        uv_dup = next(vault.glob("notes/*uv-duplicate*"))
-        custom_type = next(vault.glob("notes/*custom-type-test*"))
+        uv_dup = next(vault.glob("notes/*/uv-duplicate*"))
+        custom_type = next(vault.glob("notes/*/custom-type-test*"))
         checks = {
+            "add and idea use day folders without dating their titles":
+                old.parent == vault / "notes" / dt.date.today().isoformat()
+                and old.name == "uv-workspace-gotcha.md"
+                and parse_note(old, vault)["title"] == "UV Workspace Gotcha"
+                and (vault / "notes" / dt.date.today().isoformat() / "marimo-batch-reporting-as-the-default.md").exists(),
+            "daily note collisions preserve earlier bytes": rc_collision1 == 0 and rc_collision2 == 0
+                and collision_original and collision.read_bytes() == collision_original
+                and (daily_notes / "daily-collision-2.md").is_file(),
+            "reserved daily filenames remain searchable captures": all(reserved_notes_preserved),
+            "legacy flat notes remain unmigrated and searchable": legacy.read_bytes() == legacy_bytes
+                and legacy in note_files(vault)
+                and rc_legacy_search == 0 and str(legacy) in legacy_search.getvalue()
+                and "2000-01-01-legacy.md" in (vault / "notes" / "index.md").read_text(encoding="utf-8"),
+            "supersession links work across legacy and daily layouts": rc_legacy_replace == 0 and rc_day_replace == 0
+                and parse_note(prior, vault)["status"] == "deprecated"
+                and parse_note(prior_day, vault)["status"] == "deprecated"
+                and ("Prior", "../2000-01-01-prior.md") in md_links((daily_notes / "flat-replacement.md").read_text(encoding="utf-8"))
+                and ("Prior day", "../2000-01-02/prior.md") in md_links((daily_notes / "daily-replacement.md").read_text(encoding="utf-8"))
+                and "1 broken links" in compatibility_lint.getvalue(),
+            "day folders have navigable indexes": (daily_notes / "index.md").is_file()
+                and f"{dt.date.today().isoformat()}/index.md" in (vault / "notes" / "index.md").read_text(encoding="utf-8"),
             "script guidance is English and leaves wiki language to the owner":
                 initial_schema.startswith("# Wiki schema\n")
                 and "The template language does not set the wiki content language." in initial_schema
@@ -1779,8 +1849,8 @@ def cmd_selftest() -> int:
             "init ok": rc0 == 0 and rc0b == 0 and (vault / "index.md").exists(),
             "init idempotent": init_entries == init_entries_after,
             "add ok": rc1 == 0 and rc2 == 0 and rc4 == 0,
-            "idea ok": rc3 == 0 and any(vault.glob("notes/*marimo-batch-reporting-as-the-default*")),
-            "idea is draft": "status: draft" in next(vault.glob("notes/*marimo-batch-reporting-as-the-default*")).read_text(encoding="utf-8"),
+            "idea ok": rc3 == 0 and any(vault.glob("notes/*/marimo-batch-reporting-as-the-default*")),
+            "idea is draft": "status: draft" in next(vault.glob("notes/*/marimo-batch-reporting-as-the-default*")).read_text(encoding="utf-8"),
             "source ok": "https://docs.astral.sh/uv/" in uv_dup.read_text(encoding="utf-8"),
             "search ok": rc5 == 0 and rc6 == 0,
             "deprecated entries are hidden": "UV Workspace Gotcha" not in out.split("UV Workspace Final")[0],
@@ -1800,15 +1870,15 @@ def cmd_selftest() -> int:
                 and "A stdin body with enough words" in stdin_note.read_text(encoding="utf-8"),
             "unclosed fence rejected before write": bad_fence_proc.returncode != 0
                 and "unclosed fenced code block" in bad_fence_proc.stderr.lower()
-                and not any(vault.glob("notes/*malformed-fence*")),
+                and not any(vault.glob("notes/*/malformed-fence*")),
             "broken body links rejected before write": bad_link_proc.returncode != 0
                 and "link target not found" in bad_link_proc.stderr.lower()
-                and not any(vault.glob("notes/*broken-markdown-link*")),
+                and not any(vault.glob("notes/*/broken-markdown-link*")),
             "idea captures unresolved links": idea_link_proc.returncode == 0
-                and any(idea_vault.glob("notes/*capture-draft-link*")),
+                and any(idea_vault.glob("notes/*/capture-draft-link*")),
             "missing local source rejected": bad_source_proc.returncode != 0
                 and "source" in bad_source_proc.stderr.lower()
-                and not any(vault.glob("notes/*missing-local-source*")),
+                and not any(vault.glob("notes/*/missing-local-source*")),
             "all content directories have indexes": all(path.exists() for path in (
                 root_index, notes_index, topics_index, personal_index, nested_index,
             )),
@@ -1836,14 +1906,14 @@ def cmd_selftest() -> int:
                 and "personal/handwritten.md" in personal_search,
             "personal ingestion creates source and graph links": ingest_proc.returncode == 0
                 and ingested_note is not None
-                and ("Handwritten", "../personal/handwritten.md") in md_links(ingested_note.read_text(encoding="utf-8"))
-                and ("Node A", "node-a.md") in md_links(ingested_note.read_text(encoding="utf-8"))
+                and ("Handwritten", "../../personal/handwritten.md") in md_links(ingested_note.read_text(encoding="utf-8"))
+                and ("Node A", "../node-a.md") in md_links(ingested_note.read_text(encoding="utf-8"))
                 and personal.read_bytes() == personal_original,
             "personal source exempt but concepts still require type": rc_graph_index == 0
                 and "personal/handwritten.md" not in index_report and "notes/untyped.md" in index_report,
             "lint reports unsupported wikilinks, not code samples": "[[Node A]]" in drift_report
                 and "not-real.md" not in drift_report,
-            "idea through the actual CLI": proc.returncode == 0 and any(vault.glob("notes/*subprocess-idea-regression*")),
+            "idea through the actual CLI": proc.returncode == 0 and any(vault.glob("notes/*/subprocess-idea-regression*")),
             "supersession links intact": out.count("    broken:") == 1,  # Only the intentionally missing fixture.
             "log uses OKF §9 groups": f"## {dt.date.today().isoformat()}" in (vault / "log.md").read_text(encoding="utf-8"),
             "log migrates frontmatter": not migrated_log.startswith("---") and "old entry" in migrated_log,
@@ -1886,7 +1956,7 @@ def main() -> int:
     sp.add_argument("--all", action="store_true", help="include deprecated entries")
     ap_eval = sub.add_parser("eval", help="read-only recall@k and MRR@10 for current FTS ranking")
     ap_eval.add_argument("cases", help="JSONL with q and gold vault-relative Markdown paths")
-    ap_add = sub.add_parser("add", help="create a formatted OKF concept with sources and links")
+    ap_add = sub.add_parser("add", help="create a dated OKF note with sources and links")
     ap_add.add_argument("title")
     ap_add.add_argument("-t", "--type", default="observation",
                         help=f"free-form OKF type (OKF §4.1); common: {', '.join(VALID_TYPES)}")
@@ -1917,7 +1987,7 @@ def main() -> int:
     ap_capture.add_argument("--original", help="copy the original file unchanged into raw/")
     ap_capture.add_argument("--scope", choices=("full", "excerpt"), default="excerpt",
                             help="attested completeness of supplied text (default: excerpt)")
-    ap_idea = sub.add_parser("idea", help="capture an idea as a draft insight")
+    ap_idea = sub.add_parser("idea", help="capture an idea as a dated draft insight")
     ap_idea.add_argument("text")
     ap_idea.add_argument("-g", "--tags", default="")
     ap_v = sub.add_parser("verify", help="record verification (OKF §5.2/§5.3 trust tier)")

@@ -10,6 +10,8 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge init
 
 `index.md` contains navigation, `log.md` records changes and `.history/` preserves prior maintained-page bytes. Keep human-curated text outside generated index blocks; prefer current maintained pages as entry points. `index.db` is generated FTS5 and can be rebuilt from Markdown.
 
+New atomic notes use `notes/YYYY-MM-DD/slug.md`. Indexing creates navigation for day folders and continues to include legacy flat notes. Initialization and rebuilding do not relocate existing notes or change their links.
+
 ## Structural checks are not compilation
 
 Run the requested checks in the selected bundle:
