@@ -25,7 +25,7 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge dedup
 uv run <skill-dir>/scripts/sb.py --vault knowledge stats
 ```
 
-`lint` checks links, unsupported wikilinks, missing types, index/FTS drift, drafts and stale metadata. It does not establish readability, source support or semantic integration. `orphans` reports missing inbound links, not a verdict that a page needs a new relationship. `dedup` reports similarity candidates, not permission to delete.
+`lint` checks links, unsupported wikilinks, missing types, index/FTS drift, lifecycle status on notes and maintained pages, and stale metadata. It does not establish readability, source support or semantic integration. `orphans` reports missing inbound links, not a verdict that a page needs a new relationship. `dedup` reports similarity candidates, not permission to delete.
 
 A read-only request does not authorize `index`, `lint --fix`, metadata repair or synthesis. When authorized, `lint --fix` repairs only generated indexes/FTS, not broken links or contradictory claims. After authorized manual edits run `index` and then `lint`.
 

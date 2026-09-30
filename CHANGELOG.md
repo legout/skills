@@ -6,6 +6,7 @@ matching Git tag exists.
 
 ## Unreleased
 
+- Added original MIT-licensed `docx`, `pdf`, `pptx` and `xlsx` skills with uv-managed helpers for tracked Word edits/comments, independent PowerPoint slide/chart copies, Excel formula recalculation/error reporting, PDF forms/flattening/passwords and portable Office/PDF rendering. Added advanced references and a real-file regression check; no Anthropic implementation files are included.
 - Added `origin_projects` provenance to `second-brain` through repeatable `--origin-project` on `add`, `idea`, `capture` and `page`. Page revisions retain and merge origins; different capture origins create linked immutable snapshots. Project/global routing and folder layouts remain unchanged.
 - Moved `document-to-markdown` and `second-brain` into the `tools-and-research` category; skill names and invocations are unchanged.
 - Moved default planning-artifact paths from `docs/` to the `project/` namespace (`project/research|adr|specs|plans|tickets/`, `project/agents/`), separating delivery artifacts from product documentation; legacy `docs/` installations are grandfathered and never auto-migrated. `planning-contract` records the namespace rule; consumers reference both.

@@ -122,6 +122,10 @@ for rule in (
     "Capture is not integration", "## Completion contract", "explicitly deferred",
     "capture-only", "Read-only maintenance never authorizes writes or synthesis",
     "`add` and `idea` always write to `notes/`", "`page` selects the maintained folder",
+    "sources/YYYY-MM-DD/slug.md", "generated.at", "Existing flat notes and captures",
+    "Existing project files—including files under `data/`—stay in place",
+    "source captures have no lifecycle `status`", "`verified` is separate trust metadata",
+    "`--archive-original` explicitly preserves an eligible new asset",
     "complete page body", "--expect-sha256", "--supersedes",
 ):
     if rule not in second_brain_text:

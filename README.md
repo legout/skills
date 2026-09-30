@@ -60,6 +60,10 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 
 - **`chrome-cdp`** — approved control of an existing local Chrome session.
 - **`document-to-markdown`** — local-first conversion of documents into agent-readable Markdown.
+- **`docx`** — create and edit Word files with python-docx.
+- **`pdf`** — create and change PDFs with pypdf and ReportLab.
+- **`pptx`** — create and edit PowerPoint decks with python-pptx.
+- **`xlsx`** — create and edit Excel workbooks with openpyxl.
 - **`handoff`** — redacted handoff for a fresh agent session.
 - **`last30days`** — recent social, community, video, GitHub, and web research.
 - **`research`** — primary-source research captured in a repository note.
@@ -141,6 +145,8 @@ bash scripts/check-skill-sources.sh
 ```bash
 bash -n tests/skills_test.sh scripts/check-skill-sources.sh
 bash tests/skills_test.sh
+# Office real-file checks require uv and LibreOffice; optional output directory keeps previews.
+uv run --no-project tests/office_skills_test.py
 bash scripts/check-skill-sources.sh
 git diff --check
 ```
