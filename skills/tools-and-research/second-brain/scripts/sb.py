@@ -24,12 +24,12 @@ Usage:
   sb [--vault PATH] eval CASES.jsonl   measure current FTS5 ranking (read-only)
   sb [--vault PATH] add "Title" [-t TYPE] [-g TAGS] [-r RELEVANCE] [-b BODY | --body-file FILE]
                       [--related PATH]... [--status draft] [--supersedes PATH] [--source URL]...
-                      (TYPE ist frei per OKF §4.1; ueblich: observation/decision/insight/failure/reference)
+                      (TYPE is free-form per OKF §4.1; common: observation/decision/insight/failure/reference)
   sb [--vault PATH] page concept|entity|reference|topic|playbook "Title" --body-file FILE
                        [--source URL]... [--related PATH]...
                        [--expect-sha256 HASH --reason TEXT]  create/revise a canonical wiki page
   sb [--vault PATH] capture "Title" --source URL --body-file FILE [--original FILE] [--scope full|excerpt]
-  sb [--vault PATH] verify PATH [--by ACTOR]   OKF-verified vermerken (Default human:$USER)
+  sb [--vault PATH] verify PATH [--by ACTOR]   record OKF verification (default human:$USER)
   sb [--vault PATH] idea "Text"       quick-capture as draft insight
   sb [--vault PATH] lint [--fix]      links, index/FTS drift + OKF/health report
   sb [--vault PATH] orphans           concepts without semantic Markdown inbound links
@@ -111,7 +111,7 @@ def connect(vault: Path, target: Path | None = None) -> sqlite3.Connection:
         )
     except sqlite3.OperationalError as exc:
         con.close()
-        sys.exit(f"[sb] FTS5 nicht verfuegbar ({exc}). Grep-Fallback: rg -i <term> {vault}")
+        sys.exit(f"[sb] FTS5 unavailable ({exc}). Grep fallback: rg -i <term> {vault}")
     return con
 
 
@@ -169,7 +169,7 @@ def parse_note(path: Path, vault: Path) -> dict:
 
 
 def _verified_field(fields: dict[str, str], meta: str) -> str:
-    """verified als Rohstring — Flow-Map direkt, Listenform via Folgezeilen."""
+    """Read verified as raw text, including flow maps and multiline lists."""
     verified = fields.get("verified", "")
     if "verified" in fields and not verified:
         vm = re.search(r"^verified:\s*\n((?:[ \t]+- .*\n?)+)", meta, re.M)
@@ -221,7 +221,7 @@ def markdown_outside_code(text: str) -> str:
 
 
 def resolve_link(vault: Path, src: Path, target: str) -> Path:
-    """OKF §6.1: '/x.md' ist bundle-relativ, sonst Pfad relativ zur verlinkenden Datei."""
+    """OKF §6.1: '/x.md' is bundle-relative; other paths are relative to the linking file."""
     target = urllib.parse.unquote(target.split("?", 1)[0])
     if target.startswith("/"):
         return vault / target.lstrip("/")
@@ -336,6 +336,7 @@ def render_index(vault: Path, directory: Path, directories: list[Path]) -> str:
     title = f"{vault.name} — Knowledge Index" if directory == vault else f"{directory.name} — Index"
     existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else f"# {title}\n"
     existing = existing.replace("\r\n", "\n").replace("\r", "\n")
+    # Preserve removal of legacy German placeholders during index migration.
     existing = existing.replace("* [Titel](notes/<slug>.md) - Einzeiler-Claim\n", "")
     existing = existing.replace("Kuratierte Einstiegszeilen (OKF §8-Form):\n\n", "")
     block = index_block(vault, directory, directories)
@@ -387,10 +388,10 @@ def cmd_index(vault: Path) -> int:
         os.replace(temp_db, db_path(vault))
     finally:
         temp_db.unlink(missing_ok=True)
-    print(f"[sb] {len(rows)} Markdown-Dateien in {len(indexes)} Verzeichnis-Indizes + FTS indexiert")
+    print(f"[sb] indexed {len(rows)} Markdown files in {len(indexes)} directory indexes + FTS")
     print(f"[sb] FTS: {db_path(vault)}")
     if untyped:
-        print(f"[sb] OKF-WARNUNG: {len(untyped)} Datei(en) ohne 'type' (OKF verlangt type):")
+        print(f"[sb] OKF WARNING: {len(untyped)} file(s) without 'type' (required by OKF):")
         for p in untyped[:10]:
             print(f"    {p}")
     return 0
@@ -408,17 +409,17 @@ def ranked_rows(con: sqlite3.Connection, query: str, limit: int, show_all: bool)
 
 def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
     if limit < 1:
-        sys.exit("[sb] --limit muss mindestens 1 sein")
+        sys.exit("[sb] --limit must be at least 1")
     db = db_path(vault)
     if not db.exists():
-        print(f"[sb] Kein Index. Erst 'sb index' ausfuehren (oder rg -i {query!r} {vault}).")
+        print(f"[sb] No index. Run 'sb index' first (or rg -i {query!r} {vault}).")
         return 1
     con = sqlite3.connect(db)
     try:
         rows = ranked_rows(con, query, limit, show_all)
     except sqlite3.OperationalError as exc:
         con.close()
-        sys.exit(f"[sb] Suchfehler ({exc}). Index veraltet? 'sb index' ausfuehren.")
+        sys.exit(f"[sb] Search error ({exc}). Stale index? Run 'sb index'.")
     now = dt.datetime.now(dt.timezone.utc)
     for path, title, ntype, tags, rel, status, stale_after, verified, snip in rows:
         stale = ""
@@ -436,9 +437,9 @@ def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
                 "SELECT count(*) FROM notes WHERE notes MATCH ? AND status = 'deprecated'", (query,)
             ).fetchone()[0]
             if hidden:
-                extra = f" ({hidden} deprecated versteckt, --all zeigt sie)"
+                extra = f" ({hidden} deprecated entries hidden; use --all to show them)"
         con.close()
-        print(f"[sb] Keine Treffer fuer {query!r}.{extra}")
+        print(f"[sb] No matches for {query!r}.{extra}")
         return 1
     con.close()
     return 0
@@ -504,13 +505,13 @@ def slugify(title: str) -> str:
 
 
 def write_log(vault: Path, label: str, message: str) -> None:
-    """OKF §9: datumsgruppierte Eintraege, neueste Gruppe oben, keine Frontmatter."""
+    """OKF §9: date-grouped entries, newest group first, without frontmatter."""
     log = vault / "log.md"
     if not log.exists():
         log.write_text("# Update Log\n", encoding="utf-8")
     text = log.read_text(encoding="utf-8")
-    # Alte CLI-Versionen erzeugten log.md mit Frontmatter. Beim ersten neuen
-    # Eintrag einmalig auf das OKF-§9-Format migrieren.
+    # Older CLI versions added frontmatter to log.md. On the first new entry,
+    # migrate it once to the OKF §9 format.
     text = re.sub(r"^---\s*\n.*?\n---\s*\n?", "", text, count=1, flags=re.S)
     if not text.startswith("# "):
         text = "# Update Log\n\n" + text.lstrip()
@@ -525,46 +526,74 @@ def write_log(vault: Path, label: str, message: str) -> None:
     log.write_text(text, encoding="utf-8")
 
 
-DEFAULT_SCHEMA = """# Wiki-Schema
+DEFAULT_SCHEMA = """# Wiki schema
 
-Diese vom Besitzer anpassbaren Regeln steuern, wo Wissen landet. `sb init` und
-`sb index` ersetzen diese Datei nicht. Vor dem Einlesen oder Überarbeiten lesen.
+These owner-editable rules govern knowledge placement. `sb init` and `sb index`
+do not replace this file. Read it before ingesting or revising content.
 
-## Quellen und Geschichte
+## Sources and history
 
-- `raw/`: unveränderte Originaldateien (auch binäres Material). `sb capture
-  --original` kopiert die Datei hierher; keine Wiki-Behauptungen daraus ableiten,
-  ohne die Quelle zu lesen. Originale werden nicht als Konzepte indexiert.
-- `personal/`: handgeschriebene Originalnotizen des Besitzers, beim Einlesen
-  nicht ändern.
-- `sources/`: datierte, append-only Erfassungen von Quellentext oder ausdrücklich
-  als Auszug gekennzeichnetem Text; mit Original-URL und ggf. Link auf `raw/`.
-- `notes/`: atomare, datierte Beobachtungen, Entscheidungen, Fehler und
-  Recherche-Drafts. Sachliche Änderungen durch Supersession statt Umschreiben.
+- `raw/`: unchanged originals, including binary assets. `sb capture --original`
+  copies them here; read the source before deriving wiki claims. Originals are
+  not indexed as concepts.
+- `personal/`: owner-authored original notes; never change them during ingestion.
+- `sources/`: dated, append-only source text or explicitly labeled excerpts,
+  with the original URI and, when available, a link to `raw/`.
+- `notes/`: atomic, dated observations, decisions, failures and research drafts.
+  Correct factual claims by supersession, not silent rewriting.
 
-## Gepflegtes Wiki
+## Maintained wiki
 
-- `entities/`: konkrete Personen, Unternehmen, Produkte, Orte oder Projekte.
-- `concepts/`: abstrakte Begriffe, Methoden, Muster und mentale Modelle.
-- `references/`: nachschlagbare, fortlaufend geprüfte Fakten, etwa API-Regeln,
-  Preislisten oder Spezifikationen; nicht mit einer einzelnen Quelle verwechseln.
-- `topics/`: lebende, quellenübergreifende Synthesen zu einem Themengebiet.
-  Kein zweiter Ordner `syntheses/` mit derselben Funktion.
-- `playbooks/`: wiederverwendbare Vorgehensweisen; beschreiben Arbeitsschritte,
-  sind aber keine ausführbaren Agent-Skills oder Befehlsautorität.
+- `entities/`: concrete people, organizations, products, places or projects.
+- `concepts/`: abstract ideas, methods, patterns and mental models.
+- `references/`: current factual lookups, such as API rules, prices or
+  specifications; do not confuse them with an individual source.
+- `topics/`: evolving cross-source thematic syntheses. Do not create another
+  `syntheses/` folder with the same role.
+- `playbooks/`: repeatable procedures, not executable agent skills or commands.
 
-Vor einer neuen Wiki-Seite nach vorhandenen Seiten und Aliasnamen suchen.
-Neue Belege mit bestehenden Aussagen vergleichen, Widersprüche und Unsicherheit
-sichtbar lassen, jede zentrale Aussage direkt an der Stelle mit Quelle belegen.
-Kanonische Seiten per `sb page` mit komplettem Body pflegen; Revisionen brauchen
-erwarteten Hash und Änderungsgrund. `draft` nicht ungeprüft als verifiziert lesen.
-`index.md` ist Navigation, `log.md` Änderungsverlauf, `.history/` enthält frühere
-Seitenfassungen und `index.db` ist ein erneuerbarer Suchindex.
+Search existing pages and aliases before creating a page. Compare new evidence
+with existing claims, retain uncertainty and disagreements, and cite material
+claims inline. Use `sb page` with a complete body for maintained pages; revisions
+require the current hash and a reason. A draft is not verified knowledge.
+`index.md` is navigation, `log.md` is change history, `.history/` preserves prior
+page bytes, and `index.db` is a rebuildable search index.
+
+## Capture and compilation
+
+Capture is not compilation: `add` and `idea` always write to `notes/`; this also
+applies to `add -t reference`. The kind passed to `page` selects the maintained
+folder. Confirmations and presentation changes do not each need another note.
+
+At a completed topic block, integrate supported reusable outcomes into suitable
+maintained pages or create one when needed. Name the reason and intended target
+for deferred integration. Preserve notes as history; compilation alone neither
+deprecates them nor verifies their claims. Do not merely move notes, create a
+page per table row or fill every folder. Open questions remain drafts; explicit
+capture-only and read-only requests retain their scope. Report captures,
+compiled pages and deferrals separately. Focus the hot index on current
+maintained pages, not every capture.
+
+## Write for people and agents
+
+- Make authored pages, source summaries and reading views understandable
+  without the original conversation. Introduce the subject, scope and caveats.
+- Use descriptive headings, short paragraphs and purposeful lists or tables.
+  Include only meaningful sections; do not invent facts or template filler.
+- Separate source statements, observations, interpretation, limitations and
+  open questions. Keep evidence and qualifications beside their claims.
+- Preserve meaning, numbers, units, ranges, technical names and identifiers.
+  Readability must neither reduce precision nor conceal uncertainty.
+- Follow the owner's wiki language; preserve metadata structure, stable paths
+  and original quotations. The template language does not set the wiki content language.
+- Keep originals and verbatim captures unchanged. Label derived summaries,
+  translations and reading views and link their evidence. Do not rewrite
+  append-only captures or present their hash as a translated view's hash.
 """
 
 
 def ensure_bundle(vault: Path) -> bool:
-    """Fehlende OKF-Bundle-Struktur anlegen; True nur bei neuem index.md."""
+    """Create missing OKF structure; return True only for a newly created index.md."""
     vault.mkdir(parents=True, exist_ok=True)
     (vault / "notes").mkdir(exist_ok=True)
     (vault / "sources").mkdir(exist_ok=True)
@@ -587,23 +616,23 @@ def ensure_bundle(vault: Path) -> bool:
     if not (vault / "log.md").exists():
         (vault / "log.md").write_text("# Update Log\n", encoding="utf-8")
     if created:
-        write_log(vault, "Initialization", f"Bundle erstellt — {now_utc()} by {ACTOR}")
+        write_log(vault, "Initialization", f"Bundle created — {now_utc()} by {ACTOR}")
     return created
 
 
 def deprecate(vault: Path, target: Path, successor_rel: str, successor_title: str) -> None:
-    """OKF-Claim-Update: alt bleibt lesbar, wird aber als veraltet markiert."""
+    """OKF claim update: retain the previous claim and mark it deprecated."""
     text = target.read_text(encoding="utf-8")
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n?", text, re.S)
     if not m:
-        sys.exit(f"[sb] deprecate: kein Frontmatter: {target.name}")
+        sys.exit(f"[sb] deprecate: missing frontmatter: {target.name}")
     meta = m.group(1)
-    # Nur Frontmatter anfassen — Body-Zeilen wie 'status: …' duerfen nie getroffen werden.
+    # Modify only frontmatter, never body lines such as 'status: …'.
     if re.search(r"^status:", meta, re.M):
         meta = re.sub(r"^status:.*$", "status: deprecated", meta, count=1, flags=re.M)
     else:
         meta = "status: deprecated\n" + meta
-    # OKF §5.2: Deprecation ist eine wesentliche Aenderung -> generated.at mitbumpen.
+    # OKF §5.2: deprecation is a material change; update generated.at as well.
     meta = re.sub(r"^generated:.*$", f"generated: {{ by: {ACTOR}, at: {now_utc()} }}",
                   meta, count=1, flags=re.M)
     text = f"---\n{meta}\n---\n" + text[m.end():]
@@ -647,15 +676,15 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     args.title = args.title.strip()
     args.type = args.type.strip()
     if not args.title or any(c in args.title for c in "\r\n"):
-        sys.exit("[sb] Titel darf nicht leer oder mehrzeilig sein")
+        sys.exit("[sb] Title must be nonempty and single-line")
     if not args.type or any(c in args.type for c in "\r\n"):
-        sys.exit("[sb] --type darf nicht leer oder mehrzeilig sein")
+        sys.exit("[sb] --type must be nonempty and single-line")
     if args.status not in VALID_STATUS:
-        sys.exit(f"[sb] --status muss einer von {VALID_STATUS} sein")
+        sys.exit(f"[sb] --status must be one of {VALID_STATUS}")
     date = dt.date.today().isoformat()
     stem = f"{date}-{slugify(args.title)}"
     note = vault / "notes" / f"{stem}.md"
-    n = 2  # Slug-Kollision am selben Tag: Suffix statt Abbruch (auch fuer non-ASCII-Slugs)
+    n = 2  # Same-day slug collisions use a suffix, including non-ASCII slugs.
     while note.exists():
         note = vault / "notes" / f"{stem}-{n}.md"
         n += 1
@@ -696,9 +725,9 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
         target = (vault / args.supersedes).resolve()
         if (not target.is_relative_to(vault) or not target.is_file()
                 or target.name in RESERVED):
-            sys.exit(f"[sb] --supersedes: kein regelmaessiges Konzept im Bundle: {args.supersedes}")
+            sys.exit(f"[sb] --supersedes: not a regular concept file in the bundle: {args.supersedes}")
         if not re.match(r"^---\s*\n.*?\n---\s*\n?", target.read_text(encoding="utf-8"), re.S):
-            sys.exit(f"[sb] --supersedes: Konzept hat kein Frontmatter: {args.supersedes}")
+            sys.exit(f"[sb] --supersedes: concept has no frontmatter: {args.supersedes}")
         predecessor = target
     fm = f"type: {json.dumps(args.type, ensure_ascii=False)}\n"
     if args.status != "stable":
@@ -733,12 +762,12 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     rendered_sections = "\n\n".join(sections)
     note.write_text(f"---\n{fm}---\n\n{rendered_sections}\n", encoding="utf-8")
     if predecessor is not None:
-        # Erst erfolgreich schreiben, dann deprecieren — kein verwaistes 'deprecated' ohne Nachfolger.
+        # Write successfully before deprecation; never leave a predecessor without a successor.
         successor_rel = urllib.parse.quote(
             os.path.relpath(note, predecessor.parent).replace(os.sep, "/"), safe="/-._~",
         )
         deprecate(vault, predecessor, successor_rel, args.title)
-    print(f"[sb] Konzept angelegt: {note}")
+    print(f"[sb] Created concept: {note}")
     return cmd_index(vault)
 
 
@@ -891,7 +920,7 @@ def cmd_capture(vault: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_idea(vault: Path, text: str, args: argparse.Namespace) -> int:
-    # argparse setzt Defaults nur des aufgerufenen Subparsers: fehlende Felder ergaenzen.
+    # argparse only sets the selected subparser's defaults; supply missing fields.
     args.title = text.strip().rstrip(".")
     args.type = "insight"
     args.status = "draft"
@@ -903,20 +932,20 @@ def cmd_idea(vault: Path, text: str, args: argparse.Namespace) -> int:
 
 
 def cmd_verify(vault: Path, rel: str, by: str) -> int:
-    """OKF §5.2/§5.3: Verifikations-Eintrag anhaengen (Trust-Tier human-reviewed)."""
+    """OKF §5.2/§5.3: append a verification entry in the human-reviewed trust tier."""
     vault = vault.resolve()
     if not by:
         by = f"human:{getpass.getuser()}"
     by = by.strip()
     if not re.fullmatch(r"[\w@./:+-]+", by):
-        sys.exit("[sb] --by darf nur Buchstaben, Zahlen und @./:+- enthalten")
+        sys.exit("[sb] --by may contain only letters, numbers and @./:+-")
     target = (vault / rel).resolve()
     if not target.is_relative_to(vault) or not target.is_file() or target.name in RESERVED:
-        sys.exit(f"[sb] verify: kein regelmaessiges Konzept im Bundle: {rel}")
+        sys.exit(f"[sb] verify: not a regular concept file in the bundle: {rel}")
     text = target.read_text(encoding="utf-8")
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n?", text, re.S)
     if not m:
-        sys.exit(f"[sb] verify: kein Frontmatter: {rel}")
+        sys.exit(f"[sb] verify: missing frontmatter: {rel}")
     meta = m.group(1)
     new_entry = f"{{ by: {json.dumps(by, ensure_ascii=False)}, at: {now_utc()} }}"
     vm = re.search(r"^verified:[^\n]*(?:\n[ \t]+[^\n]*)*", meta, re.M)
@@ -935,27 +964,31 @@ def cmd_verify(vault: Path, rel: str, by: str) -> int:
 
 
 HOOK_BLOCK = """## Second Brain (project knowledge)
-- Projektwissen liegt in `{vault}` (OKF v0.2 Bundle, git-getrackt).
-- Vor nicht-trivialen Aufgaben: `uv run {sb} --vault "{vault}" search "<Begriffe>"` (Fallback: rg).
-- `schema.md` lesen; Originale bei Bedarf mit `uv run {sb} --vault "{vault}" capture "Titel" --source "<URI>" --body-file "<Textdatei>" --original "<Original>"` in `raw/` bewahren, Quellentexte in `sources/` und Wissen in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/` pflegen.
-- `uv run {sb} --vault "{vault}" page concept "Titel" --body-file "<vollstaendige-Seite>" --expect-sha256 "<Hash>" --reason "<Grund>"` aktualisiert bestehende kanonische Seiten; alte Fassungen liegen in `.history/`.
-- Einzelne dauerhafte Fakten: `… --vault "{vault}" add "Titel" -t decision -g tags --related notes/related.md` (niemals Secrets).
-- Claims nie stillschweigend umschreiben — superseden: `… --vault "{vault}" add "Neu" --supersedes notes/alt.md` (Pfad relativ zum Bundle); bei Recall status/stale_after beachten.
-- Handschriftliche Markdown-Dateien liegen in `personal/`; nur auf Anfrage unverändert als Quelle lesen.
-- Alle `index.md`-Dateien enthalten generierte Navigation; `index.db` dient ausschliesslich FTS. Nach manuellen Aenderungen `uv run {sb} --vault "{vault}" index`, fuer Drift/Links `uv run {sb} --vault "{vault}" lint` ausfuehren.
+- Project knowledge belongs in `{vault}` (OKF v0.2 bundle).
+- Before non-trivial work: `uv run {sb} --vault "{vault}" search "<terms>"` (fallback: rg).
+- Read `schema.md`; preserve originals with `uv run {sb} --vault "{vault}" capture "Title" --source "<URI>" --body-file "<text-file>" --original "<original>"` when applicable. Keep originals in `raw/`, captures in `sources/` and maintained knowledge in `entities/`, `concepts/`, `references/`, `topics/`, `playbooks/`.
+- `uv run {sb} --vault "{vault}" page concept "Title" --body-file "<complete-page>" --expect-sha256 "<hash>" --reason "<reason>"` revises maintained pages; prior bytes remain in `.history/`.
+- Preserve distinct durable facts with `… --vault "{vault}" add "Title" -t decision -g tags --related notes/related.md` (never secrets).
+- Capture is not compilation: `add`/`idea` write to `notes/`; so does `add -t reference`. `page` selects the maintained folder. Do not recapture confirmations of unchanged claims.
+- Normal completion requires compilation or justified deferral after a topic block. Integrate supported reusable outcomes into maintained pages, or state the deferral's reason and target. Report captures, compiled pages and open questions separately; focus the hot index on current maintained pages.
+- Explicit capture-only/open-question requests retain their scope; read-only checks authorize neither writes nor synthesis. Preserve historical notes; compilation is not verification or automatic status promotion.
+- Never silently rewrite factual claims; supersede with `… --vault "{vault}" add "Replacement" --supersedes notes/old.md` (bundle-relative path). Respect status and stale_after during recall.
+- Owner-authored Markdown belongs in `personal/`; read it only on request and leave it unchanged.
+- Follow the owner's wiki language; English skill instructions do not determine content language.
+- Preserve human-curated text outside generated index blocks; `index.db` is FTS only. After manual edits run `uv run {sb} --vault "{vault}" index`; check links and drift with `uv run {sb} --vault "{vault}" lint`.
 """
 
 
 def cmd_init(vault: Path) -> int:
-    """OKF-Bundle-Skeleton anlegen und den AGENTS.md-Hook ausgeben."""
+    """Create missing OKF bundle structure and print the AGENTS.md hook."""
     vault = vault.resolve()
     ensure_bundle(vault)
     try:
         hook_vault = vault.relative_to(Path.cwd().resolve()).as_posix()
     except ValueError:
         hook_vault = str(vault)
-    print(f"[sb] OKF v0.2 Bundle bereit: {vault}")
-    print("[sb] Diesen Block in die Projekt-AGENTS.md einfuegen:\n")
+    print(f"[sb] OKF v0.2 bundle ready: {vault}")
+    print("[sb] Add this block to the project's AGENTS.md:\n")
     print(HOOK_BLOCK.format(vault=hook_vault, sb=str(Path(__file__).resolve())))
     return cmd_index(vault)
 
@@ -1030,15 +1063,15 @@ def cmd_lint(vault: Path, fix: bool) -> int:
                 broken.append((index, label, target))
     drifted_indexes = index_drift(vault)
     stale_fts = fts_drift(vault)
-    print(f"[sb] lint: {len(broken)} kaputte Links, {len(unsupported_wikilinks)} unsupported wikilinks, "
+    print(f"[sb] lint: {len(broken)} broken links, {len(unsupported_wikilinks)} unsupported wikilinks, "
           f"{len(drifted_indexes)} index drift, FTS {'drift' if stale_fts else 'current'}, "
-          f"{len(untyped)} ohne type, {drafts} draft, {deprecated} deprecated, {stale} stale")
+          f"{len(untyped)} without type, {drafts} draft, {deprecated} deprecated, {stale} stale")
     for p, label, target in broken:
-        print(f"    kaputt: {p.relative_to(vault)} -> [{label}]({target})")
+        print(f"    broken: {p.relative_to(vault)} -> [{label}]({target})")
     for p, target in unsupported_wikilinks:
         print(f"    unsupported wikilink: {p.relative_to(vault)} -> [[{target}]]; use [text](path.md)")
     for rel in untyped:
-        print(f"    ohne type: {rel}")
+        print(f"    without type: {rel}")
     for path in drifted_indexes:
         print(f"    index drift: {path.relative_to(vault)}")
     if stale_fts:
@@ -1059,24 +1092,24 @@ def cmd_orphans(vault: Path) -> int:
             if resolved.is_relative_to(vault):
                 inbound.add(os.path.realpath(resolved))
     orphans = [p for p in files if os.path.realpath(p) not in inbound]
-    print(f"[sb] {len(orphans)} Orphan(s) ohne Inbound-Links (Kandidaten fuer Verknuepfungen):")
+    print(f"[sb] {len(orphans)} orphan(s) without inbound links (integration candidates):")
     for p in orphans:
         print(f"    {p.relative_to(vault)}")
     return 0
 
 
 def shingles(text: str, n: int = 3) -> set[tuple[str, ...]]:
-    # H1-Zeile entfernen: Duplikate haben oft unterschiedliche Titel, gleiche Body.
+    # Drop the H1: duplicates often have different titles but identical bodies.
     text = re.sub(r"^#\s+.+$\n?", "", text, count=1, flags=re.M)
     words = re.findall(r"\w+", text.lower())
     return {tuple(words[i:i + n]) for i in range(max(0, len(words) - n + 1))}
 
 
 def cmd_dedup(vault: Path, threshold: float) -> int:
-    # ponytail: Kandidatenpaare via Shingle-Inverted-Index, dann Jaccard;
-    # O(n²) nur noch fuer Kandidaten — reicht bis einige Tausend Konzepte.
+    # Find candidate pairs through a shingle inverted index, then use Jaccard.
+    # Only candidate pairs incur O(n²) work; suitable for a few thousand concepts.
     if not 0 <= threshold <= 1:
-        sys.exit("[sb] --threshold muss zwischen 0 und 1 liegen")
+        sys.exit("[sb] --threshold must be between 0 and 1")
     vault = vault.resolve()
     entries = []
     index: dict[tuple[str, ...], list[int]] = {}
@@ -1102,8 +1135,8 @@ def cmd_dedup(vault: Path, threshold: float) -> int:
         if jac >= threshold:
             found += 1
             print(f"    {jac:.0%}  {entries[a][0].relative_to(vault)}  ~  {entries[b][0].relative_to(vault)}")
-    print(f"[sb] {found} Duplikat-Paar(e) >= {threshold:.0%} Aehnlichkeit "
-          "(Loesung: superseden, nicht loeschen)")
+    print(f"[sb] {found} duplicate pair(s) >= {threshold:.0%} similarity "
+          "(resolve by supersession, not deletion)")
     return 0
 
 
@@ -1140,15 +1173,15 @@ def run_pattern(binary: str, pattern: str, lang: str, root: Path) -> list[dict]:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120,
                               check=False)
     except subprocess.TimeoutExpired:
-        sys.exit(f"[sb] ast-grep Timeout fuer Sprache {lang}")
-    if proc.returncode not in (0, 1):  # ast-grep: 1 = gueltiges Muster, keine Treffer
-        sys.exit(f"[sb] ast-grep fehlgeschlagen: {proc.stderr.strip()[:300]}")
+        sys.exit(f"[sb] ast-grep timed out for language {lang}")
+    if proc.returncode not in (0, 1):  # ast-grep: 1 means a valid pattern with no matches.
+        sys.exit(f"[sb] ast-grep failed: {proc.stderr.strip()[:300]}")
     if not proc.stdout.strip():
         return []
     try:
         return json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
-        sys.exit(f"[sb] ast-grep lieferte ungueltiges JSON: {exc}")
+        sys.exit(f"[sb] ast-grep returned invalid JSON: {exc}")
 
 
 def meta_name(match: dict) -> str:
@@ -1205,18 +1238,18 @@ def resolve_import(lang: str, mod: str, importer: str,
 
 
 def cmd_codegraph(vault: Path, root: Path) -> int:
-    """Codebasis-Symbol-/Importgraph via ast-grep als OKF-Konzept.
+    """Map code symbols/imports through ast-grep into an OKF concept.
 
-    ponytail: v1 mappt python + ts/js (functions/classes/imports); Import-
-    Aufloesung ist Heuristik (Basename/Pfadmatch), kein Typ-Resolver.
-    Upgrade-Pfad: tatsaechliche Cross-References via LSP, wenn noetig.
+    Supports Python and TS/JS functions, classes and imports. Import resolution
+    uses basename/path heuristics, not a type resolver. LSP cross-references
+    would be a possible future extension if needed.
     """
     binary = find_ast_grep()
     if not binary:
-        sys.exit("[sb] ast-grep nicht gefunden. Install: npm i -g @ast-grep/cli (oder brew install ast-grep)")
+        sys.exit("[sb] ast-grep not found. Install: npm i -g @ast-grep/cli (or brew install ast-grep)")
     root = root.resolve()
     if not root.is_dir():
-        sys.exit(f"[sb] --root ist kein Verzeichnis: {root}")
+        sys.exit(f"[sb] --root is not a directory: {root}")
     vault = vault.resolve()
     known: dict[str, Path] = {}
     extensions = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"}
@@ -1249,18 +1282,18 @@ def cmd_codegraph(vault: Path, root: Path) -> int:
                         if mod:
                             target = resolve_import(lang, str(mod), f, known)
                             if target:
-                                # Inline-Code, kein Link: Ziel liegt ausserhalb des Bundles,
-                                # Links dorthin wuerden lint/dream dauerhaft vergiften.
+                                # Use inline code, not a link: the target is outside the
+                                # bundle and would create permanently broken wiki links.
                                 imports.setdefault(f, set()).add(f"`{mod}` -> `{target.relative_to(root)}`")
                             else:
-                                imports.setdefault(f, set()).add(f"`{mod}` -> (extern)")
+                                imports.setdefault(f, set()).add(f"`{mod}` -> (external)")
         for f in sorted(set(symbols) | set(imports)):
             lines = [f"## {f}"]
             lines += [f"- {s}" for s in sorted(symbols.get(f, []))]
             lines += [f"- import {i}" for i in sorted(imports.get(f, []))]
             sections.append("\n".join(lines) + "\n")
     if not sections:
-        print("[sb] Keine Treffer — ist --root ein python/ts/js Projekt?")
+        print("[sb] No matches; is --root a Python/TS/JS project?")
         return 1
     out = vault / "topics" / "code-graph.md"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -1270,8 +1303,8 @@ def cmd_codegraph(vault: Path, root: Path) -> int:
         + "\n".join(sections),
         encoding="utf-8",
     )
-    write_log(vault, "Update", f"code-graph aktualisiert: {root} — {now_utc()} by {ACTOR}")
-    print(f"[sb] Code-Graph geschrieben: {out}")
+    write_log(vault, "Update", f"code graph updated: {root} — {now_utc()} by {ACTOR}")
+    print(f"[sb] Code graph written: {out}")
     return cmd_index(vault)
 
 
@@ -1279,12 +1312,12 @@ def cmd_codegraph(vault: Path, root: Path) -> int:
 
 def cmd_stats(vault: Path) -> int:
     files = note_files(vault)
-    # Frontmatter-basiert (parse_note), nicht Ganzdatei-Regex: Body-Zeilen wie 'status: …' faelschen sonst die Zahl.
+    # Parse frontmatter, not whole-file regexes; body lines like 'status: …' must not affect counts.
     concepts = [p for p in files if p.relative_to(vault).parts[0] != "personal"]
     deprecated = sum(1 for p in concepts if parse_note(p, vault).get("status") == "deprecated")
     print(f"Bundle:      {vault} (OKF v0.2)")
-    print(f"Markdown:    {len(files)} Dateien ({len(concepts)} Konzepte, {len(files) - len(concepts)} personal)")
-    print(f"Navigation:  {len(index_directories(vault))} Verzeichnis-Indizes ({len(index_drift(vault))} drift)")
+    print(f"Markdown:    {len(files)} files ({len(concepts)} concepts, {len(files) - len(concepts)} personal)")
+    print(f"Navigation:  {len(index_directories(vault))} directory indexes ({len(index_drift(vault))} drift)")
     fts = "stale" if fts_drift(vault) else "current"
     print(f"FTS only:    {db_path(vault)} ({fts})")
     return 0
@@ -1300,22 +1333,22 @@ def cmd_selftest() -> int:
         rc0 = cmd_init(vault)
         rc1 = cmd_add(vault, _ns(title="UV Workspace Gotcha", type="failure", tags="python, uv",
                                  relevance="high", status="stable", supersedes=None, source=[],
-                                 body="uv sync ignoriert workspace-members ohne explicit source. Fix: tool.uv.sources setzen."))
+                                 body="uv sync ignores workspace members without an explicit source. Fix: set tool.uv.sources."))
         old = next(vault.glob("notes/*uv-workspace*"))
         rc2 = cmd_add(vault, _ns(title="UV Workspace Final", type="decision", tags="python, uv",
                                  relevance="high", status="stable",
                                  supersedes=str(old.relative_to(vault)), source=[],
-                                 body="Endgueltige Loesung: tool.uv.sources + workspace members."))
-        rc3 = cmd_idea(vault, "Marimo batch reporting als Standardweg", _ns(tags="", relevance="low", supersedes=None, source=[]))
-        rc3b = cmd_add(vault, _ns(title="Marimo Batch Reporting Kopie", type="insight", tags="",
+                                 body="Final solution: tool.uv.sources + workspace members."))
+        rc3 = cmd_idea(vault, "Marimo batch reporting as the default", _ns(tags="", relevance="low", supersedes=None, source=[]))
+        rc3b = cmd_add(vault, _ns(title="Marimo Batch Reporting Copy", type="insight", tags="",
                                   relevance="low", status="stable", supersedes=None, source=[],
-                                  body="Marimo batch reporting als Standardweg"))
-        rc4 = cmd_add(vault, _ns(title="UV Duplikat", type="failure", tags="python",
+                                  body="Marimo batch reporting as the default"))
+        rc4 = cmd_add(vault, _ns(title="UV Duplicate", type="failure", tags="python",
                                  relevance="medium", status="stable", supersedes=None, source=["https://docs.astral.sh/uv/"],
-                                 body="uv sync ignoriert workspace-members ohne explicit source. Fix: tool.uv.sources setzen."))
+                                 body="uv sync ignores workspace members without an explicit source. Fix: set tool.uv.sources."))
         manual_broken_link = vault / "notes" / "manual-broken-link.md"
         manual_broken_link.write_text(
-            "---\ntype: observation\n---\n# Manual Broken Link\n\nSee [Doku](nicht-da.md).\n",
+            "---\ntype: observation\n---\n# Manual Broken Link\n\nSee [Documentation](not-there.md).\n",
             encoding="utf-8",
         )
         final_note = next(vault.glob("notes/*uv-workspace-final*"))
@@ -1327,9 +1360,9 @@ def cmd_selftest() -> int:
             encoding="utf-8",
         )
         rc2vb = cmd_verify(vault, str(block_note.relative_to(vault)), "human:new")
-        rc_t = cmd_add(vault, _ns(title="Custom Typ Test", type="code-graph", tags="",
+        rc_t = cmd_add(vault, _ns(title="Custom Type Test", type="code-graph", tags="",
                                   relevance="low", status="stable", supersedes=None, source=[],
-                                  body="Freier OKF-Typ."))
+                                  body="Free-form OKF type."))
         long_body = "Plain prose should wrap into readable Markdown paragraphs. " * 4
         rc_format = cmd_add(vault, _ns(title="Formatted Plain Body", type="observation", tags="",
                                        relevance="medium", status="stable", supersedes=None,
@@ -1447,7 +1480,7 @@ def cmd_selftest() -> int:
             rc_personal_search = cmd_search(graph_vault, "quartzsource", 5, False)
         graph_orphans = orphan_buf.getvalue()
         personal_search = graph_search_buf.getvalue()
-        proc = subprocess.run(  # Regression N1: idea via echtem CLI (argparse, nicht Namespace-Injektion)
+        proc = subprocess.run(  # Regression: exercise idea through argparse, not injected namespaces.
             [sys.executable, str(Path(__file__).resolve()), "--vault", str(vault),
              "idea", "Subprocess Idea Regression"],
             capture_output=True, text=True,
@@ -1653,17 +1686,29 @@ def cmd_selftest() -> int:
             with contextlib.redirect_stdout(wiki_lint_buf):
                 cmd_lint(wiki_vault, fix=False)
         date_only = parse_instant("2000-01-01")
-        uv_dup = next(vault.glob("notes/*uv-duplikat*"))
-        custom_type = next(vault.glob("notes/*custom-typ-test*"))
+        uv_dup = next(vault.glob("notes/*uv-duplicate*"))
+        custom_type = next(vault.glob("notes/*custom-type-test*"))
         checks = {
+            "script guidance is English and leaves wiki language to the owner":
+                initial_schema.startswith("# Wiki schema\n")
+                and "The template language does not set the wiki content language." in initial_schema
+                and "Capture is not compilation" in HOOK_BLOCK,
+            "project hook and new schema distinguish capture from compilation":
+                "Capture is not compilation" in initial_schema
+                and "compilation or justified deferral" in HOOK_BLOCK
+                and "capture-only" in HOOK_BLOCK
+                and "read-only" in HOOK_BLOCK,
             "project hook scopes every documented CLI action": all(
                 f'--vault "{{vault}}" {verb}' in HOOK_BLOCK
                 for verb in ("search", "capture", "page", "add", "index", "lint")
             ),
             "wiki schema and category directories": all((wiki_vault / name).is_dir() for name in
                 ("raw", "entities", "references", "playbooks"))
-                and all(label in initial_schema for label in ("raw/", "entities/", "references/", "playbooks/"))
-                and "Owner convention." in schema.read_text(encoding="utf-8")
+                and all(label in initial_schema for label in (
+                    "raw/", "entities/", "references/", "playbooks/",
+                    "## Write for people and agents", "reading views",
+                ))
+                and schema.read_text(encoding="utf-8") == initial_schema + "\nOwner convention.\n"
                 and "schema.md" in (wiki_vault / "index.md").read_text(encoding="utf-8")
                 and schema not in note_files(wiki_vault),
             "capture preserves original outside FTS": original_capture_proc.returncode == 0
@@ -1724,26 +1769,26 @@ def cmd_selftest() -> int:
                 and (wiki_vault / "concepts" / "index.md").exists()
                 and (wiki_vault / "sources" / "index.md").exists()
                 and "topics/research-workflows.md" in wiki_search_buf.getvalue()
-                and "0 kaputte Links" in wiki_lint_buf.getvalue(),
+                and "0 broken links" in wiki_lint_buf.getvalue(),
             "additional page kinds": all(rc == 0 and path.exists()
                 and parse_note(path, wiki_vault)["type"] == kind
                 and f"{path.parent.name}/index.md" in (wiki_vault / "index.md").read_text(encoding="utf-8")
-                for rc, path, kind in other_pages) and "0 kaputte Links" in wiki_lint_buf.getvalue(),
+                for rc, path, kind in other_pages) and "0 broken links" in wiki_lint_buf.getvalue(),
             "non-Latin page slugs are distinct": slugify("知识") != slugify("研究")
                 and slugify("知识") == slugify("知识"),
             "init ok": rc0 == 0 and rc0b == 0 and (vault / "index.md").exists(),
             "init idempotent": init_entries == init_entries_after,
             "add ok": rc1 == 0 and rc2 == 0 and rc4 == 0,
-            "idea ok": rc3 == 0 and any(vault.glob("notes/*marimo-batch-reporting-als-standardweg*")),
-            "idea ist draft": "status: draft" in next(vault.glob("notes/*marimo-batch-reporting-als-standardweg*")).read_text(encoding="utf-8"),
+            "idea ok": rc3 == 0 and any(vault.glob("notes/*marimo-batch-reporting-as-the-default*")),
+            "idea is draft": "status: draft" in next(vault.glob("notes/*marimo-batch-reporting-as-the-default*")).read_text(encoding="utf-8"),
             "source ok": "https://docs.astral.sh/uv/" in uv_dup.read_text(encoding="utf-8"),
             "search ok": rc5 == 0 and rc6 == 0,
-            "deprecated versteckt": "UV Workspace Gotcha" not in out.split("UV Workspace Final")[0],
-            "supersede sichtbar mit --all": out.count("UV Workspace Gotcha") >= 1,
-            "deprecated markiert": "status: deprecated" in old.read_text(encoding="utf-8"),
-            "verify schreibt": rc2v == 0 and "human:test" in final_note.read_text(encoding="utf-8") and "verified:" in final_note.read_text(encoding="utf-8"),
-            "verify behaelt Block-Mapping": rc2vb == 0 and "human:old" in block_note.read_text(encoding="utf-8") and "human:new" in block_note.read_text(encoding="utf-8"),
-            "freier Typ": rc_t == 0 and parse_note(custom_type, vault)["type"] == "code-graph",
+            "deprecated entries are hidden": "UV Workspace Gotcha" not in out.split("UV Workspace Final")[0],
+            "superseded entries visible with --all": out.count("UV Workspace Gotcha") >= 1,
+            "deprecated status recorded": "status: deprecated" in old.read_text(encoding="utf-8"),
+            "verification recorded": rc2v == 0 and "human:test" in final_note.read_text(encoding="utf-8") and "verified:" in final_note.read_text(encoding="utf-8"),
+            "verification preserves block mappings": rc2vb == 0 and "human:old" in block_note.read_text(encoding="utf-8") and "human:new" in block_note.read_text(encoding="utf-8"),
+            "custom type supported": rc_t == 0 and parse_note(custom_type, vault)["type"] == "code-graph",
             "plain body is wrapped": rc_format == 0 and max(map(len, formatted_body.splitlines())) <= 88,
             "body-file preserves Markdown": body_file_proc.returncode == 0 and body_file_note is not None
                 and "## Context" in body_file_note.read_text(encoding="utf-8")
@@ -1798,19 +1843,19 @@ def cmd_selftest() -> int:
                 and "personal/handwritten.md" not in index_report and "notes/untyped.md" in index_report,
             "lint reports unsupported wikilinks, not code samples": "[[Node A]]" in drift_report
                 and "not-real.md" not in drift_report,
-            "idea via echtem CLI": proc.returncode == 0 and any(vault.glob("notes/*subprocess-idea-regression*")),
-            "supersede-Links ganz": out.count("    kaputt:") == 1,  # nur der absichtliche nicht-da.md
-            "log §9-Gruppen": f"## {dt.date.today().isoformat()}" in (vault / "log.md").read_text(encoding="utf-8"),
-            "log migriert Frontmatter": not migrated_log.startswith("---") and "old entry" in migrated_log,
-            "verify sichtbar": "human-verified" in out,
-            "log geschrieben": (vault / "log.md").exists(),
-            "okf type vorhanden": parse_note(old, vault)["type"] == "failure",
-            "lint findet kaputten Link": rc7 == 0 and "nicht-da.md" in out,
-            "orphans laeuft": rc8 == 0,
-            "dedup findet Paar": rc3b == 0 and rc9 == 0 and "marimo-batch-reporting-als-standardweg" in out and "marimo-batch-reporting-kopie" in out and "~" in out,
+            "idea through the actual CLI": proc.returncode == 0 and any(vault.glob("notes/*subprocess-idea-regression*")),
+            "supersession links intact": out.count("    broken:") == 1,  # Only the intentionally missing fixture.
+            "log uses OKF §9 groups": f"## {dt.date.today().isoformat()}" in (vault / "log.md").read_text(encoding="utf-8"),
+            "log migrates frontmatter": not migrated_log.startswith("---") and "old entry" in migrated_log,
+            "verification is visible": "human-verified" in out,
+            "log written": (vault / "log.md").exists(),
+            "OKF type recorded": parse_note(old, vault)["type"] == "failure",
+            "lint finds broken links": rc7 == 0 and "not-there.md" in out,
+            "orphans runs": rc8 == 0,
+            "dedup finds the pair": rc3b == 0 and rc9 == 0 and "marimo-batch-reporting-as-the-default" in out and "marimo-batch-reporting-copy" in out and "~" in out,
             "meta_name parser": meta_name({"metaVariables": {"single": {"NAME": {"text": "my_fn"}}}}) == "my_fn",
             "date-only stale_after": date_only is not None and date_only.tzinfo is not None,
-            "relativer Import": resolve_import("typescript", "./b", "src/a.ts", known) == Path("src/b.ts"),
+            "relative import": resolve_import("typescript", "./b", "src/a.ts", known) == Path("src/b.ts"),
             "Markdown parser handles labels and excludes non-links": md_links(
                 "[Missing](missing.md) and [A \\[B\\]](node-b.md) "
                 "and [space](<space note.md>) and [web](https://example.com/a).\n"
@@ -1823,28 +1868,28 @@ def cmd_selftest() -> int:
         }
         failed = [k for k, v in checks.items() if not v]
         if failed:
-            sys.exit(f"[sb] selftest FEHLGESCHLAGEN: {failed}\n{out}")
-    print(f"[sb] selftest OK ({len(checks)} Checks: init/add/idea/verify/cli/capture/supersede/search/eval/lint/orphans/dedup/log)")
+            sys.exit(f"[sb] selftest FAILED: {failed}\n{out}")
+    print(f"[sb] selftest OK ({len(checks)} checks: init/add/idea/verify/cli/capture/supersede/search/eval/lint/orphans/dedup/log)")
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="sb", description="second-brain CLI (OKF v0.2 + sqlite FTS5)")
-    ap.add_argument("--vault", help="Bundle-Pfad (Default: $SECOND_BRAIN_DIR oder ~/second-brain)")
+    ap.add_argument("--vault", help="Bundle path (default: $SECOND_BRAIN_DIR or ~/second-brain)")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("init", help="OKF-Bundle anlegen + AGENTS.md-Hook ausgeben")
-    sub.add_parser("index", help="Markdown-Verzeichnisindizes + FTS5-Index neu aufbauen")
-    sub.add_parser("rebuild", help="Alias fuer index (kompletter Neuaufbau)")
-    sp = sub.add_parser("search", help="Volltextsuche (FTS5 MATCH Syntax)")
+    sub.add_parser("init", help="create an OKF bundle and print the AGENTS.md hook")
+    sub.add_parser("index", help="rebuild Markdown directory indexes and the FTS5 index")
+    sub.add_parser("rebuild", help="alias for index (complete rebuild)")
+    sp = sub.add_parser("search", help="full-text search (FTS5 MATCH syntax)")
     sp.add_argument("query")
     sp.add_argument("-n", "--limit", type=int, default=5)
-    sp.add_argument("--all", action="store_true", help="auch deprecated zeigen")
+    sp.add_argument("--all", action="store_true", help="include deprecated entries")
     ap_eval = sub.add_parser("eval", help="read-only recall@k and MRR@10 for current FTS ranking")
     ap_eval.add_argument("cases", help="JSONL with q and gold vault-relative Markdown paths")
-    ap_add = sub.add_parser("add", help="formatiertes OKF-Konzept mit Quellen/Verknuepfungen anlegen")
+    ap_add = sub.add_parser("add", help="create a formatted OKF concept with sources and links")
     ap_add.add_argument("title")
     ap_add.add_argument("-t", "--type", default="observation",
-                        help=f"OKF-Typ, frei (OKF §4.1); ueblich: {', '.join(VALID_TYPES)}")
+                        help=f"free-form OKF type (OKF §4.1); common: {', '.join(VALID_TYPES)}")
     ap_add.add_argument("-g", "--tags", default="")
     ap_add.add_argument("-r", "--relevance", default="medium", choices=VALID_RELEVANCE)
     body_input = ap_add.add_mutually_exclusive_group()
@@ -1853,9 +1898,9 @@ def main() -> int:
     ap_add.add_argument("--related", action="append", default=[],
                         help="related Markdown path relative to the bundle (repeatable)")
     ap_add.add_argument("--status", default="stable", choices=VALID_STATUS)
-    ap_add.add_argument("--supersedes", default="", help="Pfad des zu ersetzenden Konzepts (relativ zum Bundle)")
-    ap_add.add_argument("--source", action="append", default=[], help="OKF-Quelle (URL), wiederholbar")
-    ap_page = sub.add_parser("page", help="kanonische Wiki-Seite anlegen oder begruendet ueberarbeiten")
+    ap_add.add_argument("--supersedes", default="", help="bundle-relative path of the concept being replaced")
+    ap_add.add_argument("--source", action="append", default=[], help="OKF source URL (repeatable)")
+    ap_page = sub.add_parser("page", help="create or explicitly revise a canonical wiki page")
     ap_page.add_argument("kind", choices=tuple(PAGE_FOLDERS))
     ap_page.add_argument("title")
     ap_page.add_argument("--body-file", required=True, help="complete Markdown body; '-' reads stdin")
@@ -1872,21 +1917,21 @@ def main() -> int:
     ap_capture.add_argument("--original", help="copy the original file unchanged into raw/")
     ap_capture.add_argument("--scope", choices=("full", "excerpt"), default="excerpt",
                             help="attested completeness of supplied text (default: excerpt)")
-    ap_idea = sub.add_parser("idea", help="Idee als draft-insight festhalten")
+    ap_idea = sub.add_parser("idea", help="capture an idea as a draft insight")
     ap_idea.add_argument("text")
     ap_idea.add_argument("-g", "--tags", default="")
-    ap_v = sub.add_parser("verify", help="Verifikation vermerken (OKF §5.2/§5.3 Trust-Tier)")
-    ap_v.add_argument("path", help="Konzept-Pfad relativ zum Bundle")
-    ap_v.add_argument("--by", default="", help="Aktor (Default human:$USER, z.B. human:vse)")
-    ap_lint = sub.add_parser("lint", help="Kaputte Links + OKF/Health-Report")
-    ap_lint.add_argument("--fix", action="store_true", help="nur generierte Indizes und FTS neu aufbauen")
-    sub.add_parser("orphans", help="Konzepte ohne Inbound-Links")
-    ap_dd = sub.add_parser("dedup", help="Near-Duplicate-Paare finden")
+    ap_v = sub.add_parser("verify", help="record verification (OKF §5.2/§5.3 trust tier)")
+    ap_v.add_argument("path", help="bundle-relative concept path")
+    ap_v.add_argument("--by", default="", help="actor (default human:$USER, e.g. human:vse)")
+    ap_lint = sub.add_parser("lint", help="broken links and OKF/health report")
+    ap_lint.add_argument("--fix", action="store_true", help="rebuild generated indexes and FTS only")
+    sub.add_parser("orphans", help="concepts without inbound links")
+    ap_dd = sub.add_parser("dedup", help="find near-duplicate pairs")
     ap_dd.add_argument("-t", "--threshold", type=float, default=0.75)
-    ap_cg = sub.add_parser("codegraph", help="Symbol-/Importgraph via ast-grep als OKF-Konzept")
-    ap_cg.add_argument("--root", default=".", help="Wurzel des Codeprojekts")
-    sub.add_parser("stats", help="Bundle-/Index-Statistik")
-    sub.add_parser("selftest", help="Round-Trip-Checks in temporaerem Bundle")
+    ap_cg = sub.add_parser("codegraph", help="symbol/import graph through ast-grep as an OKF concept")
+    ap_cg.add_argument("--root", default=".", help="code project root")
+    sub.add_parser("stats", help="bundle and index statistics")
+    sub.add_parser("selftest", help="round-trip checks in a temporary bundle")
     args = ap.parse_args()
 
     if args.cmd == "selftest":

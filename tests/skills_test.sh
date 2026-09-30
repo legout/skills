@@ -115,6 +115,18 @@ for name in ("SKILL.md", "references/pi-dispatch.md", "references/review-and-rec
     if "re-review the complete replacement range" in text or "review the complete replacement range" in text:
         errors.append(f"{name}: reconstruction still forces a full re-review")
 
+# Ordinary persistence must not regress to capture-only while narrower scopes survive.
+second_brain = skills_root / "tools-and-research/second-brain"
+second_brain_text = (second_brain / "SKILL.md").read_text()
+for rule in (
+    "Capture is not integration", "## Completion contract", "explicitly deferred",
+    "capture-only", "Read-only maintenance never authorizes writes or synthesis",
+    "`add` and `idea` always write to `notes/`", "`page` selects the maintained folder",
+    "complete page body", "--expect-sha256", "--supersedes",
+):
+    if rule not in second_brain_text:
+        errors.append(f"second-brain: missing persistence contract {rule!r}")
+
 recovery = (workflow / "references/review-and-recovery.md").read_text()
 for rule in ("Disposition before repair", "One fix pass, one delta recheck", "No third round",
              "priorReviewSha..replacementReviewSha", "integration effects", "accept / fix / hand back / ask"):

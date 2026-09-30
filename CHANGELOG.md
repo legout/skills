@@ -12,3 +12,6 @@ matching Git tag exists.
 - Added catalog-wide semantic versioning, with `0.1.0` prepared as the first version.
 - Added support for `VERSION`-based catalogs and first releases in `make-release`.
 - Included the existing 34-skill catalog as the initial baseline, including planning, implementation, verification, and review guardrails.
+- Added human- and agent-friendly writing rules to `second-brain` and its new-vault schema, preserving source fidelity, capture hashes and each wiki's configured language.
+- Made ordinary `second-brain` persistence require maintained-page compilation or a justified deferral, preserving explicit capture-only and read-only scopes. Split advanced workflows, capture/history safeguards and retrieval maintenance into directly linked references; new-vault schemas and project hooks carry the same contract. CLI commands and existing owner schemas are unchanged.
+- Standardized `second-brain` script comments, docstrings, CLI help/output and new-bundle guidance in English without changing existing owner schemas, captured content or configured wiki languages.
