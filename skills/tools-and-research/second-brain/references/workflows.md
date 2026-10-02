@@ -57,6 +57,8 @@ Retain the full existing source/related set alongside new evidence. Keep uncerta
 
 ## Record project origin without changing scope
 
+When knowledge arises from a project, record its stable lowercase project ID in `origin_projects` with repeatable `--origin-project <id>` on `add`, `idea`, `capture` and `page`. Reuse known IDs; do not use a local path or URL, and clarify an ambiguous identity rather than guessing from the working directory. Omit provenance only when no project origin is known. Origin means where the knowledge arose, not where it applies; it never changes vault routing or authorizes global fallback for project-only knowledge.
+
 For a transferable finding from a project without its own bundle, keep the global folder schema and supply its known ID explicitly:
 
 ```bash
