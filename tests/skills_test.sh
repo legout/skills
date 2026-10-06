@@ -115,6 +115,28 @@ for name in ("SKILL.md", "references/pi-dispatch.md", "references/review-and-rec
     if "re-review the complete replacement range" in text or "review the complete replacement range" in text:
         errors.append(f"{name}: reconstruction still forces a full re-review")
 
+# Verified checks may be reused only on an equivalent acceptance surface.
+text = (workflow / "SKILL.md").read_text()
+for rule in ("Reuse verified focused-check evidence", "exact tree and relevant environment match"):
+    if rule not in text:
+        errors.append(f"SKILL.md: missing validation reuse gate {rule!r}")
+
+# A pane launch must not mistake an existing session for a fresh worker, and
+# CLI-only Paseo launches must not wait for unavailable parent callbacks.
+backend_contracts = {
+    "references/herdr-dispatch.md": ("action: \"list-cwd\"", "focus: false", "openedProjectPane", "returned paneId", "fresh roster", "before sending the mutation brief"),
+    "references/paseo-dispatch.md": ("projectPath", "branchName", "Agent-scoped MCP", "CLI/top-level", "paseo wait"),
+    "references/manifest-and-briefs.md": ("outside every disposable worker worktree", "git diff --no-ext-diff --no-textconv --binary --full-index", "Before parent-requested cleanup", "Native finalization may precede parent reconstruction"),
+    "references/pi-dispatch.md": ("workflow: true",),
+}
+for name, rules in backend_contracts.items():
+    text = (workflow / name).read_text()
+    for rule in rules:
+        if rule not in text:
+            errors.append(f"{name}: missing backend contract {rule!r}")
+if "`workflowScript`" in (workflow / "references/pi-dispatch.md").read_text():
+    errors.append("pi-dispatch.md: removed workflowScript parameter")
+
 # Ordinary persistence must not regress to capture-only while narrower scopes survive.
 second_brain = skills_root / "tools-and-research/second-brain"
 second_brain_text = (second_brain / "SKILL.md").read_text()

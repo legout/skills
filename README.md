@@ -130,7 +130,7 @@ completion claim   -> verification-before-completion
 
 ADRs explain why; specifications define behavior and acceptance; plans define executable units. Tracker tickets replace—rather than duplicate—the plan when durable coordination is required.
 
-`orchestrate-implementation` expects `pi-subagents` and may use configured `pi-intercom` peers. `merge-worktree` PR mode expects an authenticated `gh` CLI. `make-release` composes with release, changelog, GitHub, commit, and uv tooling when available.
+`orchestrate-implementation` expects `pi-subagents` (the default worker backend) and may use configured `pi-intercom` peers. A run or lane may additionally name the `herdr-pane` backend (visible Pi session coordinated through `pi-intercom`) or the `paseo` backend (Paseo-managed agent and worktree); Herdr, Paseo, and their runtime guidance are separate prerequisites. `merge-worktree` PR mode expects an authenticated `gh` CLI. `make-release` composes with release, changelog, GitHub, commit, and uv tooling when available.
 
 ## Provenance
 
@@ -143,8 +143,11 @@ bash scripts/check-skill-sources.sh
 ## Development
 
 ```bash
-bash -n tests/skills_test.sh scripts/check-skill-sources.sh
+for f in tests/skills_test.sh tests/orchestrator_handoff_test.sh scripts/check-skill-sources.sh; do
+  bash -n "$f" || exit 1
+done
 bash tests/skills_test.sh
+bash tests/orchestrator_handoff_test.sh
 # Office real-file checks require uv and LibreOffice; optional output directory keeps previews.
 uv run --no-project tests/office_skills_test.py
 bash scripts/check-skill-sources.sh

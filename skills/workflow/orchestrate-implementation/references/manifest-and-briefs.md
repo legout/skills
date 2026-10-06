@@ -1,8 +1,14 @@
 # Implementation manifests and briefs
 
+- [Run manifest](#run-manifest)
+- [Cold-start task brief](#cold-start-task-brief)
+- [Capture the mutation handoff](#capture-the-mutation-handoff)
+- [Roles and context](#roles-and-context)
+- [Persistent intercom peers](#persistent-intercom-peers)
+
 ## Run manifest
 
-Create one compact run manifest in runtime-managed artifacts. Record:
+Create one compact run manifest in a parent-owned artifact directory, outside every disposable worker worktree. Use runtime-managed artifacts when available; otherwise allocate a stable run directory and record its path. Reports, briefs, and uniquely named handoff/replacement patches must survive workspace cleanup and be accessible to the selected backend. Record:
 
 - repository, cwd, base ref, and mode;
 - source artifact references, each with its planning-contract classification, approved scope and revision, and approval reference;
@@ -11,10 +17,10 @@ Create one compact run manifest in runtime-managed artifacts. Record:
 - normalized constraints, non-goals, and acceptance criteria;
 - task IDs, dependency edges, lanes, and claimed files/contracts;
 - per-task readiness: prerequisite evidence and the readiness verdict recorded before dispatch;
-- worker, reviewer, simplifier, oracle, and peer configuration;
+- run-default backend, per-lane overrides, and worker/reviewer/advisor configuration, including session/agent/workspace IDs and the result-collection channel;
 - validation units with risk, named failure modes, focused commands, review policy, and the one-fix/one-delta-recheck limit (not reset at candidate assembly);
 - unresolved decisions and their owners;
-- per-lane pinned named base ref and resolved SHA, worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
+- per-lane pinned named base ref and resolved SHA, worker branch/worktree (distinct for a fresh fix), worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
 - candidate-branch base, head, registered worktree, cherry-picks, exact review range, and review state; and
 - residual risks and artifact references.
 
@@ -25,7 +31,7 @@ Store large content in artifacts. Keep only paths and concise summaries in the m
 Give each worker one bounded brief containing:
 
 1. goal;
-2. repository, cwd, base ref, lane, and managed worktree;
+2. repository, cwd, pinned base ref/SHA, lane, selected backend, and isolated worktree;
 3. allowed files/contracts and authority boundary;
 4. relevant upstream interfaces, the approved behavioral source with its exact approved scope and revision, and approved decisions;
 5. acceptance criteria;
@@ -35,6 +41,8 @@ Give each worker one bounded brief containing:
 9. stop/escalate conditions.
 
 Do not paste the complete plan or accumulated task history into worker prompts. Include relevant written conventions (named sources/rules, or none found), real callers/input provenance/environment, and any actually touched trust boundary. Never infer that an internal library or user-owned local data is internet-facing.
+
+State the reporting route explicitly: native supervisor escalation and runtime-bound output for `pi-subagents`; intercom `ask`/`send` to the parent's session ID for `herdr-pane`; a final report (blocked with the question when needed) and MCP/CLI follow-up for `paseo`. Include the parent-owned output paths and stop conditions; no worker assumes a channel its backend lacks.
 
 Paste this guardrail into each worker's task, including fix workers:
 
@@ -54,6 +62,29 @@ The worker report contains:
 - open decisions and residual risks; and
 - artifact and handoff references, including the complete patch digest, worker tree/cleanliness, runtime cleanup state, and any warnings.
 
+## Capture the mutation handoff
+
+Run in the worker checkout after committing all intended changes. The parent supplies a unique `patch` path outside the worktree and the recorded `base_ref`/`base_sha`. Report the emitted identities with the final report, then relinquish write ownership until an authorized fix. A fix emits a new full replacement path; never overwrite prior review inputs.
+
+```bash
+set -euo pipefail
+set -o noclobber
+stop() { printf 'handoff refusal: %s\n' "$*" >&2; exit 1; }
+: "${base_ref:?pinned ref}" "${base_sha:?recorded base sha}" "${patch:?external handoff path}"
+test "$(git rev-parse "$base_ref^{commit}")" = "$base_sha" || stop "base pin missing or moved"
+status=$(git status --porcelain --untracked-files=all --ignore-submodules=none) || stop "worker status check failed"
+test -z "$status" || stop "worker checkout is dirty"
+worker_sha=$(git rev-parse HEAD)
+expected_tree=$(git rev-parse 'HEAD^{tree}')
+git diff --no-ext-diff --no-textconv --binary --full-index --unified=3 --submodule=short --no-color --no-relative --ignore-submodules=none --src-prefix=a/ --dst-prefix=b/ "$base_sha" "$worker_sha" >"$patch"
+patch_digest=$(git hash-object --no-filters "$patch")
+printf 'worker_sha=%s\nexpected_tree=%s\npatch_digest=%s\n' "$worker_sha" "$expected_tree" "$patch_digest"
+```
+
+Before parent-requested cleanup, verify the external patch/digest and reconstruction, and recheck that the live checkout is clean at the reported worker SHA. Use the explicit status flags above: Git display preferences can hide untracked files or submodule changes, even from worktree removal. A failed status check, missing report, dirty checkout, or changed head blocks removal; archive/cleanup only after writer ownership is released, no consumer needs the checkout, and removal is authorized.
+
+Native finalization may precede parent reconstruction: `pi-subagents` can automatically remove its managed worktree after capturing the handoff. Require the complete external patch/digest and worker identities before finalization, then record the runtime's actual cleanup state. This does not authorize parent-requested removal or acceptance without reconstruction.
+
 The manifest must distinguish four identities: worker provenance (the commit/tree reported by the child), the materialized review commit/tree (the parent-owned reconstruction actually checked), the lane review boundary (`lastReviewedSha` on that reconstruction), and the candidate commit/tree assembled from accepted reviewed lanes. Never copy a clean verdict between these identities. Retain the prior materialized review ref/SHA for a fix: the replacement is reconstructed from the original pinned base but the recheck compares the old and new materialized endpoints, not the full replacement against the base. Record these ranges in the existing review state, not a new ledger.
 
 Workers do not expand scope, assemble other lanes, publish, or delegate further unless the orchestrator explicitly grants that authority.
@@ -64,12 +95,12 @@ Workers do not expand scope, assemble other lanes, publish, or delegate further 
 |---|---|---|
 | Orchestrator | Parent | Routing, decisions, acceptance, candidate assembly |
 | Scout/normalizer | Fresh | Read-only repository and input inspection |
-| Worker | Fresh | Sole writer in one managed worktree; evidence per assigned test obligation |
+| Worker | Fresh, retained only for the same lane's fix | Sole writer in one isolated worktree; evidence per assigned test obligation |
 | Reviewer | Fresh | Read-only review against the exact task diff |
 | Simplifier | Fresh | Optional read-only complexity challenge |
 | Oracle | Forked, exceptional | Advisory hard-decision escalation |
 
-Profiles represent stable model, tool, thinking, context, or stance differences. Do not create a profile per task.
+Profiles represent stable model, tool, thinking, context, or stance differences. Do not create a profile per task. Roles are backend-agnostic: the backend changes lifecycle mechanics (isolation, delivery, signaling, cleanup), never authority.
 
 ## Persistent intercom peers
 
@@ -87,5 +118,3 @@ At configured checkpoints:
 4. use the configured missing-peer policy: `fresh-advisor` or `pause`.
 
 Named peers must already be running or be opened separately as visible project panes. Do not claim that intercom created a clean session. Peers may not edit production code, commit, integrate, push, merge, deploy, or release.
-
-Spawned children use `contact_supervisor` for blocking decisions or meaningful progress. The parent responds through `subagent_supervisor`. Do not route ordinary child lifecycle through generic intercom.

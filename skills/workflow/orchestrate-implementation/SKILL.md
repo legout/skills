@@ -27,9 +27,17 @@ The parent dispositions every finding before repair: reject failed gates in one 
 
 After each task, restate the approved task, compare the result, and choose `accept / fix / hand back / ask`. Extra ideas get one line, not code. Keep the smallest safe change; dependencies and abstractions need a job today. Use existing reports, not new ledgers, lifecycles, or sign-off artifacts.
 
-**REQUIRED SUB-SKILL:** Use `pi-subagents` for child lifecycle, fresh contexts, managed worktrees, artifacts, missions, review, and recovery.
+## Worker backends
 
-Use `pi-intercom` only for explicitly named, persistent read-only peers or visible cross-project peers. Spawned children use Pi's native supervisor channel for decisions and progress.
+Use the requested or configured run default, otherwise `pi-subagents`; explicit lane selections override that default. Record the resolved backend per lane in the manifest. Supported backends:
+
+- **`pi-subagents`** (default): managed children and worktrees; spawned children use Pi's native supervisor channel for decisions and progress. Mechanics: [Pi dispatch](references/pi-dispatch.md).
+- **`herdr-pane`**: a visible Pi session in a Herdr pane/tab, coordinated through `pi-intercom`. The parent allocates a registered mutation worktree from the pinned base; intercom carries the brief, escalation, and completion report. Mechanics: [Herdr dispatch](references/herdr-dispatch.md).
+- **`paseo`**: a Paseo agent on a configured provider/model in a Paseo-managed worktree; also supports read-only advisors. Agent-scoped MCP uses completion callbacks; CLI/top-level launches need explicit result collection. Mechanics: [Paseo dispatch](references/paseo-dispatch.md).
+
+Before dispatch, read the installed `pi-subagents`, `pi-intercom`, or `paseo` skill for each selected backend and verify its tools/CLI, caller context, and worker-side dependencies. Missing guidance or an unavailable selected backend pauses the run; do not install dependencies or silently substitute another backend. Backend choice never changes the acceptance boundary: every mutation lane is accepted only through the pinned named base, the durable patch and digest, and parent-owned reconstruction. Scouts, reviewers, and simplifiers stay on fresh `pi-subagents` contexts unless the user explicitly names another backend for that role.
+
+Use `pi-intercom` for `herdr-pane` lane lifecycle and for explicitly named, persistent read-only peers or visible cross-project peers.
 
 ## Durable handoff and recovery boundary
 
@@ -37,9 +45,9 @@ The worker worktree is an execution detail, not the review artifact. Before muta
 
 Require each mutation lane to report a complete binary-capable patch, its digest, worker-reported commit/tree/cleanliness, and the runtime handoff/cleanup status. Keep the base and handoff artifacts until every consumer is terminal. Missing, partial, dirty, corrupt, or inconsistent handoffs block acceptance; a child exiting is not success by itself.
 
-When the worker worktree or branch is gone, reconstruct in a registered parent-owned review worktree outside extension auto-discovery and the active source checkout: create it from the pinned named base, verify the patch digest, run `git apply --check` and `git apply --index`, and compare the staged tree with the expected worker tree. Commit that reconstructed tree, run focused checks there, and apply the selected review policy to its exact base/head range. Record worker provenance separately from the materialized review SHA/tree; advance `lastReviewedSha` only for the reconstructed branch.
+Before accepting a mutation lane, even if its worker checkout survives, reconstruct in a registered parent-owned review worktree outside extension auto-discovery and the active source checkout. Use the shared byte-preserving replay recipe: verify the pin/digest, staged and committed trees against the expected worker tree, and checkout cleanliness. Reuse verified focused-check evidence only when that exact tree and relevant environment match; a worker's pass claim alone is not verified evidence. Otherwise run the affected checks there. Apply the selected review policy to the exact base/head range, record worker provenance separately from the materialized review SHA/tree, and advance `lastReviewedSha` only for the reconstructed branch.
 
-A fix worker replays a full patch relative to the original pinned base. The replacement patch supersedes the prior full lane patch; it is not an incremental patch applied on top of the previous result. Preserve the prior materialized review ref/SHA before reconstruction. Reconstruct the full replacement from the pinned base, but re-review only `priorReviewSha..replacementReviewSha` and the behavior the accepted fixes address. Full-patch transport does not reset review scope or the correction budget; missing prior review evidence requires an owner decision, not a full review restart. Assemble accepted reconstructed commits in a separate registered candidate worktree, then hand `merge-worktree` the candidate path, branch, base/head, checks, review evidence, and authorization state.
+A fix worker replays a full patch relative to the original pinned base. The replacement patch supersedes the prior full lane patch; it is not an incremental patch applied on top of the previous result. Preserve the prior materialized review ref/SHA before reconstruction. Reconstruct the full replacement from the pinned base, but re-review only `priorReviewSha..replacementReviewSha` and the behavior the accepted fixes address. Full-patch transport does not reset review scope or the correction budget; missing prior review evidence requires an owner decision, not a full review restart. Assemble accepted reconstructed commits in a separate registered candidate worktree. If a full replacement supersedes an assembled lane, preserve the prior candidate and rebuild from the approved base with the current accepted lanes, not by appending the replacement. Then hand `merge-worktree` the candidate path, branch, base/head, checks, review evidence, and authorization state.
 
 ## Modes
 
@@ -65,9 +73,9 @@ Read all supplied ADRs, specifications, issues, plans, and approved designs befo
 
 Stop before mutation when inputs conflict or a material acceptance criterion is missing. Ask for the exact owner decision instead of selecting one silently.
 
-Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Detect whether the harness already provides isolation; never create nested or manually registered mutation worktrees when managed child worktrees are available. Registered parent-owned review and candidate checkouts are the one deliberate exception: they exist only for reconstruction, focused checks, review, and assembly of already-captured lanes. They are not nested child worktrees, not a second child allocator, and never concurrent shared-writer locations; managed mutation children stay with `pi-subagents`. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
+Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Use the selected backend's isolation: managed worktrees for `pi-subagents` and `paseo`, parent-allocated registered mutation worktrees only for `herdr-pane`. Never nest worktrees or share a mutation checkout. Parent-owned review/candidate checkouts reconstruct, validate, review, and assemble captured lanes; they are not worker locations. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
 
-Before dispatch, run or record the smallest fast baseline able to distinguish pre-existing failures from task regressions. Do not run the full repository matrix unless project policy or the named risks require it. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one managed worktree and one writer. Follow the plan's smallest safe decomposition: do not create lanes merely to parallelize or add review points, and prefer one writer when coordination would cost more than the work. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
+Before dispatch, run or record the smallest fast baseline able to distinguish pre-existing failures from task regressions. Do not run the full repository matrix unless project policy or the named risks require it. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one isolated worktree — managed, Paseo-managed, or parent-allocated for a `herdr-pane` lane — and one writer. Follow the plan's smallest safe decomposition: do not create lanes merely to parallelize or add review points, and prefer one writer when coordination would cost more than the work. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
 
 Normalize different plan formats with a read-only scout. Preserve the planner's source documents; do not require every planning skill to emit one new format.
 
@@ -89,7 +97,7 @@ For every command or manual check, name the failure mode it covers. Reuse requir
 
 ## Execution references
 
-Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). For native child/worktree mechanics, read [Pi dispatch](references/pi-dispatch.md). Before accepting work or recovering a failed lane, read [review and recovery](references/review-and-recovery.md).
+Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md) and [Pi dispatch](references/pi-dispatch.md) for the shared ownership, inline reviewer contract, and reconstruction recipes. Also read [Herdr dispatch](references/herdr-dispatch.md) or [Paseo dispatch](references/paseo-dispatch.md) when selected. Before accepting work or recovering a failed lane, read [review and recovery](references/review-and-recovery.md).
 
 ## Quick reference
 
@@ -98,14 +106,17 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 | Non-git directory | `plan-only`; no mutation workers |
 | Conflicting sources | Stop before dispatch; request owner decision |
 | Research-only, draft, or unapproved source | Refuse dispatch; route the work back to the owning skill |
-| Independent writers | Managed worktree per writer |
+| Independent writers | One isolated worktree per writer, allocated by the selected backend |
 | High-risk or dependency-defining task | Immediate review |
 | Low-risk completed task | Run its focused check and include it in the parent's final diff inspection; no independent task review |
 | Dependent tasks | Serial handoff with explicit interface |
-| Spawned child question | Native supervisor channel |
+| Spawned child question | Native supervisor channel (`pi-subagents`); intercom `ask` (`herdr-pane`); final blocked report then follow-up (`paseo`) |
 | Persistent specialist | Named read-only intercom peer |
 | Missing optional peer | Fresh advisor fallback |
 | Missing required peer | Pause |
+| Named backend unavailable | Pause; do not silently substitute another backend |
+| `herdr-pane` mutation lane | Parent-allocated registered worktree; intercom lifecycle |
+| `paseo` worker / advisor | Managed worktree for mutation / read-only workspace for advice; collect results via the selected transport |
 | Review finding | Parent dispositions first; one batch of accepted small in-scope fixes, then one fresh delta-only recheck; unresolved or large fixes go to the human |
 | Missing/corrupt handoff | Block acceptance; preserve the artifact and owned refs for recovery |
 | Candidate-assembly conflict | Pause and preserve ownership |
@@ -113,8 +124,8 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md). 
 
 ## Common mistakes
 
-- Treating intercom messages as durable state instead of using missions and artifacts.
-- Calling persistent sessions "clean" despite retained history.
+- Treating messages as durable state instead of using the parent-owned manifest and artifacts.
+- Calling persistent sessions "clean" despite retained history; one lane per pane session.
 - Running parallel writers in one checkout.
 - Giving every worker the whole plan and accumulated reports.
 - Letting a reviewer or worker become the final scope or publication authority.

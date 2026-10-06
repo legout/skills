@@ -1,5 +1,7 @@
 # Pi implementation dispatch
 
+Default worker backend (`pi-subagents`). `herdr-pane` and `paseo` lanes reuse this file's lane-ownership rules and durable lifecycle recipe; their dispatch references substitute only the allocation, delivery, signaling, and cleanup mechanics.
+
 - [Lane ownership](#lane-ownership)
 - [Native Pi dispatch recipe](#native-pi-dispatch-recipe)
 - [Reviewer dispatch contract](#reviewer-dispatch-contract)
@@ -7,12 +9,12 @@
 
 ## Lane ownership
 
-- Parallel mutation requires separate managed worktrees.
+- Mutation requires separate isolated worktrees allocated by the selected backend.
 - One writer owns each worktree and source seam.
 - Dependent tasks wait for upstream handoffs.
 - Read-only children may share a checkout only when they cannot change project state.
 - Each worker makes focused commits.
-- The orchestrator assembles only accepted, reviewed lane commits in a registered candidate worktree; a worker report alone is never the assembled tree.
+- The orchestrator assembles only reconstructed lane commits whose required lane gates passed; deferred review runs on the candidate before acceptance. A worker report alone is never the assembled tree.
 - A conflict pauses candidate assembly; it never starts another writer against uncertain ownership.
 - Before mutation, create a collision-checked named base ref and record its resolved SHA. Use that supported named ref for managed allocation; do not use a raw SHA or moving parent `HEAD` as a recovery base.
 - A lane handoff must include the full binary-capable patch path and digest, worker commit/tree/cleanliness, and runtime cleanup status. A missing or dirty handoff is blocked, not an accepted empty lane.
@@ -27,14 +29,14 @@ Lane | repo/cwd | task decision | claimed files/contract | worktree | authority 
 
 ## Native Pi dispatch recipe
 
-For a coordinated wave, make exactly one top-level `subagent` call with `async: true` and a `workflowScript`.
+Read the installed `pi-subagents` skill and current tool guide first. For the native portion of a coordinated wave, write one fenced `js workflow` block and call `subagent({ workflow: true, async: true })` in the same reply, or use `workflow: "./path/to/script.js"`. Keep Herdr/Paseo dispatch outside the native workflow; they are not `runs.run` children.
 
 - Use `runs.run` for dependent stages.
 - Use `runs.all` for independent read-only work.
 - Use `runs.lanes` for predeclared serial stages across independent lanes.
-- Use stable keys and distinct managed output paths.
+- Use stable keys, short behavior labels on workflow children/stages, and distinct runtime-bound `output` paths.
 - Set fresh context for scouts, workers, reviewers, and validators.
-- Set `worktree: true` on parallel mutation-capable children.
+- Set `worktree: true` and the pinned named `baseRef` on mutation-capable children.
 - Give `new-test` workers the embedded public-seam, behavior-first red/green contract; require evidence matching the assigned test obligation in each report.
 - Do not set hard tool budgets on mutation-capable workers.
 - Return output references, commit IDs, and handoffs instead of copying full reports into later prompts.
@@ -85,7 +87,7 @@ fi
 # its digest, and the worker-reported clean tree before allowing child finalization
 ```
 
-**Replay and reconstruct after cleanup.** Verify the pin and the patch digest before creating anything; never fall back to the parent's current `HEAD`. Verify the staged tree against the expected clean worker tree before committing.
+**Replay and reconstruct after cleanup.** Verify the pin and the patch digest before creating anything; never fall back to the parent's current `HEAD`. Replay without whitespace rewriting (also for a fresh fix worker). Verify the staged tree before committing, then the committed tree and checkout cleanliness: hooks can change either after the first check. Unexpected changes block acceptance and preserve the checkout; do not bypass required hooks or checks to force a result.
 
 ```bash
 stop() { printf 'lifecycle refusal: %s\n' "$*" >&2; exit 1; }
@@ -97,18 +99,21 @@ base_ref="refs/heads/orchestrator/$run/base/$lane"
 review_branch=${review_branch:-"orchestrator/$run/review/$lane"}
 git rev-parse --verify --quiet "$base_ref^{commit}" >/dev/null || stop "base pin is missing"
 test "$(git rev-parse "$base_ref")" = "$base_sha" || stop "base pin moved; preserve artifacts for an owner decision"
-test "$(git hash-object "$patch")" = "$patch_digest" || stop "handoff patch digest mismatch"
+test "$(git hash-object --no-filters "$patch")" = "$patch_digest" || stop "handoff patch digest mismatch"
 git worktree add -b "$review_branch" "$review_path" "$base_ref" || stop "review worktree creation failed"
-git -C "$review_path" apply --check "$patch" || stop "handoff patch does not apply cleanly to the pinned base"
-git -C "$review_path" apply --index "$patch" || stop "handoff patch could not be staged"
-# worker reports are supporting evidence; only the staged tree is the reviewed content
+git -C "$review_path" apply --check --whitespace=nowarn "$patch" || stop "handoff patch does not apply cleanly to the pinned base"
+git -C "$review_path" apply --index --whitespace=nowarn "$patch" || stop "handoff patch could not be staged"
+# worker reports are supporting evidence; verify both sides of the commit boundary
 test "$(git -C "$review_path" write-tree)" = "$expected_tree" || stop "staged tree differs from the expected worker tree"
 git -C "$review_path" commit -qm "reconstruct $lane for review" || stop "reconstruction commit failed"
+test "$(git -C "$review_path" rev-parse 'HEAD^{tree}')" = "$expected_tree" || stop "committed tree differs from the expected worker tree"
+status=$(git -C "$review_path" status --porcelain --untracked-files=all --ignore-submodules=none) || stop "review status check failed"
+test -z "$status" || stop "review checkout is dirty"
 # initial review: "$base_sha"..HEAD; fix recheck: priorReviewSha..replacementReviewSha
 # advance lastReviewedSha on this reconstruction only after the required review/recheck
 ```
 
-**Assemble accepted reconstructed commits.** The candidate consumes only reconstructed reviewed commits, never a deleted worker path, the parent `HEAD`, or a live worker SHA.
+**Assemble reconstructed commits after required lane gates.** Run only when candidate assembly is authorized by the mode/owner. Create the candidate once, then rerun for subsequent independent or dependent lanes in the planned order. It consumes reconstructed commits, never a live worker SHA; apply deferred candidate review before acceptance. If an assembled lane is replaced, preserve the prior candidate and supply a distinct `candidate_branch` and new `candidate_path`; rebuild from the approved base with the current accepted reconstruction of every lane in order. Never append the full replacement to its superseded lane. Changed dependency bases require reconciliation, not bypassing the ancestry check; rebuilding does not reset review state or the correction budget.
 
 ```bash
 stop() { printf 'lifecycle refusal: %s\n' "$*" >&2; exit 1; }
@@ -117,7 +122,16 @@ set -euo pipefail
 : "${reviewed_sha:?reconstructed reviewed commit}" "${candidate_path:?registered candidate worktree path}"
 base_ref="refs/heads/orchestrator/$run/base/$lane"
 test "$(git rev-parse "$base_ref")" = "$base_sha" || stop "base pin moved before candidate assembly"
-git worktree add -b "orchestrator/$run/candidate" "$candidate_path" "$base_ref" || stop "candidate worktree creation failed"
+candidate_branch=${candidate_branch:-"orchestrator/$run/candidate"}
+if [ ! -e "$candidate_path" ]; then
+    git worktree add -b "$candidate_branch" "$candidate_path" "$base_ref" || stop "candidate worktree creation failed"
+fi
+candidate_path=$(cd "$candidate_path" && pwd -P) || stop "candidate path is not a directory"
+git worktree list --porcelain | grep -Fx -- "worktree $candidate_path" >/dev/null || stop "candidate is not registered in this repository"
+test "$(git -C "$candidate_path" symbolic-ref --quiet HEAD)" = "refs/heads/$candidate_branch" || stop "candidate branch mismatch"
+status=$(git -C "$candidate_path" status --porcelain --untracked-files=all --ignore-submodules=none) || stop "candidate status check failed"
+test -z "$status" || stop "candidate checkout is dirty"
+git -C "$candidate_path" merge-base --is-ancestor "$base_sha" HEAD || stop "candidate does not contain the lane base"
 git -C "$candidate_path" cherry-pick "$reviewed_sha" >/dev/null || stop "candidate assembly failed"
 # apply the selected candidate policy to base..head, reusing verified prior evidence
 # for settled code and reviewing integration effects; then hand merge-worktree the
