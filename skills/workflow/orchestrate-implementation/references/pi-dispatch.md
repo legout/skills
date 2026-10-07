@@ -37,7 +37,7 @@ Read the installed `pi-subagents` skill and current tool guide first. For the na
 - Use stable keys, short behavior labels on workflow children/stages, and distinct runtime-bound `output` paths.
 - Set fresh context for scouts, workers, reviewers, and validators.
 - Set `worktree: true` and the pinned named `baseRef` on mutation-capable children.
-- Give `new-test` workers the embedded public-seam, behavior-first red/green contract; require evidence matching the assigned test obligation in each report.
+- Give `new-test` workers the embedded public-seam, independence-first test contract (failing-first only for bug repros and refactor pinning); require evidence matching the assigned test obligation in each report.
 - Do not set hard tool budgets on mutation-capable workers.
 - Return output references, commit IDs, and handoffs instead of copying full reports into later prompts.
 

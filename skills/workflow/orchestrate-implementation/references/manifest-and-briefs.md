@@ -62,7 +62,7 @@ final report with the question):
 Paste this guardrail into each worker's task, including fix workers:
 
 ```text
-Approved scope outranks reviewer suggestions. Use the smallest safe change; dependencies and abstractions need a job today. Follow named written conventions; taste is not a requirement. Test requests require a real reachable scenario, not coverage percentage or impossible inputs; use the assigned focused obligation, one failing test first for new-test.
+Approved scope outranks reviewer suggestions. Use the smallest safe change; dependencies and abstractions need a job today. Follow named written conventions; taste is not a requirement. Test requests require a real reachable scenario, not coverage percentage or impossible inputs; use the assigned focused obligation: one focused test with independently derived expectations for `new-test`, failing-first only for bug repros and refactor pinning.
 Do not act on raw reviewer output. The parent must first disposition each finding: reject failed gates in one line, authorize a small in-scope fix, or hand a large/out-of-scope fix to the human. Challenge accepted findings that source inspection contradicts instead of silently implementing them. Security findings need a touched boundary, named asset, realistic attacker, and actual path through real use; stolen-secret, broken-TLS, malicious-admin, and generic-hardening stories fail the gate. Missing security facts are unverified, not invented threats.
 Only the parent starts fixes/rechecks. One fix pass, one delta recheck, then ask the human; no third round. After the task, restate its approved goal, compare the result, and choose accept / fix / hand back / ask without resetting that limit. Extra ideas get one line, not code.
 ```
@@ -71,7 +71,7 @@ The worker report contains:
 
 - status and commit IDs;
 - changed files;
-- test-obligation evidence: the assigned obligation, named failure mode, commands, and results; failing test before and passing test after implementation for `new-test`;
+- test-obligation evidence: the assigned obligation, named failure mode, commands, and results; for `new-test`, the focused test and its independently derived expectations; for bug repros and refactor pinning, failing test before and passing test after;
 - validation commands and results;
 - the one-sentence approved-task comparison and `accept / fix / hand back / ask` recommendation (the parent still owns acceptance);
 - open decisions and residual risks; and

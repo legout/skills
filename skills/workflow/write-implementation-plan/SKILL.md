@@ -79,7 +79,7 @@ A task is the smallest coherent deliverable that exposes a real dependency, owne
 - only the focused commands and expected evidence not already supplied by required CI; and
 - a completion criterion.
 
-Use checkbox steps. Assign `new-test` only when changed behavior would otherwise lack meaningful coverage; prefer one focused test at the cheapest stable public seam. For `new-test`, show the red → minimal green → verification sequence. Include code snippets only where exact signatures or non-obvious logic prevent ambiguity; do not invent large implementations in prose.
+Use checkbox steps. Assign `new-test` only when changed behavior would otherwise lack meaningful coverage; prefer one focused test at the cheapest stable public seam. For `new-test`, show the focused test, its independently derived expectation, and the verification command; show the failing-first sequence only for bug repros and behavior pinning before refactors. Include code snippets only where exact signatures or non-obvious logic prevent ambiguity; do not invent large implementations in prose.
 
 Internal migrations sequence replacement, caller migration, verification, legacy-path deletion, and a stale-reference search inside one cleanup; any transitional compatibility names its real consumer and its removal condition.
 
