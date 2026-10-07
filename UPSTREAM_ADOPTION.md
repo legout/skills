@@ -144,6 +144,12 @@ Trigger either cleanup workflow only on an explicit user request or as one model
 
 Keep pins per file rather than replacing adapted packages wholesale. This pass adopts safer treatment of input text from `blader/humanizer` and marimo's cell-boundary and dataflow guidance from `marimo-team/marimo-pair`. It also records the existing local ADR-path edits as an adaptation, without overwriting them. The large script and asset changes in `last30days`, `archify`, and the relocated `Agents365-ai/365-skills` packages need separate reviews; their existing pins remain valid. Other upstream drift is not a reason to change catalog versions or discard local workflows. See `sources.json` for the exact file-level pins.
 
+`bash scripts/check-skill-sources.sh` validates pinned source availability and
+vendored hashes. A moved upstream branch is an informational warning by default,
+not a pin-integrity failure. Use `--strict-upstream` for a deliberate freshness
+audit. Review the emitted compare links and selectively update relationships only
+when adopting changes; do not bump pins to make the warning disappear.
+
 ## Cursor pstack `poteto-mode` review
 
 Source pin: `cursor/plugins@93b00b89ef425a9c1bac0d0b317dfc49c930ac99`, `pstack/skills/poteto-mode`.

@@ -12,6 +12,15 @@ from pathlib import Path
 root = Path(sys.argv[1]).resolve()
 skills_root = root / "skills"
 errors = []
+
+source_check = (root / "scripts/check-skill-sources.sh").read_text()
+for rule in (
+    "--strict-upstream",
+    "SKILL_SOURCE_CHECK_STRICT_UPSTREAM",
+    "pinned-source integrity passed; branch drift is informational",
+):
+    if rule not in source_check:
+        errors.append(f"check-skill-sources.sh: missing drift policy {rule!r}")
 names = set()
 
 # Catch malformed catalog versions and missing release notes before publishing.

@@ -54,5 +54,8 @@ checks. It replaced only the manual streaming hash loop with Python's
 source-manifest behavior before and after that change.
 
 Model-download/cache state makes observed runtimes unsuitable for a controlled
-performance comparison. Upstream provenance files are unchanged; the optional
-network-dependent full upstream check timed out in this environment.
+performance comparison. The upstream source check was subsequently run in both
+modes: default integrity validation passed for 499 pinned paths and vendored
+hashes, while reporting 12 moved adopted branches as warnings; `--strict-upstream`
+returned nonzero for those same 12 moved groups. No source pins or adoption
+decisions were changed.

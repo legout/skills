@@ -136,6 +136,12 @@ ADRs explain why; specifications define behavior and acceptance; plans define ex
 
 [`UPSTREAM_ADOPTION.md`](UPSTREAM_ADOPTION.md) records adoption decisions. [`sources.json`](sources.json) records pinned file-level provenance, and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) carries applicable notices.
 
+`bash scripts/check-skill-sources.sh` verifies pinned paths and vendored hashes;
+upstream branch movement is reported as a warning. Run
+`bash scripts/check-skill-sources.sh --strict-upstream` for an explicit freshness
+audit that fails when adopted branches have advanced. Review compare links and
+update only adopted file relationships; do not move pins just to silence drift.
+
 ```bash
 bash scripts/check-skill-sources.sh
 ```
@@ -152,6 +158,7 @@ bash tests/orchestrator_handoff_test.sh
 uv run --no-project tests/office_skills_test.py
 # Synthetic PDF artifact checks; no private inputs or model inference required.
 uv run --script tests/document_to_markdown_test.py
+# Pinned-source integrity; add --strict-upstream for a deliberate freshness audit.
 bash scripts/check-skill-sources.sh
 git diff --check
 ```

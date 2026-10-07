@@ -2,7 +2,27 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
+STRICT_UPSTREAM=0
+if [[ ${1:-} == "--help" || ${1:-} == "-h" ]]; then
+  cat <<'EOF'
+Usage: check-skill-sources.sh [--strict-upstream] [manifest.json]
+
+Verifies pinned source paths and vendored hashes. Upstream branch movement is a
+warning by default; --strict-upstream makes adopted-branch drift fail the check.
+The optional positional manifest path remains supported.
+EOF
+  exit 0
+fi
+if [[ ${1:-} == "--strict-upstream" ]]; then
+  STRICT_UPSTREAM=1
+  shift
+fi
+if (( $# > 1 )); then
+  echo "usage: check-skill-sources.sh [--strict-upstream] [manifest.json]" >&2
+  exit 2
+fi
 MANIFEST=${1:-"$ROOT/sources.json"}
+export SKILL_SOURCE_CHECK_STRICT_UPSTREAM=$STRICT_UPSTREAM
 
 python3 - "$ROOT" "$MANIFEST" <<'PY'
 import hashlib
@@ -19,6 +39,7 @@ from pathlib import Path, PurePosixPath
 root = Path(sys.argv[1]).resolve()
 manifest_path = Path(sys.argv[2])
 errors = 0
+strict_upstream = os.environ.get("SKILL_SOURCE_CHECK_STRICT_UPSTREAM") == "1"
 
 
 def fail(message):
@@ -227,7 +248,10 @@ for (repository, branch, commit), group in sorted(groups.items()):
 
 if drift:
     print(f"\n{drift} adopted source group(s) moved; review before updating")
-    sys.exit(1)
+    if strict_upstream:
+        sys.exit(1)
+    print("WARNING: pinned-source integrity passed; branch drift is informational. "
+          "Use --strict-upstream to fail when adopted sources move.")
 
 print(f"\nValidated {len(valid)} pinned source path(s) across {len(heads)} repository branch(es)")
 PY
