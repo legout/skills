@@ -1,0 +1,26 @@
+{
+  "skill_name": "document-to-markdown",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Plan conversion of a scanned expense form with a three-column attendee table, blank company cells and checked/unchecked boxes. The document has no text layer. Semantic accuracy matters. State the first candidate tool, acceptance checks and targeted fallback; do not execute conversion for this routing evaluation.",
+      "expected_output": "Choose a structural candidate rather than unconditionally run plain OCR; retain empty cells and verify selections from source images. Escalate unresolved regions to approved vision, not a public endpoint.",
+      "files": ["fixtures/semantic-routing.md"],
+      "assertions": ["Uses structural parsing for the printed form", "Preserves source cell placement and blank fields", "Verifies checkbox states from source", "Keeps vision within the approved data boundary"]
+    },
+    {
+      "id": 2,
+      "prompt": "A PDF conversion command exits 0 and the structural Markdown checker passes. OCR confidence is high, but the receipt output omits its VAT rows and a company appears under the wrong attendee. The source shows 12,00 on the form and 12,01 on the receipt. May I publish it, and what should happen next? Do not execute tools for this routing evaluation.",
+      "expected_output": "Reject semantic acceptance, name relationship/coverage failures, verify source values without reconciling the different totals, and reprocess only failed regions. Structural success and model confidence cannot certify meaning.",
+      "files": ["fixtures/semantic-routing.md"],
+      "assertions": ["Does not accept exit 0 or structural checks as semantic proof", "Preserves both differing source totals", "Targets the failed regions rather than blindly runs all engines", "Flags unresolved readings instead of inventing repairs"]
+    },
+    {
+      "id": 3,
+      "prompt": "Convert a short, clean single-column digital PDF to Markdown on a Windows laptop. Its text and paragraph order are intact. Explain the minimal route and the final check, without installing models or executing conversion for this routing evaluation.",
+      "expected_output": "Use native extraction without unnecessary OCR/Docling/MinerU/vision; check source fidelity before completion. No macOS-only engine or resource-heavy ladder is necessary.",
+      "files": [],
+      "assertions": ["Uses the native lightweight route", "Does not unnecessarily OCR or run a model ladder", "Still checks the output against source"]
+    }
+  ]
+}

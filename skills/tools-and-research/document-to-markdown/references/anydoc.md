@@ -15,10 +15,10 @@ npm install -g @firecrawl/anydoc                   # permanent `anydoc` command
 
 | Code | Meaning | Router action |
 | --- | --- | --- |
-| 0 | converted | done |
+| 0 | candidate converted | inspect content/structure against source; not semantic acceptance |
 | 1 | could not convert | try markitdown (fallbacks.md), then report failure |
 | 2 | usage error | fix invocation |
-| 3 | PDF pages need OCR | RapidOCR leg ([ocr.md](ocr.md)) |
+| 3 | PDF pages need OCR | choose lightweight OCR or structural parsing by page layout ([ocr.md](ocr.md)) |
 
 Failures print one `anydoc: <message>` line to stderr. The CLI never prompts.
 

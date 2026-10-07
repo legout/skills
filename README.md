@@ -59,7 +59,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 ### Tools and research
 
 - **`chrome-cdp`** — approved control of an existing local Chrome session.
-- **`document-to-markdown`** — local-first conversion of documents into agent-readable Markdown.
+- **`document-to-markdown`** — local-first, semantic-fidelity-first document conversion with structural parsing and approved vision escalation.
 - **`docx`** — create and edit Word files with python-docx.
 - **`pdf`** — create and change PDFs with pypdf and ReportLab.
 - **`pptx`** — create and edit PowerPoint decks with python-pptx.
@@ -150,6 +150,8 @@ bash tests/skills_test.sh
 bash tests/orchestrator_handoff_test.sh
 # Office real-file checks require uv and LibreOffice; optional output directory keeps previews.
 uv run --no-project tests/office_skills_test.py
+# Synthetic PDF artifact checks; no private inputs or model inference required.
+uv run --script tests/document_to_markdown_test.py
 bash scripts/check-skill-sources.sh
 git diff --check
 ```

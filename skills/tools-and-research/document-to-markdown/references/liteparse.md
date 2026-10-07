@@ -6,9 +6,9 @@ LlamaIndex's local PDF parser (Rust core, PDFium, bundled Tesseract OCR). PDF on
 
 | Situation | Action |
 | --- | --- |
-| anydoc exit 0 | done — do not call liteparse |
+| anydoc exit 0, candidate faithful after checking | accept; do not call liteparse unnecessarily |
 | anydoc exit 3, `lit is-complex` flags **some** pages | `lit parse --format markdown` — text pages stay native, only flagged pages get OCR |
-| anydoc exit 3, **all** pages flagged | stay on the RapidOCR/VLM leg ([ocr.md](ocr.md)) |
+| anydoc exit 3, **all** pages flagged | inspect layout; plain text → [OCR](ocr.md), structure → [Docling/MinerU](structured-pdf.md) |
 | need page ranges, per-page verdicts, screenshots, bounding boxes | call liteparse directly |
 | anydoc PDF output mangled (e.g. reading order) | one retry with liteparse markdown |
 
@@ -33,5 +33,5 @@ uvx --from liteparse lit parse report.pdf --format markdown --target-pages "1-5,
 
 - Local only: bundled Tesseract (the default). Never `--ocr-server-url` at a public endpoint.
 - `--ocr-language deu` for German. `.traineddata` downloads on first use (package/model installs are fine); air-gapped: `TESSDATA_PREFIX` → local tessdata dir.
-- Markdown reconstruction is heuristic: dense/multi-level tables and heavy multi-column layouts can render imperfectly. Complex scan pages belong to the VLM tier ([ocr.md](ocr.md)); tables as data belong to camelot ([tables.md](tables.md)).
+- Markdown reconstruction is heuristic: dense/multi-level tables and heavy multi-column layouts can render imperfectly. Use structural parsing for these pages; unresolved semantic failures go to [vision](vision.md). Tables as data belong to camelot ([tables.md](tables.md)).
 - Encrypted PDFs: `--password` exists, but the qpdf rule stands — decrypt once, then route normally.
