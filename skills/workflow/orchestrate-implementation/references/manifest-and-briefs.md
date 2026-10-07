@@ -38,11 +38,26 @@ Give each worker one bounded brief containing:
 6. the validation unit's risk, named failure mode, and focused command not already covered by required CI;
 7. test obligation: the assigned obligation and its rationale;
 8. commit and report requirements; and
-9. stop/escalate conditions.
+9. stop/escalate conditions (two tiers; use the ladder below).
 
 Do not paste the complete plan or accumulated task history into worker prompts. Include relevant written conventions (named sources/rules, or none found), real callers/input provenance/environment, and any actually touched trust boundary. Never infer that an internal library or user-owned local data is internet-facing.
 
 State the reporting route explicitly: native supervisor escalation and runtime-bound output for `pi-subagents`; intercom `ask`/`send` to the parent's session ID for `herdr-pane`; a final report (blocked with the question when needed) and MCP/CLI follow-up for `paseo`. Include the parent-owned output paths and stop conditions; no worker assumes a channel its backend lacks.
+
+Paste this stop/escalate ladder into each worker's task in place of an open-ended stop list; it pre-authorizes mechanical conflicts so only genuine owner decisions escalate:
+
+```text
+PRE-AUTHORIZED (act, then record the delta in the report; do not ask):
+- Derived mechanical constraints (numeric budgets, word/line counts,
+  "roughly N" doc sentences, line-number references) may be adjusted
+  minimally so approved canonical/verbatim text fits. Approved text
+  outranks derived constraints; the constraint moves, the text doesn't.
+HARD STOPS (escalate via this brief's reporting route, or block the
+final report with the question):
+- Ambiguity about which text is canonical; trust-boundary/security
+  changes; publish/push/tag; irreversible operations; deleting
+  guardrail lines.
+```
 
 Paste this guardrail into each worker's task, including fix workers:
 
