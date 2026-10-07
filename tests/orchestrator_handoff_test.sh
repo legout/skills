@@ -8,9 +8,11 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 DOC="$ROOT/skills/workflow/orchestrate-implementation/references/pi-dispatch.md"
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/orchestrator-handoff.XXXXXX")
+TMP=$(cd "$TMP" && pwd -P)
 trap 'rm -rf "$TMP"' EXIT
 
 fail() {
+    [ ! -f "$TMP/recipe.log" ] || { printf '%s\n' '--- recipe output ---' >&2; printf '%s\n' "$(<"$TMP/recipe.log")" >&2; }
     printf 'FAIL: %s\n' "$*" >&2
     exit 1
 }
@@ -58,7 +60,8 @@ git -C "$module_origin" commit -qam second
 module_head=$(git -C "$module_origin" rev-parse HEAD)
 
 REPO="$TMP/repo"
-mkdir -p "$REPO"
+WORKTREE_ROOT="$TMP/worktrees/repo"
+mkdir -p "$REPO" "$WORKTREE_ROOT"
 git -C "$REPO" init -q
 git -C "$REPO" config user.name test
 git -C "$REPO" config user.email test@example.invalid
@@ -77,9 +80,9 @@ git -C "$REPO" commit -qm base
 run=test lane=api
 base_sha=$(git -C "$REPO" rev-parse HEAD)
 base_ref="refs/heads/orchestrator/$run/base/$lane"
-worker="$TMP/worker"
-review="$TMP/review"
-candidate="$TMP/candidate"
+worker="$WORKTREE_ROOT/worker"
+review="$WORKTREE_ROOT/review"
+candidate="$WORKTREE_ROOT/candidate"
 patch="$TMP/lane.patch"
 review_branch="orchestrator/$run/review/$lane"
 
@@ -87,7 +90,7 @@ run_recipe() {
     (cd "${2:-$REPO}" && exec bash "$1") >"$TMP/recipe.log" 2>&1
 }
 
-export run lane base_sha
+export run lane base_sha expected_root="$WORKTREE_ROOT"
 unset worker_branch candidate_branch
 run_recipe "$RECIPE_DIR/block1.sh" || fail "base pin failed"
 test "$(git -C "$REPO" rev-parse "$base_ref")" = "$base_sha" || fail "wrong base pin"
@@ -132,7 +135,7 @@ for format in log diff context-zero; do
     patch="$format_patch" run_recipe "$RECIPE_DIR/manifest-and-briefs.sh" "$worker" || fail "$format capture failed"
     patch_digest=$(git -C "$REPO" hash-object --no-filters "$format_patch")
     patch="$format_patch" expected_tree="$expected_tree" \
-      review_path="$TMP/$format-review" review_branch="orchestrator/$run/format/$format" \
+      review_path="$WORKTREE_ROOT/$format-review" review_branch="orchestrator/$run/format/$format" \
       patch_digest="$patch_digest" run_recipe "$RECIPE_DIR/block2.sh" || fail "$format handoff did not reconstruct the worker tree"
     if [ "$format" = context-zero ]; then
         git -C "$REPO" config --unset diff.context
@@ -184,7 +187,7 @@ for hook_mode in staged unstaged; do
         printf '%s\n' 'git add keep.txt' >>"$REPO/.git/hooks/pre-commit"
     fi
     chmod +x "$REPO/.git/hooks/pre-commit"
-    review_path="$TMP/$hook_mode-hook-review"
+    review_path="$WORKTREE_ROOT/$hook_mode-hook-review"
     review_branch="orchestrator/$run/hook/$hook_mode"
     if run_recipe "$RECIPE_DIR/block2.sh"; then fail "accepted $hook_mode hook mutation"; fi
     test -d "$review_path" || fail "hook refusal discarded review checkout"
@@ -221,7 +224,7 @@ prior_candidate_tree=$(git -C "$candidate" rev-parse 'HEAD^{tree}')
 # the old materialized review and compare endpoints, not their merge-base:
 # otherwise settled binary/mode/deletion changes reappear in the re-review.
 prior_reviewed_sha=$reviewed_sha
-fix_worker="$TMP/fix-worker"
+fix_worker="$WORKTREE_ROOT/fix-worker"
 export worker_path="$fix_worker" worker_branch="orchestrator/$run/fix/$lane"
 run_recipe "$RECIPE_DIR/herdr-dispatch.sh" || fail "replacement worker allocation failed"
 unset worker_branch
@@ -237,7 +240,7 @@ run_recipe "$RECIPE_DIR/manifest-and-briefs.sh" "$fix_worker" || fail "replaceme
 patch_digest=$(git -C "$REPO" hash-object --no-filters "$patch")
 git -C "$REPO" worktree remove "$fix_worker"
 git -C "$REPO" branch -D "orchestrator/$run/fix/$lane" >/dev/null
-review_path="$TMP/replacement-review"
+review_path="$WORKTREE_ROOT/replacement-review"
 review_branch="orchestrator/$run/replacement/$lane"
 run_recipe "$RECIPE_DIR/block2.sh" || fail "replacement reconstruction failed"
 reviewed_sha=$(git -C "$review_path" rev-parse HEAD)
@@ -246,7 +249,7 @@ test "$(git -C "$review" rev-parse HEAD)" = "$prior_reviewed_sha" || fail "prior
 test "$(git -C "$review_path" rev-parse 'HEAD^{tree}')" = "$expected_tree" || fail "replacement tree mismatch"
 
 # Replace the full lane in a new candidate, not on top of the superseded lane.
-candidate="$TMP/replacement-candidate"
+candidate="$WORKTREE_ROOT/replacement-candidate"
 export reviewed_sha candidate_path="$candidate" candidate_branch="orchestrator/$run/replacement-candidate"
 run_recipe "$RECIPE_DIR/block3.sh" || fail "replacement candidate assembly failed"
 test "$(git -C "$candidate" rev-parse 'HEAD^{tree}')" = "$expected_tree" || fail "candidate tree mismatch"
@@ -260,7 +263,7 @@ first_candidate_sha=$(git -C "$candidate" rev-parse HEAD)
 lane=ui
 run_recipe "$RECIPE_DIR/block1.sh" || fail "second lane base pin failed"
 base_ref="refs/heads/orchestrator/$run/base/$lane"
-second_worker="$TMP/second-worker"
+second_worker="$WORKTREE_ROOT/second-worker"
 git -C "$REPO" worktree add -q -b "orchestrator/$run/worker/$lane" "$second_worker" "$base_ref"
 printf 'second lane\n' >"$second_worker/second.txt"
 git -C "$second_worker" add second.txt
@@ -269,7 +272,7 @@ expected_tree=$(git -C "$second_worker" rev-parse 'HEAD^{tree}')
 patch="$TMP/second.patch"
 run_recipe "$RECIPE_DIR/manifest-and-briefs.sh" "$second_worker" || fail "second lane capture failed"
 patch_digest=$(git -C "$REPO" hash-object --no-filters "$patch")
-review_path="$TMP/second-review"
+review_path="$WORKTREE_ROOT/second-review"
 review_branch="orchestrator/$run/review/$lane"
 run_recipe "$RECIPE_DIR/block2.sh" || fail "second lane reconstruction failed"
 reviewed_sha=$(git -C "$review_path" rev-parse HEAD)
@@ -282,8 +285,8 @@ rm "$candidate/untracked.txt"
 git -C "$REPO" config --unset status.showUntrackedFiles
 run_recipe "$RECIPE_DIR/block3.sh" || fail "second lane candidate assembly failed"
 git -C "$candidate" merge-base --is-ancestor "$first_candidate_sha" HEAD || fail "first candidate history lost"
-cmp "$candidate/keep.txt" "$TMP/replacement-review/keep.txt" || fail "first lane content lost"
-cmp "$candidate/data.bin" "$TMP/replacement-review/data.bin" || fail "first lane binary lost"
+cmp "$candidate/keep.txt" "$WORKTREE_ROOT/replacement-review/keep.txt" || fail "first lane content lost"
+cmp "$candidate/data.bin" "$WORKTREE_ROOT/replacement-review/data.bin" || fail "first lane binary lost"
 test -x "$candidate/mode.sh" || fail "first lane mode lost"
 test ! -e "$candidate/remove.txt" || fail "first lane deletion lost"
 cmp "$candidate/second.txt" "$second_worker/second.txt" || fail "second lane content missing"

@@ -31,12 +31,22 @@ Lane | repo/cwd | task decision | claimed files/contract | worktree | authority 
 
 Read the installed `pi-subagents` skill and current tool guide first. For the native portion of a coordinated wave, write one fenced `js workflow` block and call `subagent({ workflow: true, async: true })` in the same reply, or use `workflow: "./path/to/script.js"`. Keep Herdr/Paseo dispatch outside the native workflow; they are not `runs.run` children.
 
+### Root and model preflight
+
+Resolve the physical Git top-level path and derive `<repo-parent>/worktrees/<repo-basename>/`. Use unique worker/fix, review, and candidate branch/path leaves, including run/lane/role/attempt where the selected allocator supports naming. Record the exact mapping; never relocate an allocator-managed path to impose a naming scheme. Validate every existing path component, reject symlinks and unsafe locations, and check each proposed leaf and branch are unused before allocation. Create only the expected root after validation. Do not relocate old worktrees.
+
+Keep the configured Pi-subagents allocator. Read its effective `worktreeProvider`, `worktreeBaseDir`, and `PI_SUBAGENTS_WORKTREE_DIR` before dispatch. A configured base directory/environment variable selects native allocation and cannot be combined with explicit `worktrunk`; never set it just to force a provider change. With native allocation and no configured base, the dedicated root is the repository parent's `worktrees/` directory and the leaf adds the repository basename, which yields the required shared root. If a configured native base exists, require its resulting `<base>/<repo-basename>` to be the expected root. Repositories inside Pi extension auto-discovery may be relocated by the runtime and must block if the resulting path is not the expected root.
+
+If the resolved provider is Worktrunk, inspect its effective path template with `wt config show` in the repository and account for `WORKTRUNK_WORKTREE_PATH`. Require every branch-derived path to resolve beneath the expected root; a suitable template is `{{ repo_path }}/../worktrees/{{ repo }}/{{ branch | sanitize }}` (see [Worktrunk config](https://worktrunk.dev/config/)). Do not edit user/project Worktrunk config or set a temporary path to switch allocators. `auto` may resolve according to pi-subagents' documented provider selection; record the resolved allocator. An unavailable explicitly selected Worktrunk provider or an unevaluable/off-root path blocks before `runs.run`.
+
+For each worker or reviewer, resolve model and thinking fields independently (run/lane → project → global → spec default). Call `subagent({ action: "models" })` to confirm the exact `provider/model` ID, then pass the complete role pair in the documented per-run form `model: "provider/model:thinking-level"` (`:off` is also explicit). Do not use an agent name as a model ID, strip an existing thinking suffix, or infer a provider alias. If a suffix conflicts with the selected thinking field, or the backend cannot run the exact ID/level, block. The worker's first instruction is a no-write preflight: verify its actual cwd is the expected registered path and report the runtime-effective model/thinking before touching files; a mismatch returns blocked without mutation. Verify the returned runtime path and model evidence in the parent before accepting the lane.
+
 - Use `runs.run` for dependent stages.
 - Use `runs.all` for independent read-only work.
 - Use `runs.lanes` for predeclared serial stages across independent lanes.
 - Use stable keys, short behavior labels on workflow children/stages, and distinct runtime-bound `output` paths.
 - Set fresh context for scouts, workers, reviewers, and validators.
-- Set `worktree: true` and the pinned named `baseRef` on mutation-capable children.
+- Set `worktree: true` and the pinned named `baseRef` on mutation-capable children; pass the exact worker/reviewer `model: "provider/model:thinking-level"` value on each launch.
 - Give `new-test` workers the embedded public-seam, independence-first test contract (failing-first only for bug repros and refactor pinning); require evidence matching the assigned test obligation in each report.
 - Do not set hard tool budgets on mutation-capable workers.
 - Return output references, commit IDs, and handoffs instead of copying full reports into later prompts.
@@ -92,9 +102,10 @@ fi
 ```bash
 stop() { printf 'lifecycle refusal: %s\n' "$*" >&2; exit 1; }
 set -euo pipefail
-: "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}"
+: "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}" "${expected_root:?canonical shared root}"
 : "${patch:?handoff patch path}" "${patch_digest:?patch digest}" "${expected_tree:?expected clean worker tree}"
 : "${review_path:?registered review worktree path}"
+case "$review_path" in "$expected_root"/*) ;; *) stop "review path is outside the shared root" ;; esac
 base_ref="refs/heads/orchestrator/$run/base/$lane"
 review_branch=${review_branch:-"orchestrator/$run/review/$lane"}
 git rev-parse --verify --quiet "$base_ref^{commit}" >/dev/null || stop "base pin is missing"
@@ -118,8 +129,9 @@ test -z "$status" || stop "review checkout is dirty"
 ```bash
 stop() { printf 'lifecycle refusal: %s\n' "$*" >&2; exit 1; }
 set -euo pipefail
-: "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}"
+: "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}" "${expected_root:?canonical shared root}"
 : "${reviewed_sha:?reconstructed reviewed commit}" "${candidate_path:?registered candidate worktree path}"
+case "$candidate_path" in "$expected_root"/*) ;; *) stop "candidate path is outside the shared root" ;; esac
 base_ref="refs/heads/orchestrator/$run/base/$lane"
 test "$(git rev-parse "$base_ref")" = "$base_sha" || stop "base pin moved before candidate assembly"
 candidate_branch=${candidate_branch:-"orchestrator/$run/candidate"}

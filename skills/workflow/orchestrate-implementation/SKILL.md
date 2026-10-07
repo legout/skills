@@ -39,6 +39,12 @@ Before dispatch, read the installed `pi-subagents`, `pi-intercom`, or `paseo` sk
 
 Use `pi-intercom` for `herdr-pane` lane lifecycle and for explicitly named, persistent read-only peers or visible cross-project peers.
 
+## Shared worktree root and role settings
+
+For each mutation run, resolve the canonical Git top-level directory and derive `<canonical-repo-parent>/worktrees/<repo-basename>/`. Use this one visible, external root for worker/fix, parent review/reconstruction, and candidate worktrees. Give each checkout a unique path and branch, and record the run/lane/role/attempt-to-path mapping. Include those components in allocator-controlled names when supported; never move or rename a managed worktree to impose a naming scheme. Before allocation, validate the physical path, existing components and symlinks, permissions, branch/path collisions, and that the root is outside both the active checkout and Pi extension auto-discovery. Create only the expected root after validation. Verify every returned worktree is registered beneath it before granting write authority. Preserve existing worktrees; an unsafe, unavailable, colliding, or unsupported root blocks dispatch without an off-root retry or allocator switch.
+
+Resolve each role's model and thinking fields independently: explicit run/lane → project → global → spec default. Defaults are worker `zai/glm-5.3`/`high` and reviewer `openai-codex/gpt-6.1-sol`/`high`. `inherit` removes that field's override so it resolves from the global setting or spec default, never the parent session. Because project override objects may shadow global objects, resolve and pass the complete effective pair explicitly. Before agent creation, prove the selected backend can run the exact provider/model and thinking level; do not infer aliases, drop thinking, downgrade, or select a different backend. Record each value and source, the backend-effective pair, and any blocker in the existing run manifest.
+
 ## Durable handoff and recovery boundary
 
 The worker worktree is an execution detail, not the review artifact. Before mutation, create a collision-checked, parent-owned named base ref such as `refs/heads/orchestrator/<run>/base/<lane>` at the approved lane base. Record its resolved SHA and require that the ref still resolves to that SHA before every recovery. Pass the named ref—not a raw SHA or the moving parent `HEAD`—to managed allocation.
@@ -73,7 +79,7 @@ Read all supplied ADRs, specifications, issues, plans, and approved designs befo
 
 Stop before mutation when inputs conflict or a material acceptance criterion is missing. Ask for the exact owner decision instead of selecting one silently.
 
-Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Use the selected backend's isolation: managed worktrees for `pi-subagents` and `paseo`, parent-allocated registered mutation worktrees only for `herdr-pane`. Never nest worktrees or share a mutation checkout. Parent-owned review/candidate checkouts reconstruct, validate, review, and assemble captured lanes; they are not worker locations. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
+Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, the shared root, exact worker/reviewer pairs, and selected-backend support before allocating writers. Use the selected backend's isolation: managed worktrees for `pi-subagents` and `paseo`, parent-allocated registered mutation worktrees only for `herdr-pane`. Never nest worktrees or share a mutation checkout. Parent-owned review/candidate checkouts reconstruct, validate, review, and assemble captured lanes; they are not worker locations. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
 
 Before dispatch, run or record the smallest fast baseline able to distinguish pre-existing failures from task regressions. Do not run the full repository matrix unless project policy or the named risks require it. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one isolated worktree — managed, Paseo-managed, or parent-allocated for a `herdr-pane` lane — and one writer. Follow the plan's smallest safe decomposition: do not create lanes merely to parallelize or add review points, and prefer one writer when coordination would cost more than the work. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
 
@@ -117,6 +123,7 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md) a
 | Missing optional peer | Fresh advisor fallback |
 | Missing required peer | Pause |
 | Named backend unavailable | Pause; do not silently substitute another backend |
+| Root or exact model/thinking unsupported | Block before allocation/agent creation; preserve state and record the reason |
 | `herdr-pane` mutation lane | Parent-allocated registered worktree; intercom lifecycle |
 | `paseo` worker / advisor | Managed worktree for mutation / read-only workspace for advice; collect results via the selected transport |
 | Review finding | Parent dispositions first; one batch of accepted small in-scope fixes, then one fresh delta-only recheck; unresolved or large fixes go to the human |
@@ -133,6 +140,7 @@ Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md) a
 - Letting a reviewer or worker become the final scope or publication authority.
 - Starting a replacement writer before failed-lane ownership is resolved.
 - Assuming a completed child's worktree or cwd still exists at fix time; durable handoff patch paths, pinned named bases, and registered parent-owned review/candidate checkouts are the recovery boundary.
+- Silently accepting an off-root allocator path, changing allocators, or dropping/substituting a role model or thinking level.
 - Treating a worker-reported SHA as the reviewed tree without reconstructing and checking the artifact.
 - Adding duplicate tests, broad validation matrices, or review rounds without a distinct reachable failure mode.
 - Dispatching a writer from research findings, a draft specification, or a materially changed unapproved source.

@@ -15,6 +15,7 @@ This is a bounded **executable** native Pi acceptance fixture for `orchestrate-i
 ```bash
 set -euo pipefail
 run_root=$(mktemp -d "${TMPDIR:-/tmp}/managed-lifecycle.XXXXXX")
+run_root=$(cd "$run_root" && pwd -P)
 mkdir -p "$run_root/repo"
 git -C "$run_root/repo" init -q
 git -C "$run_root/repo" config user.name "managed lifecycle fixture"
@@ -23,26 +24,44 @@ printf 'seed\n' > "$run_root/repo/seed.txt"
 git -C "$run_root/repo" add seed.txt && git -C "$run_root/repo" commit -qm "fixture base"
 ```
 
-Keep parent-created review/candidate checkouts under `$run_root`. Native managed worktrees and handoff/report artifacts may use the runtime's configured locations outside `$run_root`; record their exact paths and ownership rather than changing runtime placement or copying a report in place of the captured patch. Verify every mutation checkout's canonical `git rev-parse --git-common-dir` identifies `$run_root/repo/.git` before using it. Only this fixture's recorded resources may be cleaned up; preserve failed or uncertain artifacts.
+The canonical repository root is `$run_root/repo`; the required shared worktree root is `$run_root/worktrees/repo/`. Put the native managed worker/fix worktrees and parent-created review/candidate checkouts beneath that root. Verify the configured Pi allocator predicts this root before dispatch; do not set `worktreeBaseDir` to switch an explicitly selected Worktrunk provider. If the selected allocator cannot honor the root, mark the fixture BLOCKED before launching a writer. Handoff/report artifacts must remain outside every disposable worker worktree; record their exact paths and ownership rather than copying a report in place of the captured patch. Verify every mutation checkout's canonical path, registration beneath the shared root, and `git rev-parse --git-common-dir` ownership by `$run_root/repo/.git` before mutation. Only this fixture's recorded resources may be cleaned up; preserve failed or uncertain artifacts.
 
 ## Scenario
 
-1. **Discover:** list available agents/capabilities through the native protocol; record the runtime version.
-2. **Pin:** create the collision-checked named base `refs/heads/orchestrator/<run>/base/api` at the approved lane base with the documented pin recipe; record the resolved SHA.
-3. **Worker:** launch one small managed mutation worker with fresh context from the named `baseRef`, a bounded brief, a `new-test`-style check, and a declared report output path. Let normal child finalization run — do not request retention of the worktree.
-4. **Handoff:** consume the actual runtime handoff artifact: complete binary-capable patch path, digest, worker-reported commit/tree/cleanliness, and recorded cleanup state (worktree removed/preserved).
-5. **Move parent:** commit an unrelated change on the parent branch so its HEAD advances past the pinned base.
-6. **Reconstruct:** run the documented byte-preserving replay recipe in a registered parent-owned review worktree: verify the pin/digest, verify the staged tree equals the reported clean worker tree, commit, then verify the committed tree and checkout cleanliness. Run the focused check there to exercise this fixture's reconstruction surface; do not replace that required live evidence with an offline or worker report.
-7. **Review:** dispatch a fresh read-only reviewer against the exact `base..reconstructed-head` range with the full inline reviewer contract and actual fixture criteria; record the verdict. Preserve the materialized review ref/SHA. Plant one real criterion violation for this fixture's repair, not a pseudo-finding.
-8. **Fix:** launch a fresh managed fix worker from the same verified pinned base, replaying the full prior patch and applying one accepted finding; capture its complete replacement patch and digest; let finalization clean up.
-9. **Replace:** reconstruct the replacement patch from the pinned base on a distinct review branch; verify it is a full replacement (not incremental). Recheck only the direct `priorReviewSha..replacementReviewSha` delta and the accepted finding's behavior. One fix pass, one recheck; unresolved findings stop for the human, never reset the budget or re-review settled code.
-10. **Candidate:** assemble the reconstructed reviewed commit in a registered candidate worktree; record the handoff fields for `merge-worktree`; stop before integration.
+This fixture uses one explicit controlled fault so the repair path is exercised without inventing a review finding: the first worker adds executable `render.sh` that prints `ready ` followed by a newline, plus `test_render.sh` that requires executable permission and exact stdout bytes `ready\n`. The test must fail on the known trailing-space defect, and the worker must report that failure honestly. The approved finding is only that `render.sh` violates the byte-exact output criterion; the fresh fix worker removes the space, reruns the test successfully, and replaces the full patch. Do not manufacture a finding if the reviewer misses this reachable failure; record fixture FAIL and stop.
+
+The test oracle must compare bytes without trimming output; for example:
+
+```bash
+set -euo pipefail
+actual=$(mktemp)
+trap 'rm -f "$actual"' EXIT
+test -x ./render.sh
+./render.sh > "$actual"
+printf 'ready\n' | cmp - "$actual"
+```
+
+1. **Discover:** list available agents/capabilities through the native protocol; record the runtime version and effective worktree allocator.
+2. **Resolve:** capture the effective worker and reviewer model/thinking fields (run/lane → project → global → spec defaults), their sources, and exact `provider/model:thinking-level` launch forms. Verify both model IDs and thinking levels are supported before any writer starts; if not, exercise the blocked no-launch path.
+3. **Pin:** create the collision-checked named base `refs/heads/orchestrator/<run>/base/api` at the approved lane base with the documented pin recipe; record the resolved SHA.
+4. **Worker:** launch one small managed mutation worker with fresh context from the named `baseRef`, a bounded brief containing the exact worker pair and expected root, the controlled-fault requirement/test above, and a declared report output path. The worker's first action is a no-write check of its actual registered path and effective model/thinking; mismatch returns blocked without editing. Run `bash test_render.sh`, report its expected failure without claiming success, and let normal child finalization run — do not request retention of the worktree.
+5. **Handoff:** consume the actual runtime handoff artifact: complete binary-capable patch path, digest, worker-reported commit/tree/cleanliness, and recorded cleanup state (worktree removed/preserved).
+6. **Move parent:** commit an unrelated change on the parent branch so its HEAD advances past the pinned base.
+7. **Reconstruct:** run the documented byte-preserving replay recipe in a registered parent-owned review worktree beneath the shared root: verify the pin/digest, verify the staged tree equals the reported clean worker tree, commit, then verify the committed tree and checkout cleanliness. Run `bash test_render.sh` there and record the expected trailing-space failure; do not replace that required live evidence with an offline or worker report.
+8. **Review:** dispatch a fresh read-only reviewer using the exact reviewer model/thinking pair against the exact `base..reconstructed-head` range with the full inline reviewer contract and the byte-exact output criterion; record the verdict. It must identify the reachable trailing-space failure as `fix-first`. Preserve the materialized review ref/SHA.
+9. **Fix:** launch a fresh managed fix worker from the same verified pinned base with the exact worker pair, replaying the full prior patch and removing only the accepted trailing-space defect; run `bash test_render.sh` successfully, capture its complete replacement patch and digest, and let finalization clean up.
+10. **Replace:** reconstruct the replacement patch from the pinned base on a distinct review branch under the shared root; verify it is a full replacement (not incremental). Recheck only the direct `priorReviewSha..replacementReviewSha` delta and the accepted finding's behavior. One fix pass, one recheck; unresolved findings stop for the human, never reset the budget or re-review settled code.
+11. **Candidate:** assemble the reconstructed reviewed commit in a registered candidate worktree beneath the shared root; record the handoff fields for `merge-worktree`; stop before integration.
 
 ## Required evidence fields
 
 | Field | Meaning |
 |---|---|
 | `runtime_version` | Actual Pi/`pi-subagents` version used |
+| `expected_root` | Canonical `<repo-parent>/worktrees/<repo-name>/` path and allocator preflight evidence |
+| `worker_model`, `worker_thinking`, `worker_sources` | Exact worker pair and per-field resolution sources |
+| `reviewer_model`, `reviewer_thinking`, `reviewer_sources` | Exact reviewer pair and per-field resolution sources |
+| `backend_effective_pair` | Exact model/thinking observed in each launched role or the precise blocker |
 | `agents_discovered` | Agent/capability discovery result |
 | `run_id`, `lane_id` | Run and lane identifiers, terminal worker/fix/reviewer IDs, and native request shapes |
 | `base_ref`, `base_sha` | Named base pin and resolved SHA (before/after checks) |

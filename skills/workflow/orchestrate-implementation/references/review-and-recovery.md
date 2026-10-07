@@ -1,5 +1,7 @@
 # Implementation review and recovery
 
+Every parent-owned review/reconstruction and candidate checkout must use the run's canonical `<repo-parent>/worktrees/<repo-name>/` root, just like worker/fix worktrees. Validate the canonical path, symlinks, and unique branch/path before allocation; recovery never relocates an existing checkout or retries outside that root. If a required review or candidate path cannot be registered there, preserve the artifacts and block.
+
 ## Review policy
 
 Choose one review policy per run:

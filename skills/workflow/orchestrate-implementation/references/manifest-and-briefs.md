@@ -10,18 +10,19 @@
 
 Create one compact run manifest in a parent-owned artifact directory, outside every disposable worker worktree. Use runtime-managed artifacts when available; otherwise allocate a stable run directory and record its path. Reports, briefs, and uniquely named handoff/replacement patches must survive workspace cleanup and be accessible to the selected backend. Record:
 
-- repository, cwd, base ref, and mode;
+- canonical repository root and expected shared worktree root `<repo-parent>/worktrees/<repo-name>/`, repository/cwd, base ref, and mode;
 - source artifact references, each with its planning-contract classification, approved scope and revision, and approval reference;
 - the contract version and available provenance, or `unknown`;
 - the capture-checkpoint outcome;
 - normalized constraints, non-goals, and acceptance criteria;
 - task IDs, dependency edges, lanes, and claimed files/contracts;
 - per-task readiness: prerequisite evidence and the readiness verdict recorded before dispatch;
-- run-default backend, per-lane overrides, and worker/reviewer/advisor configuration, including session/agent/workspace IDs and the result-collection channel;
+- run-default backend, per-lane overrides, and worker/reviewer/advisor configuration, including each role's model and thinking value, per-field source (run/lane, project, global, or spec default), backend-effective representation, session/agent/workspace IDs, and result-collection channel;
 - validation units with risk, named failure modes, focused commands, review policy, and the one-fix/one-delta-recheck limit (not reset at candidate assembly);
 - unresolved decisions and their owners;
-- per-lane pinned named base ref and resolved SHA, worker branch/worktree (distinct for a fresh fix), worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
-- candidate-branch base, head, registered worktree, cherry-picks, exact review range, and review state; and
+- per-lane pinned named base ref and resolved SHA, worker branch/worktree (distinct for a fresh fix), canonical backend-returned path and its run/lane/role/attempt mapping, worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
+- candidate-branch base, head, registered worktree, cherry-picks, exact review range, and review state;
+- any unsupported root/model/thinking condition and the exact blocked-before-launch reason; and
 - residual risks and artifact references.
 
 Store large content in artifacts. Keep only paths and concise summaries in the manifest or mission state.
@@ -31,7 +32,7 @@ Store large content in artifacts. Keep only paths and concise summaries in the m
 Give each worker one bounded brief containing:
 
 1. goal;
-2. repository, cwd, pinned base ref/SHA, lane, selected backend, and isolated worktree;
+2. repository, cwd, pinned base ref/SHA, lane, selected backend, expected shared root, exact role model/thinking pair with source, backend-effective representation, and isolated worktree;
 3. allowed files/contracts and authority boundary;
 4. relevant upstream interfaces, the approved behavioral source with its exact approved scope and revision, and approved decisions;
 5. acceptance criteria;
