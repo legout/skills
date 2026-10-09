@@ -4,12 +4,12 @@
 
 Keep one compact record outside every disposable worker worktree. Prefer existing native mission state or host artifacts; otherwise use a stable parent-owned run directory accessible to the selected host. Link reports and logs instead of copying them. Record only coordination facts:
 
-- repository, approved run base, mode, and applicable execution/integration/publication authority;
+- canonical source repository, expected shared worktree root, approved run base, mode, and applicable execution/integration/publication authority;
 - source references with approved scope/revision and approval reference, planning-contract version/provenance (or `unknown`), capture-checkpoint outcome, and task readiness;
-- tasks, dependencies, owned files/contracts, selected Pi host/model/options, child/workspace/session IDs, actual cwd, and result channel;
+- tasks, dependencies, owned files/contracts, selected Pi host, each role's complete model/thinking pair and per-field source, backend-effective representation, child/workspace/session IDs, actual canonical cwd with run/lane/role/attempt mapping, and result channel;
 - per lane: pinned base ref/SHA, result ref/SHA/tree, validation/review artifact references, prior reviewed endpoint when fixing, and blocker/next action;
 - candidate path/branch/base/head and source-result mapping; and
-- actual terminal/ownership/cleanup state, skipped checks, and residual risks.
+- actual terminal/ownership/cleanup state, any root/model/thinking blocked-before-launch reason, skipped checks, and residual risks.
 
 Add patch path/digest and reconstructed identities only for patch recovery. Keep native runtime IDs in native artifacts; do not maintain another lane board, scheduler, or evidence ledger with duplicate state. Persistent Pi peers are optional named read-only consultants, not mandatory architecture/domain/quality checkpoints.
 
@@ -18,7 +18,7 @@ Add patch path/digest and reconstructed identities only for patch recovery. Keep
 Give a fresh Pi worker one cold-start packet:
 
 1. Task goal, relevant source reference/revision, acceptance criteria, and non-goals.
-2. Exact repository/common Git directory, expected host-bound cwd/branch (runtime-supplied for native managed children), pinned base ref/SHA, and unique authorized result ref.
+2. Exact repository/common Git directory, expected shared root and host-bound cwd/branch (runtime-supplied for native managed children), complete role model/thinking pair with sources/effective form, pinned base ref/SHA, and unique authorized result ref.
 3. Owned files/contracts, upstream interfaces, relevant written conventions and real callers/inputs/environment.
 4. Assigned `new-test`, `existing-check`, or `no-new-test` obligation; named failure mode, focused command, and any required project checks.
 5. Allowed actions, explicit no-publication boundary, report destination outside the worktree, and host-specific escalation route.
@@ -27,7 +27,7 @@ Paste these guardrails into initial and fix briefs; do not send only a link:
 
 ```text
 Approved scope outranks reviewer suggestions. Use the smallest safe change; dependencies and abstractions need a job today. Follow the supplied written conventions, not unwritten taste. Run the assigned focused validation; expected values come from approved criteria or an independent oracle, not copied implementation output. Bug repros fail before the fix; behavior-affecting refactors pin current behavior before mutation. Challenge an unsuitable obligation with evidence rather than silently skipping it.
-You are the sole writer in the supplied isolated checkout. Before writes, report/verify actual cwd, canonical repository, branch, and base against the packet. Stop on material requirement ambiguity, scope/interface changes, edits beyond your owned surface, missing prerequisites, irreversible operations, or unapproved integration/publication. Do not grant permissions, install dependencies, or choose another runtime/model/host to bypass a blocker.
+You are the sole writer in the supplied isolated checkout. Before writes, report/verify actual registered cwd beneath the expected root, canonical repository, branch, base, and runtime-effective model/thinking against the packet. Stop on material requirement ambiguity, scope/interface changes, edits beyond your owned surface, missing prerequisites, irreversible operations, or unapproved integration/publication. Do not grant permissions, install dependencies, or choose another runtime/model/host to bypass a blocker.
 Only the parent dispositions review findings and authorizes fixes/rechecks. Apply only its accepted small in-scope fixes; challenge a finding contradicted by source. One fix pass and one delta recheck; do not expand or restart review. Do not delegate further. Do not run memo or write shared memory; the parent owns durable capture.
 Commit intended changes, freeze only the unique parent-authorized result ref before finalization, and return the actual commit/tree, cleanliness, changed files, validation results, and open decisions. Relinquish write ownership when reporting completion. Do not call your own report acceptance or publication authority.
 ```

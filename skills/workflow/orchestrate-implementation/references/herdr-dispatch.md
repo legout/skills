@@ -4,16 +4,19 @@ Read the installed `pi-intercom` skill and current Herdr help. Verify the caller
 
 ## Allocate the lane
 
-After pinning the base, create one new registered lane branch/worktree outside the active checkout and Pi extension auto-discovery. Use the supplied canonical repository; verify the returned common Git directory, clean initial HEAD, branch, and exclusive ownership before writes. Do not move managed/other people's worktrees.
+Apply the shared-root preflight in `SKILL.md`. After pinning the base, create one new registered lane branch/worktree beneath that root, with unique run/lane/worker-or-fix/attempt naming. Use the supplied canonical repository; verify physical path components/symlinks and collisions before allocation, then returned common Git directory, clean initial HEAD, branch, and exclusive ownership before writes. Do not move existing worktrees or retry off-root.
 
 ```bash
 set -euo pipefail
 stop() { printf 'Herdr lane refusal: %s\n' "$*" >&2; exit 1; }
-: "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}" "${worker_path:?new lane path}"
+: "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}" "${expected_root:?canonical shared root}" "${worker_path:?new lane path}"
 base_ref="refs/heads/orchestrator/$run/base/$lane"
 worker_branch=${worker_branch:-"orchestrator/$run/worker/$lane"}
+case "$worker_path" in "$expected_root"/*) ;; *) stop "lane path is outside the shared root" ;; esac
 test "$(git rev-parse "$base_ref^{commit}")" = "$base_sha" || stop "base pin missing or moved"
 git worktree add -b "$worker_branch" "$worker_path" "$base_ref" || stop "lane path or branch unavailable"
+git -C "$worker_path" rev-parse --show-toplevel | grep -Fx -- "$worker_path" >/dev/null || stop "allocated path is not the expected checkout"
+git worktree list --porcelain | grep -Fx -- "worktree $worker_path" >/dev/null || stop "allocated path is not registered"
 ```
 
 ## Register a fresh Pi session
@@ -22,7 +25,7 @@ git worktree add -b "$worker_branch" "$worker_path" "$base_ref" || stop "lane pa
 2. Send only a registration request with `cwd: "<worker_path>", openProjectPaneIfMissing: true, focus: false`: report session ID, actual cwd/repository/branch/base, Pi model/options, and tools to the parent; do not edit yet. This opens Pi but can reuse a session that registered since the snapshot.
 3. Require `Opened Herdr project pane ...`/`openedProjectPane: true`, record the returned paneId, and refresh the roster. In the fresh roster, match a previously absent session at the exact cwd to the pane actually launched. Confirm its reported placement and required tools/options **before sending the mutation brief**. A reused, missing, or ambiguous identity pauses dispatch. Pin the intercom session ID; address later messages with `to` plus `cwd`, never a pane ID or guessed alias.
 
-Intercom opening does not select a model. Explicit model/options require a supported Pi launch/configuration route and reported effective values. For a requested tab, use current `herdr tab create --help` and `herdr pane run` to start a fresh `pi` at the lane path without stealing focus, then use the same registration handshake. Do not resume an unrelated old session.
+Intercom opening does not select a model. Resolve/prove the complete role pair before agent creation through a supported Pi launch/configuration route; require runtime-effective model/thinking to match exactly before sending the mutation brief. If default intercom opening cannot apply that pair, use a documented explicit launch or block without mutation. For a requested tab, use current `herdr tab create --help` and `herdr pane run` to start fresh `pi --model "provider/model:thinking-level"` when supported, without stealing focus, then use the same registration handshake. Do not resume an unrelated old session.
 
 Deliver the bounded common brief/inline role contract only after admission. Check ignored local Pi configuration/tool dependencies explicitly; they do not automatically appear in a worktree. New tasks and reviewers use fresh sessions. If the user changes scope in the visible pane, reconcile approval before proceeding.
 

@@ -5,7 +5,7 @@
 - [Verify the result](#verify-the-result)
 - [Assemble the candidate](#assemble-the-candidate)
 
-Use these recipes for the ordinary committed-result path on every mutation-capable Pi host. The parent supplies collision-checked names, canonical paths, and recorded identities. Run in the intended repository/worker checkout; output paths belong outside disposable worktrees. A result is transport and provenance, not a review verdict.
+Use these recipes for the ordinary committed-result path on every mutation-capable Pi host. The parent supplies collision-checked names, canonical paths beneath the shared root defined in `SKILL.md`, and recorded identities. Apply its physical-path/symlink/collision preflight before every worktree allocation; unsupported roots block without relocation or off-root retry. Run in the intended repository/worker checkout; output paths belong outside disposable worktrees. A result is transport and provenance, not a review verdict.
 
 ## Pin the lane base
 
@@ -82,7 +82,8 @@ set -euo pipefail
 stop() { printf 'assembly refusal: %s\n' "$*" >&2; exit 1; }
 : "${base_ref:?pinned base}" "${base_sha:?recorded lane base}"
 : "${result_sha:?verified lane result}" "${assembly_from:?base or prior represented result}"
-: "${candidate_path:?candidate path}" "${candidate_branch:?candidate branch}"
+: "${candidate_path:?candidate path}" "${candidate_branch:?candidate branch}" "${expected_root:?canonical shared root}"
+case "$candidate_path" in "$expected_root"/*) ;; *) stop "candidate path is outside the shared root" ;; esac
 test "$(git rev-parse "$base_ref^{commit}")" = "$base_sha" || stop "base pin moved"
 git merge-base --is-ancestor "$base_sha" "$assembly_from" || stop "assembly boundary precedes lane base"
 git merge-base --is-ancestor "$assembly_from" "$result_sha" || stop "replacement is not a descendant; rebuild candidate"
@@ -91,6 +92,7 @@ if [ ! -e "$candidate_path" ]; then
     git worktree add -b "$candidate_branch" "$candidate_path" "$base_ref" || stop "candidate creation failed"
 fi
 candidate_path=$(cd "$candidate_path" && pwd -P)
+case "$candidate_path" in "$expected_root"/*) ;; *) stop "canonical candidate path is outside the shared root" ;; esac
 git worktree list --porcelain | grep -Fx -- "worktree $candidate_path" >/dev/null || stop "candidate is not registered in this repository"
 test "$(git -C "$candidate_path" symbolic-ref --quiet HEAD)" = "refs/heads/$candidate_branch" || stop "candidate branch mismatch"
 status=$(git -C "$candidate_path" status --porcelain --untracked-files=all --ignore-submodules=none) || stop "candidate status failed"

@@ -1,6 +1,6 @@
 # T3-hosted Pi dispatch
 
-Use app-owned children only inside a T3 thread. Query `orchestrator_capabilities`; select a provider instance with `driverKind: "pi"`, `canRunChildTask: true`, and no blocking constraints. Take its exact instance ID, Pi model ID, and options from the live catalog. An available Codex/OpenCode/other driver is not a Pi fallback. Pi model-provider names do not change the runtime. Child permissions never exceed the parent.
+Use app-owned children only inside a T3 thread. Query `orchestrator_capabilities`; select a provider instance with `driverKind: "pi"`, `canRunChildTask: true`, and no blocking constraints. Resolve the role's complete model/thinking pair under `SKILL.md`'s per-field policy and prove it executable through the live catalog before creation. Take the exact instance ID, Pi model ID, and matching thinking option from that catalog; unsupported pairs block, without alias inference, omitted thinking, or downgrade. An available Codex/OpenCode/other driver is not a Pi fallback. Pi model-provider names do not change the runtime. Child permissions never exceed the parent.
 
 ## Placement: currently read-only
 

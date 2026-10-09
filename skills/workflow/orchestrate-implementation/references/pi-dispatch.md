@@ -2,13 +2,21 @@
 
 Use `pi-subagents` only after delegation is authorized. Read its installed skill and current tool guide (`subagent({ action: "guide", topic: "tool-reference" })`), then discover agents and resolved settings. Select a native Pi profile: a role named `worker` or `reviewer` is not sufficient if a project override uses an `external-cli` or external-job runner. An unavailable Pi profile/model/tool dependency blocks dispatch; do not launch another runtime or install packages silently.
 
+## Root and model preflight
+
+Apply the shared-root and per-field role resolution policy in `SKILL.md`. Keep the configured allocator: inspect effective `worktreeProvider`, `worktreeBaseDir`, and `PI_SUBAGENTS_WORKTREE_DIR`. A base directory/env override selects native allocation and cannot be combined with explicit Worktrunk; do not force an allocator switch. Native allocation's `<base>/<repo-basename>` must yield the expected shared root (default base: repository parent's `worktrees/`). Runtime relocation for extension discovery must also remain within that root or block.
+
+For Worktrunk, inspect `wt config show` and `WORKTRUNK_WORKTREE_PATH`; prove branch-derived paths stay beneath the shared root. A suitable template is `{{ repo_path }}/../worktrees/{{ repo }}/{{ branch | sanitize }}` ([configuration](https://worktrunk.dev/config/)). Do not edit configuration or move managed paths. An unavailable explicitly selected allocator or unevaluable/off-root placement blocks before launch; returned paths outside the shared root block mutation.
+
+Confirm the exact model via `subagent({ action: "models" })` and supported thinking level. Pass the complete resolved pair as `model: "provider/model:thinking-level"` (including `:off` when selected), not an agent-name alias. A conflicting suffix or unsupported pair blocks before agent creation. The child's no-write preflight must verify runtime-effective model/thinking and registered placement before mutation.
+
 ## Launch and placement
 
 For one bounded task use a direct `{ agent, task }` call with explicit `cwd`, fresh context, `async: true`, runtime-bound `output`, and the required mutation isolation. Use a workflow only for useful keys, dependencies, branching, or fanout: one fenced `js workflow` block followed by `subagent({ workflow: true, async: true })`, or a script file. Use `runs.run` for dependent steps and `runs.all` for independent ones; use `runs.lanes` only when a predeclared staged plan benefits from it. Give workflow children stable keys, short behavior labels, and distinct outputs. Never wrap one task merely to obtain a workflow label.
 
 - Mutation: `worktree: true`, explicit repo/cwd, and the parent's pinned named `baseRef`. Managed allocation binds the child tools; give conditional write authority only after the child's no-write preflight verifies actual registered cwd/repository/branch and initial base against runtime-supplied allocation metadata. Do not invent a managed path/branch before allocation. Record that evidence for parent verification before acceptance.
 - Read-only: fresh context and the resolved read-only role/tool contract; share only a stable checkout and prohibit project edits. Runtime-persisted review output is allowed.
-- Pass explicitly requested model/thinking options in the installed tool's supported form; otherwise retain configured Pi role settings. Do not guess aliases or impose package model defaults.
+- Pass the complete resolved model/thinking pair explicitly on every launch, using the installed tool's supported form; do not guess aliases or drop thinking.
 - Do not impose hard tool/usage budgets on mutation-capable workers. Bound scope, and request checkpoints after active tool calls finish.
 - Paste the common worker/reviewer contract from the brief reference; paths alone are not delivery of reviewer gates.
 

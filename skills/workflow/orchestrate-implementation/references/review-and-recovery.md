@@ -1,5 +1,7 @@
 # Review and recovery
 
+Every parent review/reconstruction and candidate checkout uses the canonical `<repo-parent>/worktrees/<repo-name>/` root derived from the source repository, just like worker/fix worktrees. Apply `SKILL.md`'s physical-path/symlink/collision preflight before allocation. If the path cannot be registered there, preserve artifacts and block. Never relocate an existing checkout or retry off-root.
+
 ## Disposition before repair
 
 The parent inspects each finding at the exact reviewed head. Require a named requirement/written-rule violation, a change-caused or worsened defect, real reachability, material impact, and a proportionate response. Written conventions bind; taste does not. Security/test demands also pass the inline reviewer contract in the brief reference.
@@ -53,7 +55,8 @@ set -euo pipefail
 stop() { printf 'recovery refusal: %s\n' "$*" >&2; exit 1; }
 : "${run:?run id}" "${lane:?lane id}" "${base_sha:?recorded base sha}"
 : "${patch:?patch path}" "${patch_digest:?patch digest}" "${expected_tree:?expected clean worker tree}"
-: "${review_path:?new review worktree path}"
+: "${review_path:?new review worktree path}" "${expected_root:?canonical shared root}"
+case "$review_path" in "$expected_root"/*) ;; *) stop "review path is outside the shared root" ;; esac
 base_ref="refs/heads/orchestrator/$run/base/$lane"
 review_branch=${review_branch:-"orchestrator/$run/review/$lane"}
 test "$(git rev-parse "$base_ref^{commit}")" = "$base_sha" || stop "base pin missing or moved"
