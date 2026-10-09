@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 
 python3 - "$ROOT" <<'PY'
+import json
 import re
 import sys
 import urllib.parse
@@ -96,7 +97,7 @@ for path in sorted(markdown):
 # These pin delivery and loop scope; model behavior is exercised by the eval fixture.
 workflow = skills_root / "workflow/orchestrate-implementation"
 for relative in (
-    "workflow/orchestrate-implementation/references/pi-dispatch.md",
+    "workflow/orchestrate-implementation/references/manifest-and-briefs.md",
     "engineering/simplify-code/SKILL.md",
 ):
     text = (skills_root / relative).read_text()
@@ -130,13 +131,15 @@ for rule in ("Reuse verified focused-check evidence", "exact tree and relevant e
     if rule not in text:
         errors.append(f"SKILL.md: missing validation reuse gate {rule!r}")
 
-# A pane launch must not mistake an existing session for a fresh worker, and
-# CLI-only Paseo launches must not wait for unavailable parent callbacks.
+# These are instruction-delivery checks, not proof of live host execution.
+# Pi must remain the runtime; placement and lifecycle come from the host.
 backend_contracts = {
     "references/herdr-dispatch.md": ("action: \"list-cwd\"", "focus: false", "openedProjectPane", "returned paneId", "fresh roster", "before sending the mutation brief"),
     "references/paseo-dispatch.md": ("projectPath", "branchName", "Agent-scoped MCP", "CLI/top-level", "paseo wait"),
-    "references/manifest-and-briefs.md": ("outside every disposable worker worktree", "git diff --no-ext-diff --no-textconv --binary --full-index", "Before parent-requested cleanup", "Native finalization may precede parent reconstruction"),
-    "references/pi-dispatch.md": ("workflow: true",),
+    "references/manifest-and-briefs.md": ("outside every disposable worker worktree", "Approved scope outranks reviewer suggestions", "Do not run memo"),
+    "references/pi-dispatch.md": ("native Pi", "external-cli", "direct", "workflow: true", "before native finalization"),
+    "references/t3-dispatch.md": ("driverKind", "pi", "currently read-only", "hasPendingChildRuns", "task_cancel", "Cancellation is not cleanup"),
+    "references/git-handoff.md": ("git update-ref", "result_ref", "git-common-dir", "before finalization", "assembly_from"),
 }
 for name, rules in backend_contracts.items():
     text = (workflow / name).read_text()
@@ -164,9 +167,27 @@ for rule in (
 
 recovery = (workflow / "references/review-and-recovery.md").read_text()
 for rule in ("Disposition before repair", "One fix pass, one delta recheck", "No third round",
-             "priorReviewSha..replacementReviewSha", "integration effects", "accept / fix / hand back / ask"):
+             "priorReviewSha..replacementReviewSha", "integration effects", "accept / fix / hand back / ask",
+             "git diff --no-ext-diff --no-textconv --binary --full-index", "--whitespace=nowarn"):
     if rule not in recovery:
         errors.append(f"review-and-recovery.md: missing {rule!r}")
+
+# Supervised runs must reach candidate review without target-integration authority.
+for rule in ("All child roles use Pi", "candidate assembly", "target integration",
+             "bounded issue", "Scout only", "committed result", "patch-only"):
+    if rule not in (workflow / "SKILL.md").read_text():
+        errors.append(f"SKILL.md: missing execution contract {rule!r}")
+
+# Eval JSON paths are not Markdown links; catch missing scenario fixtures too.
+evals = json.loads((workflow / "evals/evals.json").read_text())
+eval_ids = set()
+for case in evals["evals"]:
+    if case["id"] in eval_ids:
+        errors.append(f"duplicate orchestration eval id: {case['id']}")
+    eval_ids.add(case["id"])
+    for file in case["files"]:
+        if not (workflow / "evals" / file).is_file():
+            errors.append(f"orchestration eval {case['id']}: missing {file}")
 
 if errors:
     raise SystemExit("\n".join(errors))

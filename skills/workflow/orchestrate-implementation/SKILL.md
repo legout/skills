@@ -1,6 +1,6 @@
 ---
 name: orchestrate-implementation
-description: Use when implementing a project or feature from ADRs, specifications, issues, or plans, especially when work spans multiple tasks, reviewers, worktrees, repositories, or Pi sessions.
+description: Orchestrate approved plans or GitHub issues with Pi implementers and reviewers. Use when the user requests delegated implementation or coordinated Pi sessions; not for design, plan writing, or ordinary direct coding.
 ---
 
 # Orchestrate Implementation
@@ -9,131 +9,77 @@ description: Use when implementing a project or feature from ADRs, specification
 >
 > Shared-write separation, smallest-safe-decomposition, and bounded child context are adapted from Cursor's [`poteto-mode`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99/pstack/skills/poteto-mode) at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor).
 
-## Overview
+## Ownership and authority
 
-The current session is the orchestrator. Keep user intent, scope, authority, routing, candidate assembly, and final acceptance here. Delegate bounded evidence gathering and implementation; do not turn a collection of chat sessions into an implicit scheduler.
+The current session is the parent. It owns scope, decisions, routing, finding disposition, acceptance, candidate assembly, and the final conclusion. Children implement or review bounded tasks; their reports are evidence, not acceptance or publication authority. Delegate only when the current request or applicable instructions authorize it. All child roles use Pi, including workers, fixes, scouts, reviewers, and advisors. Hosts manage placement and lifecycle; model providers inside Pi are not alternative agent runtimes.
 
-The parent owns every child's work: review the diff yourself and write the final conclusion; a child's self-report is input, not acceptance. Delegate large outputs and bulk exploration, but hand children bounded file references and a task contract rather than accumulated conversation history.
-
-Default to lean assurance: use the smallest evidence set that establishes acceptance criteria and addresses named material risks. Do not add tests, validation commands, reviewers, or review rounds for speculative failures or duplicate evidence. Escalate assurance for security, permissions, secrets, money, destructive data handling, migrations, concurrency, distributed behavior, and public contracts; do not weaken approval, data-integrity, or publication gates.
-
-## Review ground rules
-
-Agreed feature, then correctness, then proven risk. Written conventions are binding and violations are must-fix; unwritten reviewer taste never blocks. A reportable finding must violate a named requirement or written rule, be caused or worsened by this change, be reachable through real callers/inputs/environment, matter, and have a proportionate response. Test requests pass the same gate: name a real scenario, not a coverage target.
-
-Security review activates only for touched untrusted/external input, credentials, auth, or dependency boundaries. Require a named asset, realistic attacker, and actual attack path. Stolen-secret, broken-TLS, malicious-admin, and generic-hardening stories are not findings. Otherwise write `security: n/a`; missing security facts stay `unverified`, never become invented threats. Trusted internal libraries and user-owned local data are not hostile by default; service tasks use the real deployment/auth/network boundary. Written safety guarantees remain binding.
-
-The parent dispositions every finding before repair: reject failed gates in one line, authorize small in-scope fixes, or hand large/out-of-scope fixes to the human. Only the parent starts fixes/rechecks. Review ends once criteria, real risks, and written rules are covered, with `pass` or `fix-first`; finding count is not success. One fix pass, one delta recheck, then ask the human; no third round. Candidate review does not reset that budget or reopen settled findings.
-
-After each task, restate the approved task, compare the result, and choose `accept / fix / hand back / ask`. Extra ideas get one line, not code. Keep the smallest safe change; dependencies and abstractions need a job today. Use existing reports, not new ledgers, lifecycles, or sign-off artifacts.
-
-## Worker backends
-
-Use the requested or configured run default, otherwise `pi-subagents`; explicit lane selections override that default. Record the resolved backend per lane in the manifest. Supported backends:
-
-- **`pi-subagents`** (default): managed children and worktrees; spawned children use Pi's native supervisor channel for decisions and progress. Mechanics: [Pi dispatch](references/pi-dispatch.md).
-- **`herdr-pane`**: a visible Pi session in a Herdr pane/tab, coordinated through `pi-intercom`. The parent allocates a registered mutation worktree from the pinned base; intercom carries the brief, escalation, and completion report. Mechanics: [Herdr dispatch](references/herdr-dispatch.md).
-- **`paseo`**: a Paseo agent on a configured provider/model in a Paseo-managed worktree; also supports read-only advisors. Agent-scoped MCP uses completion callbacks; CLI/top-level launches need explicit result collection. Mechanics: [Paseo dispatch](references/paseo-dispatch.md).
-
-Before dispatch, read the installed `pi-subagents`, `pi-intercom`, or `paseo` skill for each selected backend and verify its tools/CLI, caller context, and worker-side dependencies. Missing guidance or an unavailable selected backend pauses the run; do not install dependencies or silently substitute another backend. Backend choice never changes the acceptance boundary: every mutation lane is accepted only through the pinned named base, the durable patch and digest, and parent-owned reconstruction. Scouts, reviewers, and simplifiers stay on fresh `pi-subagents` contexts unless the user explicitly names another backend for that role.
-
-Use `pi-intercom` for `herdr-pane` lane lifecycle and for explicitly named, persistent read-only peers or visible cross-project peers.
-
-## Durable handoff and recovery boundary
-
-The worker worktree is an execution detail, not the review artifact. Before mutation, create a collision-checked, parent-owned named base ref such as `refs/heads/orchestrator/<run>/base/<lane>` at the approved lane base. Record its resolved SHA and require that the ref still resolves to that SHA before every recovery. Pass the named ref—not a raw SHA or the moving parent `HEAD`—to managed allocation.
-
-Require each mutation lane to report a complete binary-capable patch, its digest, worker-reported commit/tree/cleanliness, and the runtime handoff/cleanup status. Keep the base and handoff artifacts until every consumer is terminal. Missing, partial, dirty, corrupt, or inconsistent handoffs block acceptance; a child exiting is not success by itself.
-
-Before accepting a mutation lane, even if its worker checkout survives, reconstruct in a registered parent-owned review worktree outside extension auto-discovery and the active source checkout. Use the shared byte-preserving replay recipe: verify the pin/digest, staged and committed trees against the expected worker tree, and checkout cleanliness. Reuse verified focused-check evidence only when that exact tree and relevant environment match; a worker's pass claim alone is not verified evidence. Otherwise run the affected checks there. Apply the selected review policy to the exact base/head range, record worker provenance separately from the materialized review SHA/tree, and advance `lastReviewedSha` only for the reconstructed branch.
-
-A fix worker replays a full patch relative to the original pinned base. The replacement patch supersedes the prior full lane patch; it is not an incremental patch applied on top of the previous result. Preserve the prior materialized review ref/SHA before reconstruction. Reconstruct the full replacement from the pinned base, but re-review only `priorReviewSha..replacementReviewSha` and the behavior the accepted fixes address. Full-patch transport does not reset review scope or the correction budget; missing prior review evidence requires an owner decision, not a full review restart. Assemble accepted reconstructed commits in a separate registered candidate worktree. If a full replacement supersedes an assembled lane, preserve the prior candidate and rebuild from the approved base with the current accepted lanes, not by appending the replacement. Then hand `merge-worktree` the candidate path, branch, base/head, checks, review evidence, and authorization state.
+Use the smallest safe decomposition. One bounded issue can have one writer; parallel writers need independent owned surfaces and separate worktrees. Scout only when context gathering has a concrete job. Do not add workflows, specialists, reviews, or checks merely to fill stages. Children do not delegate further unless the parent explicitly authorizes fanout.
 
 ## Modes
 
-Choose one mode from the request or configured default:
+State the requested/configured mode, otherwise `supervised`:
 
-- **`plan-only`**: normalize inputs, create the manifest and task briefs, and make no source edits.
-- **`supervised`** (default): run workers with proportional validation and review, then pause before cherry-picking or publication.
-- **`autonomous`**: run the same loop and cherry-pick accepted commits when clean; pause on conflicts, unresolved decisions, failed gates, missing required peers, push, PR merge, deploy, or release.
+- **`plan-only`**: read inputs and outline tasks/briefs; no source edits, worktrees, or child launches.
+- **`supervised`**: implement, validate, and review, including disposable candidate assembly; pause before target integration.
+- **`autonomous`**: keep the same loop moving while safe work is ready; neither the label nor candidate assembly grants target integration or publication authority.
 
-If the user does not specify a mode, use `supervised` and state that choice briefly.
+An execution request authorizes isolated candidate preparation, not changing the user's target branch. Explicit user restrictions override this default. Target integration, push, issue comments/closure, PR creation/merge, deploy, and release each require applicable authority. Hand approved integration to `merge-worktree`; do not treat a mode as publication permission.
 
-## Intake and preflight
+## 1. Read and authorize
 
-Load the [`planning-contract`](../planning-contract/SKILL.md) skill (Contract version: 1) before dispatch; it owns artifact classification, approval, and readiness. If it is not installed, refuse to dispatch and request installing `planning-contract` rather than proceeding on inherited or invented rules; never assume automatic dependency resolution.
+Load [planning-contract](../planning-contract/SKILL.md) (Contract version: 1). It alone owns artifact classification, approval, the capture checkpoint, and execution readiness. If missing, request installation and refuse writer dispatch. Read the supplied plan, issue, and linked approved behavioral sources; preserve them rather than manufacturing another planning format. An approved bounded issue may satisfy the contract without a separate spec or plan.
 
-Read all supplied ADRs, specifications, issues, plans, and approved designs before dispatching a writer. Preserve them as source material. If `project/agents/issue-tracker.md` (legacy `docs/agents/issue-tracker.md`) selects Epiq, load the Epiq workflow skill before any board operation and use only its `epiq_*` MCP tools; do not use the `epiq` CLI, edit Epiq state files, or initialize a board/project implicitly. Extract:
+For GitHub, fetch the exact issue with an explicit repository (for example `gh issue view <number> --repo <owner/repo> --json number,url,title,body,updatedAt`), check that repository against the checkout, and record the source URL/revision and owner authorization. Relevant comments are context, not automatic scope or permission changes. If a project selects Epiq in `project/agents/issue-tracker.md` (legacy `docs/agents/issue-tracker.md`), load its workflow and use only `epiq_*` MCP tools; do not initialize a board implicitly.
 
-- constraints, invariants, and non-goals;
-- acceptance criteria and validation evidence;
-- source seams and claimed files/contracts;
-- task dependencies and candidate-assembly order; and
-- unresolved owner decisions.
+Stop on conflicting criteria or unresolved material decisions. Route missing behavior/approval to `shape-design`, missing decomposition to `write-implementation-plan`. Recheck readiness only for tasks affected by a material source/interface/scope change. Never infer execution authority from a file location or assistant-written status.
 
-Stop before mutation when inputs conflict or a material acceptance criterion is missing. Ask for the exact owner decision instead of selecting one silently.
+## 2. Select the Pi host
 
-Require a git repository for mutation modes. Verify repository, cwd, base ref, cleanliness, and worktree support before allocating writers. Use the selected backend's isolation: managed worktrees for `pi-subagents` and `paseo`, parent-allocated registered mutation worktrees only for `herdr-pane`. Never nest worktrees or share a mutation checkout. Parent-owned review/candidate checkouts reconstruct, validate, review, and assemble captured lanes; they are not worker locations. A non-git directory may use `plan-only`; it must not receive mutation-capable workers.
+Resolve explicit per-role/lane selection, then the requested/configured run default, then the verified current host. In T3 use its child-capable **Pi** instance; in an agent-scoped Paseo session use its **Pi** provider; in Herdr use a fresh Pi pane; otherwise use available native Pi subagents. Tool presence alone is not host detection. Record the chosen host and the evidence that it can perform the requested role; ask if ambiguous. A detected or selected host without the required capability blocks that role, not permission to silently switch hosts or runtimes.
 
-Before dispatch, run or record the smallest fast baseline able to distinguish pre-existing failures from task regressions. Do not run the full repository matrix unless project policy or the named risks require it. If the baseline is red, separate pre-existing failures from task obligations and ask whether to investigate or proceed; never attribute them to a worker later. Each mutation lane gets one isolated worktree — managed, Paseo-managed, or parent-allocated for a `herdr-pane` lane — and one writer. Follow the plan's smallest safe decomposition: do not create lanes merely to parallelize or add review points, and prefer one writer when coordination would cost more than the work. The orchestrator owns managed lane cleanup and candidate assembly. `merge-worktree` separately owns target-branch integration and cleanup of the completed source worktree.
+Read only the selected adapter and its installed runtime guidance before dispatch:
 
-Normalize different plan formats with a read-only scout. Preserve the planner's source documents; do not require every planning skill to emit one new format.
+- [Native Pi dispatch](references/pi-dispatch.md): `pi-subagents`, native Pi children only.
+- [Herdr dispatch](references/herdr-dispatch.md): `herdr-pane`, fresh visible Pi sessions.
+- [Paseo dispatch](references/paseo-dispatch.md): `paseo`, Pi provider and explicitly bound workspace.
+- [T3 dispatch](references/t3-dispatch.md): `t3-delegate`, Pi driver; currently read-only until supported isolated mutation placement exists.
 
-## Planning readiness gate
+Resolve models/thinking from explicit choices and installed Pi settings or host Pi profiles; do not hardcode model IDs here, guess aliases, or drop explicitly requested options. Filter profiles for Pi before matching the role. Verify the chosen model/options and child tool dependencies; missing prerequisites pause rather than triggering installs, permission grants, or another runtime.
 
-Before dispatching any implementer, verify execution readiness as defined in `planning-contract` — the sole canonical procedure; never restate its checklist here. Refuse the dispatch before any writer or worktree is allocated, report the specific missing prerequisite, and route the work back to the skill that owns it — `shape-design` for behavior and approval, `write-implementation-plan` for decomposition. A material change discovered during execution re-runs the contract's readiness rule for the affected tasks before further dispatch.
+## 3. Prepare ownership and validation
 
-Record in the manifest: each source artifact's classification, approved scope and revision, and approval reference; the capture-checkpoint outcome; the contract version and available provenance, or `unknown`; and each task's prerequisite evidence and readiness verdict.
+Mutation requires Git. Verify the canonical repository, clean approved base, and selected host's worktree support. Record a small run state using [manifest and briefs](references/manifest-and-briefs.md); link existing host/mission artifacts rather than duplicating their contents. Read [Git handoff](references/git-handoff.md) before allocating writers: pin supported named bases and preserve committed results before disposable workspaces can disappear.
 
-## Risk and test obligations
+Use one writer per isolated registered worktree. The host may choose its managed root; verify repository identity, initial base, exclusive ownership, and that the path is outside the active checkout and Pi extension auto-discovery. A path in a prompt is not workspace placement. Confirm actual child cwd/repository/branch before granting write authority. Do not move managed worktrees or alter allocator configuration to impose a common naming scheme.
 
-Classify each validation unit as low, normal, or high risk using the lean assurance policy in the approved plan. Several tightly related tasks may share one validation unit; do not multiply checks per checkbox. Assign exactly one obligation to each unit:
+Run or record the smallest useful baseline. Distinguish pre-existing failures from task obligations; a red baseline requires an owner decision before implementation. Assign focused validation to each coherent unit, not every checkbox:
 
-- `new-test`: changed behavior lacks meaningful existing coverage and a named reachable failure would otherwise be unprotected. Add one focused test at the cheapest stable public seam. Expected values must be derived independently of the implementation under test — from the approved spec, acceptance criteria, or another oracle (an upstream contract, a real input/output pair, captured behavior) — never from reading the code under test. Ordering is the worker's choice, except: a bug fix requires a reproducing test that demonstrably fails before the fix lands, and a behavior-affecting refactor pins current behavior with a characterization test before mutation. Add further tests only for distinct material failure modes.
-- `existing-check`: an existing focused check already exercises the changed behavior. Add no redundant test; run and report that check.
-- `no-new-test`: a new test would prove little, including documentation, formatting, comments, static metadata, generated artifacts, mechanical changes, or behavior-neutral refactoring. Run the smallest meaningful parse, build, smoke check, or diff inspection.
+- `existing-check`: existing coverage exercises the named changed behavior; run it without adding redundant tests.
+- `new-test`: a named reachable failure lacks coverage; add one focused test with expected values from the approved criteria or an independent oracle, never copied from implementation output. Bug repros fail before the fix; behavior-affecting refactors pin current behavior before mutation. Add more only for distinct material failure modes.
+- `no-new-test`: docs, metadata, or mechanical/behavior-neutral work; use the meaningful parse, build, smoke, or diff check.
 
-For every command or manual check, name the failure mode it covers. Reuse required CI; do not repeat the full suite in every lane or test the same behavior at multiple layers without a distinct risk. A worker may challenge the assignment after inspection but must report why; it may not silently skip validation. Evidence is mandatory, but more evidence is not automatically better evidence.
+Choose the cheapest stable seam that catches the named failure, never mock the unit under test, and do not relax assertions to force green. Reuse verified focused-check evidence only when the exact tree and relevant environment match. A worker's pass claim alone is not verified evidence. Run required repository checks and affected acceptance checks, not every available command.
 
-When several checks would satisfy the obligation, prefer the cheapest stable one — types/lint/build, then an existing focused check, then a new focused test — and run the single focused check rather than the whole suite. State a deviation with a named reason; the ladder is guidance, not a gate. Prefer the seam that would catch the named failure mode; when a unit seam and an integration seam cost the same, prefer the integration seam, and never mock the unit under test. Treat a generated test as a finding when it mirrors the implementation's structure, over-mocks (including mocking the unit under test), relaxes assertions to force green, or hardcodes expectations copied from implementation output; expected values must come from the spec, acceptance criteria, or an independent oracle.
+## 4. Dispatch and collect
 
-## Execution references
+Give fresh children the bounded brief and inline role contract from [manifest and briefs](references/manifest-and-briefs.md). Use a direct child for one task; scripts are for useful sequencing, fanout, or branching. Read-only children can share a stable checkout if they do not modify project state. Send exact diff endpoints and real-use context to reviewers, not the whole chat history.
 
-Before dispatch, read [manifest and briefs](references/manifest-and-briefs.md) and [Pi dispatch](references/pi-dispatch.md) for the shared ownership, inline reviewer contract, and reconstruction recipes. Also read [Herdr dispatch](references/herdr-dispatch.md) or [Paseo dispatch](references/paseo-dispatch.md) when selected. Before accepting work or recovering a failed lane, read [review and recovery](references/review-and-recovery.md).
+Prefer asynchronous host completion notifications. Keep independent safe work moving; yield when only children remain. A timeout, idle turn, message receipt, or attention signal is not terminal success. Use the host's status/control API to resolve ownership before a replacement writer. Cancellation stops execution and preserves available work; cleanup is a separate decision.
 
-## Quick reference
+Use `pi-intercom` for Herdr registration, progress, questions, and explicitly named Pi peers. Paseo/T3 Pi sessions may also use it if both endpoints have connected tools and the same reachable broker. Native children use their supervisor channel by default. Intercom is messaging, not workspace placement, lifecycle authority, or proof of completion; remote hosts do not inherit local paths or broker connectivity.
 
-| Situation | Action |
-|---|---|
-| Non-git directory | `plan-only`; no mutation workers |
-| Conflicting sources | Stop before dispatch; request owner decision |
-| Research-only, draft, or unapproved source | Refuse dispatch; route the work back to the owning skill |
-| Independent writers | One isolated worktree per writer, allocated by the selected backend |
-| High-risk or dependency-defining task | Immediate review |
-| Low-risk completed task | Run its focused check and include it in the parent's final diff inspection; no independent task review |
-| Dependent tasks | Serial handoff with explicit interface |
-| Spawned child question | Native supervisor channel (`pi-subagents`); intercom `ask` (`herdr-pane`); final blocked report then follow-up (`paseo`) |
-| Persistent specialist | Named read-only intercom peer |
-| Missing optional peer | Fresh advisor fallback |
-| Missing required peer | Pause |
-| Named backend unavailable | Pause; do not silently substitute another backend |
-| `herdr-pane` mutation lane | Parent-allocated registered worktree; intercom lifecycle |
-| `paseo` worker / advisor | Managed worktree for mutation / read-only workspace for advice; collect results via the selected transport |
-| Review finding | Parent dispositions first; one batch of accepted small in-scope fixes, then one fresh delta-only recheck; unresolved or large fixes go to the human |
-| Missing/corrupt handoff | Block acceptance; preserve the artifact and owned refs for recovery |
-| Candidate-assembly conflict | Pause and preserve ownership |
-| Push/merge/deploy/release | Separate authority gate |
+## 5. Verify, review, and correct
 
-## Common mistakes
+Verify the committed result and inspect its actual diff; keep its ref frozen while consumers need it. A surviving worktree can be inspected directly once writer ownership is released. If only a patch-only handoff is available, read [review and recovery](references/review-and-recovery.md) and reconstruct it against the pinned base with digest/tree/cleanliness checks. Do not require patch reconstruction for an already verified committed result.
 
-- Treating messages as durable state instead of using the parent-owned manifest and artifacts.
-- Calling persistent sessions "clean" despite retained history; one lane per pane session.
-- Running parallel writers in one checkout.
-- Giving every worker the whole plan and accumulated reports.
-- Letting a reviewer or worker become the final scope or publication authority.
-- Starting a replacement writer before failed-lane ownership is resolved.
-- Assuming a completed child's worktree or cwd still exists at fix time; durable handoff patch paths, pinned named bases, and registered parent-owned review/candidate checkouts are the recovery boundary.
-- Treating a worker-reported SHA as the reviewed tree without reconstructing and checking the artifact.
-- Adding duplicate tests, broad validation matrices, or review rounds without a distinct reachable failure mode.
-- Dispatching a writer from research findings, a draft specification, or a materially changed unapproved source.
-- Calling autonomous candidate-assembly permission to integrate or publish.
+Parent inspection applies to every result. Independently review high-risk changes and contracts before dependent writers consume them; otherwise review the assembled candidate once (parent inspection is sufficient for low-risk-only work unless project/user rules require independence). Candidate preparation may consume validated, parent-inspected lanes whose independent review is deferred; they are not accepted until that review passes. Candidate review covers unreviewed changes and integration effects, not settled findings again.
+
+Disposition findings before repair: reject failed evidence gates in one line, authorize small in-scope fixes, hand large/out-of-scope repairs to the human, or ask about an unverified criterion. Use the full inline reviewer contract. One fix pass, one delta recheck; no third round or budget reset at candidate assembly. Prefer a fix commit on the frozen result; review only the prior-result-to-fix delta and affected behavior. Patch replacement recovery follows the same budget.
+
+## 6. Deliver and clean up
+
+Assemble in an isolated candidate worktree in dependency order, using accepted upstream candidate commits as dependent lane bases. Preserve source/result refs and record candidate base/head. Validate the combined behavior; reuse prior evidence only where it still applies. Conflicts or changed dependency bases pause for reconciliation, not another writer or automatic scope expansion.
+
+Before acceptance, inspect the exact final diff and evidence, resolve every material criterion, and account for every child as terminal or blocked with a next action. Restate the approved task, compare the result, and choose `accept / fix / hand back / ask`; extra ideas get one line, not code. Report skipped checks and residual risks. A reviewer verdict does not authorize target integration or publication.
+
+Remove only owned resources after writer ownership is released, handoffs are durable, consumers are finished, and cleanup is authorized. Preserve failed/uncertain work and refs; do not force removal, close visible panes, or archive shared/advisor workspaces implicitly. Native automatic finalization is adapter-owned and must leave its documented handoff. Supervised delivery pauses with the reviewed candidate and its `merge-worktree` handoff, not before candidate review.

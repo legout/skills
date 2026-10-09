@@ -1,16 +1,10 @@
-# Managed lifecycle acceptance fixture (executable, live run PENDING)
+# Managed lifecycle acceptance fixture (live run PENDING)
 
-This is a bounded **executable** native Pi acceptance fixture for `orchestrate-implementation`. Unlike the offline suite (`tests/orchestrator_handoff_test.sh`, which replays the documented recipe against a synthetic Git fixture), this fixture must be run live through the native Pi runtime. **Status: PENDING — it has not been executed yet.** A green offline suite is not evidence for this fixture; do not claim it passed without the evidence fields below.
+This fixture requires actual native Pi child execution in a disposable Git repository. **Status: PENDING — not executed.** Offline Git recipe tests and instruction-text checks do not prove this live runtime boundary. Run only when explicitly authorized to execute this fixture; never use a real project's checkout for its mutations.
 
-## Hard boundaries
+## Setup and authority
 
-- All Git mutations must belong to the **disposable Git repository** created for this run (see setup). Never use, mutate, or publish from an unrelated project checkout.
-- Use the `orchestrate-implementation` skill and native Pi subagent tooling (`pi-subagents`); discovering agents/capabilities first is part of the run.
-- Execute this fixture in **autonomous** mode: authorization to run this disposable evaluation includes assembly of accepted reconstructed commits in its candidate checkout, but no target integration, push, PR, deploy, release, or publication. If the owner instead selects supervised mode, pause before assembly and report **AWAITING APPROVAL**, not PASS or an infrastructure failure.
-- **Fail closed:** if any native prerequisite is unavailable (runtime not installed, no configured model credentials, no disposable-repo execution permission, protocol mismatch), report the run as **BLOCKED** with the exact error and stop. Never switch to a CLI/foreground fallback mode to force a result, and never report a blocked run as success.
-- Do not import private runtime modules or invent runtime APIs; only documented native request shapes.
-
-## Disposable setup
+Use the installed native Pi skill/tool guide, discovered native Pi profiles, and supported request shapes. Missing runtime, credentials, placement, or protocol support means `BLOCKED`, not permission for a CLI/other-host fallback. Do not import private runtime modules or invent retention options.
 
 ```bash
 set -euo pipefail
@@ -18,48 +12,35 @@ run_root=$(mktemp -d "${TMPDIR:-/tmp}/managed-lifecycle.XXXXXX")
 mkdir -p "$run_root/repo"
 git -C "$run_root/repo" init -q
 git -C "$run_root/repo" config user.name "managed lifecycle fixture"
-git -C "$run_root/repo" config user.email "managed-lifecycle-fixture@example.invalid"
+git -C "$run_root/repo" config user.email "fixture@example.invalid"
 printf 'seed\n' > "$run_root/repo/seed.txt"
-git -C "$run_root/repo" add seed.txt && git -C "$run_root/repo" commit -qm "fixture base"
+git -C "$run_root/repo" add seed.txt
+git -C "$run_root/repo" commit -qm "fixture base"
 ```
 
-Keep parent-created review/candidate checkouts under `$run_root`. Native managed worktrees and handoff/report artifacts may use the runtime's configured locations outside `$run_root`; record their exact paths and ownership rather than changing runtime placement or copying a report in place of the captured patch. Verify every mutation checkout's canonical `git rev-parse --git-common-dir` identifies `$run_root/repo/.git` before using it. Only this fixture's recorded resources may be cleaned up; preserve failed or uncertain artifacts.
+This fixture authorizes isolated implementation, review, one deliberate repair scenario, and candidate assembly in **supervised** mode. It does not authorize target integration, push, issue/PR mutation, deploy, or release. Record parent-owned worktree paths under `run_root`; runtime-managed checkouts/artifacts may live elsewhere only with verified ownership in this disposable repository. Resolve every checkout's physical common Git directory before granting writes. Preserve failures; no forced cleanup.
 
-## Scenario
+## Committed-result scenario
 
-1. **Discover:** list available agents/capabilities through the native protocol; record the runtime version.
-2. **Pin:** create the collision-checked named base `refs/heads/orchestrator/<run>/base/api` at the approved lane base with the documented pin recipe; record the resolved SHA.
-3. **Worker:** launch one small managed mutation worker with fresh context from the named `baseRef`, a bounded brief, a `new-test`-style check, and a declared report output path. Let normal child finalization run — do not request retention of the worktree.
-4. **Handoff:** consume the actual runtime handoff artifact: complete binary-capable patch path, digest, worker-reported commit/tree/cleanliness, and recorded cleanup state (worktree removed/preserved).
-5. **Move parent:** commit an unrelated change on the parent branch so its HEAD advances past the pinned base.
-6. **Reconstruct:** run the documented byte-preserving replay recipe in a registered parent-owned review worktree: verify the pin/digest, verify the staged tree equals the reported clean worker tree, commit, then verify the committed tree and checkout cleanliness. Run the focused check there to exercise this fixture's reconstruction surface; do not replace that required live evidence with an offline or worker report.
-7. **Review:** dispatch a fresh read-only reviewer against the exact `base..reconstructed-head` range with the full inline reviewer contract and actual fixture criteria; record the verdict. Preserve the materialized review ref/SHA. Plant one real criterion violation for this fixture's repair, not a pseudo-finding.
-8. **Fix:** launch a fresh managed fix worker from the same verified pinned base, replaying the full prior patch and applying one accepted finding; capture its complete replacement patch and digest; let finalization clean up.
-9. **Replace:** reconstruct the replacement patch from the pinned base on a distinct review branch; verify it is a full replacement (not incremental). Recheck only the direct `priorReviewSha..replacementReviewSha` delta and the accepted finding's behavior. One fix pass, one recheck; unresolved findings stop for the human, never reset the budget or re-review settled code.
-10. **Candidate:** assemble the reconstructed reviewed commit in a registered candidate worktree; record the handoff fields for `merge-worktree`; stop before integration.
+1. Discover native Pi profiles, current runtime versions, model/options, and worker tool dependencies. Record actual launch/role choices.
+2. Pin a named lane base with the Git handoff recipe. Record repository/base identity and approval: the fixture itself is the bounded behavioral source and execution authority; vocabulary/ADR capture has no new content.
+3. Launch one fresh managed Pi writer with `worktree: true`, that named `baseRef`, bounded owned files, external report output, and a unique parent-authorized result ref. Its fixture task is to create `answer.txt` containing exactly `ready\n`. A focused independent check compares those bytes.
+4. To exercise real finding disposition, explicitly instruct this fixture writer to prepare the single deliberate defect `ready!\n`, report the expected check failure honestly, commit it, and freeze its result ref before native finalization. This is an authorized synthetic defect, never a production instruction or a fabricated pass. No automatic green gate should reject the intentionally red fixture before its handoff is collected.
+5. Let normal native finalization run. Collect actual report, clean-check evidence, runtime handoff references, and cleanup outcome. Verify the frozen result commit/tree survives even if the managed worker branch/checkout is removed. Do not assume removal or request undocumented retention.
+6. Advance the disposable parent's HEAD with an unrelated committed file. Verify/review the frozen result, not current parent HEAD. Use a read-only checkout at the result ref if the worker checkout disappeared; do not replay a patch or create a synthetic reconstruction on this happy path.
+7. Dispatch one fresh Pi reviewer with the complete inline contract, exact base/result endpoints, real fixture callers, criterion, and honest failed check. It should identify the byte mismatch as the one small in-scope defect. The parent dispositions it and authorizes one fix pass.
+8. Launch a fresh managed Pi fix writer from the prior frozen result ref. Correct only the mismatch, run the focused check, and freeze a distinct result-attempt ref. Record actual finalization. Verify the original result remains unchanged and the fixed result descends from it.
+9. Perform one fresh delta recheck of `priorResultSha..fixedResultSha` and the byte criterion, with the full inline contract. Do not reopen the full task or dispatch a third round. Unresolved/new material blockers stop for the human.
+10. Assemble the fixed source range in an isolated candidate, run the meaningful combined check, and inspect source/tree correspondence. Complete candidate review as required without reopening settled code. Supervised mode pauses **after** this reviewed candidate exists, before target integration. Hand its path/branch/base/head, checks/review, authority, and residual risks to `merge-worktree` without invoking integration.
 
-## Required evidence fields
+## Patch recovery scenario
 
-| Field | Meaning |
-|---|---|
-| `runtime_version` | Actual Pi/`pi-subagents` version used |
-| `agents_discovered` | Agent/capability discovery result |
-| `run_id`, `lane_id` | Run and lane identifiers, terminal worker/fix/reviewer IDs, and native request shapes |
-| `base_ref`, `base_sha` | Named base pin and resolved SHA (before/after checks) |
-| `patch_path`, `patch_digest` | Complete handoff patch and digest; same for the replacement |
-| `worker_report` | Worker-reported commit/tree/cleanliness |
-| `finalization_state` | Runtime cleanup result: worktree/branch removed or preserved; exact managed paths and disposable-repository ownership checks |
-| `parent_moved_sha` | Parent HEAD after movement |
-| `review_ref`, `review_sha`, `review_tree` | Materialized reconstruction identities |
-| `review_range`, `review_verdict` | Exact reviewed range and verdict |
-| `replacement_digest`, `prior_review_sha`, `recheck_range` | Full replacement digest, preserved prior materialized review SHA, and exact delta recheck endpoints |
-| `candidate_ref`, `candidate_path`, `candidate_base`, `candidate_head` | Registered candidate handoff |
-| `handoff_fields` | Fields handed to `merge-worktree` |
-| `cleanup_evidence` | What was cleaned up, what was preserved, and why |
-| `blocker` | Exact infrastructure failure, or `none` |
+Separately exercise the optional patch-only path in fixture-owned resources: capture a complete binary-capable patch and independent expected worker tree, simulate loss of the disposable result checkout/ref, and reconstruct from the original pinned base. Record patch digest, staged/committed tree, cleanliness, and exact review endpoints. Do not relabel worker-created patches as runtime-generated artifacts.
 
-## Verdict
+Exercise refusal cases on separate paths: moved base/digest mismatch before review allocation; corrupt matching-digest patch or wrong staged tree before reconstruction commit; hook-mutated committed tree/dirty checkout blocking acceptance. Preserve diagnostic artifacts. A full patch replacement must use a new artifact/review endpoint and direct prior-to-replacement delta; do not append the replacement to its superseded candidate or reset correction limits.
 
-Before PASS, exercise the refusal cases on separate fixture-owned review paths: a moved base or digest mismatch must abort before creating a review worktree/branch; a corrupt patch with its matching digest must abort at applicability checking without creating a reconstruction commit. A wrong expected tree must also refuse before commit, preserving the staged review checkout for inspection. Record exit statuses, refs, and preserved artifacts for each case.
+## Required evidence and verdict
 
-PASS requires every evidence field populated from actual live execution, every refusal boundary above honored, and final validation plus fresh review on the exact candidate tree, checking integration effects and verifying correspondence to prior review evidence without reopening settled findings. Missing native prerequisites produce **BLOCKED** with the exact error; a failed required assertion produces **FAIL**. A supervised approval pause is **AWAITING APPROVAL**. None is PASS or permission for a fallback run. This fixture's live status remains **PENDING** until executed and its evidence recorded.
+Use existing runtime artifacts and one concise fixture result, not a new evidence ledger. Record actual runtime/model/profile discovery; worker/fix/reviewer run IDs and requests; canonical repository/workspaces; named base; original/fixed result refs, SHAs, trees and cleanliness; native finalization; parent HEAD movement; focused failed-before/passed-after checks; review/recheck endpoints and verdicts; candidate handoff; patch/refusal outcomes; and cleanup/blocker state.
+
+`PASS` requires the actual committed-result, supervised-candidate, and recovery/refusal scenarios to pass. `BLOCKED` names the missing native prerequisite; failed assertions are `FAIL`. A supervised stop before **target integration**, with all fixture criteria established, is the intended success boundary, not an early assembly approval request. Keep this fixture's live status `PENDING` until executed and its evidence recorded; never substitute offline success.

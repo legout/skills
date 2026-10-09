@@ -1,36 +1,28 @@
-# Paseo dispatch
+# Paseo-hosted Pi dispatch
 
-Read the installed `paseo` skill before using this backend. Verify the selected daemon, tools/CLI, provider, and permissions; do not start a daemon or install dependencies implicitly. The current recipe requires the daemon to access the same repository, pinned refs, and parent-owned artifact paths. A remote checkout needs an owner-approved source/artifact transport plan first; local paths and refs do not transfer themselves.
+Read the installed `paseo` skill and current MCP schema/CLI help. Verify daemon access, caller scope, Pi availability, and permissions; do not start a daemon or install dependencies implicitly. The daemon must access the repository and result artifacts. A remote Git database needs an owner-approved source/result transport plan; local refs, paths, and intercom connectivity do not transfer themselves.
 
-Use the shared ownership, handoff, reconstruction, and reviewer contracts in [Pi dispatch](pi-dispatch.md) and [manifest and briefs](manifest-and-briefs.md).
+## Pi profile and workspace
 
-## Profiles and isolation
+- With MCP, read `list_profiles` notes and consider only profiles whose provider is `pi`. Materialize the selected `provider/model` as `pi/<Pi model ID>`, with supplied `modeId`, `thinkingOptionId`, and `featureValues` mapped through the installed schema. A Pi model using OpenAI/ZAI is still Pi; a `codex` or `glm-acp-agent` runtime is not.
+- If no Pi profile fits, disclose that and use Pi provider/model discovery. CLI/top-level callers can use installed `paseo provider ls/models/diagnostic`; no extra approval is needed for read-only discovery. Verify explicit model/options instead of guessing or dropping them. Non-Pi profiles are not fallbacks. Do not broaden permissions.
+- After pinning the base, call `create_workspace` with the explicit repository (`projectPath` or supported selector), `isolation: "worktree"`, `mode: "branch-off"`, a unique `branchName`, and the pinned `baseBranch`. Honor the daemon's managed root; do not reconfigure it to match a parent naming scheme.
+- Record workspace ID/path/branch and verify repository/common Git directory, clean initial base, and actual child cwd before writes. One fresh Pi agent owns that workspace; never rely on a default project/workspace or a path merely mentioned in the prompt.
 
-- With MCP, call `list_profiles`, read the notes, and materialize the selected profile: `provider/model` into `provider`, `modeId` into `settings.modeId`, `thinkingOptionId` into `settings.thinkingOptionId`, and `featureValues` into `settings.features`. Omit absent values. If none fits, disclose the fallback and use provider discovery. CLI-only callers must request the profile values or approval to use `paseo provider ls/models/diagnostic` when profile discovery is unavailable; never guess or silently drop unsupported settings.
-- Before mutation, pin the collision-checked named base with the shared recipe. Bind `create_workspace` to the approved repository through the live schema's `projectPath` or explicit project selector, choose `isolation: "worktree"` and `mode: "branch-off"`, and supply a unique `branchName` plus the pinned `baseBranch`. Never rely on the caller's default project/workspace. CLI equivalent, with installed help authoritative:
+## Dispatch and collection
 
-```bash
-paseo workspace create --isolation worktree --path "$repo" --mode branch-off \
-  --new-branch "orchestrator/$run/worker/$lane" \
-  --base "refs/heads/orchestrator/$run/base/$lane" --json
-```
+**Agent-scoped MCP:** `create_agent` uses the verified Pi provider/model/settings, explicit `workspaceId`, bounded `initialPrompt`, and `notifyOnFinish: true`. Agent-scoped parentage/callbacks are not established by mere tool presence. Follow-ups use `send_agent_prompt` with the recorded agent ID and explicit background/notification choices. Yield for callbacks rather than polling.
 
-- Record the returned workspace ID/path/branch. Verify its Git repository and clean initial HEAD match the recorded base SHA before launching a writer. Give one fresh agent sole write ownership of that workspace; Paseo owns allocation, not the parent.
+**CLI/top-level:** use the installed `paseo run` syntax with the explicit workspace and verified Pi provider/model/settings. Collect its blocking result, or retain a specific `paseo wait <agent-id>`/log collection step for background work; top-level tools need the same explicit collection. A wait timeout does not cancel the agent, and idle/CLI success is not semantic acceptance. Inspect final report, permission/error state, and writer ownership. `paseo send --no-wait` likewise needs result collection.
 
-## Dispatch and result collection
+Paste the common bounded brief and inline role contract. Reviewers are fresh Pi agents with a read-only contract, not committees or other-runtime advisors. Existing shared workspaces are suitable only for read-only work on a stable tree.
 
-- **Agent-scoped MCP:** call `create_agent` with `title`, `provider`, the explicit `workspaceId`, `initialPrompt`, and `notifyOnFinish: true`. Parentage/callbacks require an agent-scoped caller; being a Pi session with Paseo tools does not establish that scope. Follow-ups use `send_agent_prompt` with the recorded agent ID and explicit background/notification choices. Yield for the documented native callback rather than polling.
-- **CLI/top-level:** do not assume parent callbacks. Use `paseo run --workspace <workspace-id> --provider <provider/model> --title <lane-title> <brief>` and collect its blocking result, or retain an explicit `paseo wait <agent-id>`/log collection step for a background run. A wait timeout leaves the agent potentially active; idle or a successful CLI exit is not semantic acceptance. Read the final report and inspect permissions/errors through the supported tools before deciding the lane's state. Follow-ups use `paseo send`, which waits by default; `--no-wait` also requires explicit result collection.
-- Paste the same bounded brief and worker guardrails, with external report/patch paths. Do not assume Pi tools exist in the worker runtime. For an owner decision, require the worker to preserve state and finish with a blocked report containing the exact question; answer through `send_agent_prompt` or `paseo send`. A product question is not a permission prompt; never auto-approve provider permissions.
+For questions, use intercom only when both Pi endpoints have connected tools, a reachable broker, and a verified parent session target. Otherwise preserve work and finish blocked with the exact question; the parent answers through `send_agent_prompt`/`paseo send`. Product decisions are not provider permission prompts; never auto-approve either.
 
-## Advisors and reviewers
+## Results, fixes, and cleanup
 
-Read-only advisors can use an explicitly selected existing workspace with a self-contained brief ending: `This is analysis only. Do NOT edit, create, or delete any files. Do NOT write code.` They need no mutation worktree or patch. Load `paseo-advisor` when using that pattern. Advisor opinions never replace required review; a Paseo reviewer, if explicitly selected, must be fresh, read-only, and receive the same full inline reviewer contract and exact diff.
+Freeze the authorized committed result ref before reporting completion; with a shared repository the parent verifies the actual result, not the agent verdict. Different Git databases require the approved transport and corresponding verification, not an assumed local ref. A complete patch-only handoff uses recovery.
 
-A requested committee may use the contrasting-profile/no-edits briefing from `paseo-committee`, but not its open-ended convergence loop: collect one response per member and bring unresolved disagreement to the parent. Extra advisory agents must have an approved job; selecting Paseo does not automatically request a committee.
+Resume a fix only after confirming the agent's identity, workspace, and exclusive ownership. Otherwise resolve the old writer and allocate a fresh Pi agent/workspace from the frozen result with a new result ref. Preserve the prior reviewed endpoint and correction budget.
 
-## Fixes and cleanup
-
-Resume the same agent only after confirming its ID, workspace, and exclusive ownership. Otherwise resolve the old writer, allocate a fresh workspace/branch from the original pinned base, replay the prior full patch, and dispatch a fresh agent. Backend and full-patch transport never reset the one-fix/one-delta-recheck budget.
-
-Acceptance uses the parent-owned reconstruction, not the live workspace or agent verdict. Archive only the recorded lane-owned workspace after the verified handoff survives outside it, no writer owns it, no consumer needs it, and cleanup is authorized. `archive_workspace`/`paseo workspace archive` archives its agents and terminals as well; never archive an existing workspace used only for advice. Preserve failed/uncertain lanes and check actual archive/cleanup results.
+Use documented host control to stop execution when needed, then confirm writer release and preserve available work. Archiving/removal is a separate authorized cleanup: `archive_workspace`/`paseo workspace archive` also archives agents and terminals. Never archive a shared/advisor workspace or assume archive preserves a managed worktree. Durable handoffs and finished consumers precede cleanup; uncertain lanes are preserved.

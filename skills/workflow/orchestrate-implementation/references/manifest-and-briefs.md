@@ -1,135 +1,65 @@
-# Implementation manifests and briefs
+# Manifest and briefs
 
-- [Run manifest](#run-manifest)
-- [Cold-start task brief](#cold-start-task-brief)
-- [Capture the mutation handoff](#capture-the-mutation-handoff)
-- [Roles and context](#roles-and-context)
-- [Persistent intercom peers](#persistent-intercom-peers)
+## Small parent-owned run state
 
-## Run manifest
+Keep one compact record outside every disposable worker worktree. Prefer existing native mission state or host artifacts; otherwise use a stable parent-owned run directory accessible to the selected host. Link reports and logs instead of copying them. Record only coordination facts:
 
-Create one compact run manifest in a parent-owned artifact directory, outside every disposable worker worktree. Use runtime-managed artifacts when available; otherwise allocate a stable run directory and record its path. Reports, briefs, and uniquely named handoff/replacement patches must survive workspace cleanup and be accessible to the selected backend. Record:
+- repository, approved run base, mode, and applicable execution/integration/publication authority;
+- source references with approved scope/revision and approval reference, planning-contract version/provenance (or `unknown`), capture-checkpoint outcome, and task readiness;
+- tasks, dependencies, owned files/contracts, selected Pi host/model/options, child/workspace/session IDs, actual cwd, and result channel;
+- per lane: pinned base ref/SHA, result ref/SHA/tree, validation/review artifact references, prior reviewed endpoint when fixing, and blocker/next action;
+- candidate path/branch/base/head and source-result mapping; and
+- actual terminal/ownership/cleanup state, skipped checks, and residual risks.
 
-- repository, cwd, base ref, and mode;
-- source artifact references, each with its planning-contract classification, approved scope and revision, and approval reference;
-- the contract version and available provenance, or `unknown`;
-- the capture-checkpoint outcome;
-- normalized constraints, non-goals, and acceptance criteria;
-- task IDs, dependency edges, lanes, and claimed files/contracts;
-- per-task readiness: prerequisite evidence and the readiness verdict recorded before dispatch;
-- run-default backend, per-lane overrides, and worker/reviewer/advisor configuration, including session/agent/workspace IDs and the result-collection channel;
-- validation units with risk, named failure modes, focused commands, review policy, and the one-fix/one-delta-recheck limit (not reset at candidate assembly);
-- unresolved decisions and their owners;
-- per-lane pinned named base ref and resolved SHA, worker branch/worktree (distinct for a fresh fix), worker-reported commit/tree/cleanliness, materialized review ref/worktree and SHA/tree, lane base/head/last-reviewed SHA, and handoff/cleanup state;
-- candidate-branch base, head, registered worktree, cherry-picks, exact review range, and review state; and
-- residual risks and artifact references.
+Add patch path/digest and reconstructed identities only for patch recovery. Keep native runtime IDs in native artifacts; do not maintain another lane board, scheduler, or evidence ledger with duplicate state. Persistent Pi peers are optional named read-only consultants, not mandatory architecture/domain/quality checkpoints.
 
-Store large content in artifacts. Keep only paths and concise summaries in the manifest or mission state.
+## Worker brief
 
-## Cold-start task brief
+Give a fresh Pi worker one cold-start packet:
 
-Give each worker one bounded brief containing:
+1. Task goal, relevant source reference/revision, acceptance criteria, and non-goals.
+2. Exact repository/common Git directory, expected host-bound cwd/branch (runtime-supplied for native managed children), pinned base ref/SHA, and unique authorized result ref.
+3. Owned files/contracts, upstream interfaces, relevant written conventions and real callers/inputs/environment.
+4. Assigned `new-test`, `existing-check`, or `no-new-test` obligation; named failure mode, focused command, and any required project checks.
+5. Allowed actions, explicit no-publication boundary, report destination outside the worktree, and host-specific escalation route.
 
-1. goal;
-2. repository, cwd, pinned base ref/SHA, lane, selected backend, and isolated worktree;
-3. allowed files/contracts and authority boundary;
-4. relevant upstream interfaces, the approved behavioral source with its exact approved scope and revision, and approved decisions;
-5. acceptance criteria;
-6. the validation unit's risk, named failure mode, and focused command not already covered by required CI;
-7. test obligation: the assigned obligation and its rationale;
-8. commit and report requirements; and
-9. stop/escalate conditions (two tiers; use the ladder below).
-
-Do not paste the complete plan or accumulated task history into worker prompts. Include relevant written conventions (named sources/rules, or none found), real callers/input provenance/environment, and any actually touched trust boundary. Never infer that an internal library or user-owned local data is internet-facing.
-
-State the reporting route explicitly: native supervisor escalation and runtime-bound output for `pi-subagents`; intercom `ask`/`send` to the parent's session ID for `herdr-pane`; a final report (blocked with the question when needed) and MCP/CLI follow-up for `paseo`. Include the parent-owned output paths and stop conditions; no worker assumes a channel its backend lacks.
-
-Paste this stop/escalate ladder into each worker's task in place of an open-ended stop list; it pre-authorizes mechanical conflicts so only genuine owner decisions escalate:
+Paste these guardrails into initial and fix briefs; do not send only a link:
 
 ```text
-PRE-AUTHORIZED (act, then record the delta in the report; do not ask):
-- Derived mechanical constraints (numeric budgets, word/line counts,
-  "roughly N" doc sentences, line-number references) may be adjusted
-  minimally so approved canonical/verbatim text fits. Approved text
-  outranks derived constraints; the constraint moves, the text doesn't.
-HARD STOPS (escalate via this brief's reporting route, or block the
-final report with the question):
-- Ambiguity about which text is canonical; trust-boundary/security
-  changes; publish/push/tag; irreversible operations; deleting
-  guardrail lines.
+Approved scope outranks reviewer suggestions. Use the smallest safe change; dependencies and abstractions need a job today. Follow the supplied written conventions, not unwritten taste. Run the assigned focused validation; expected values come from approved criteria or an independent oracle, not copied implementation output. Bug repros fail before the fix; behavior-affecting refactors pin current behavior before mutation. Challenge an unsuitable obligation with evidence rather than silently skipping it.
+You are the sole writer in the supplied isolated checkout. Before writes, report/verify actual cwd, canonical repository, branch, and base against the packet. Stop on material requirement ambiguity, scope/interface changes, edits beyond your owned surface, missing prerequisites, irreversible operations, or unapproved integration/publication. Do not grant permissions, install dependencies, or choose another runtime/model/host to bypass a blocker.
+Only the parent dispositions review findings and authorizes fixes/rechecks. Apply only its accepted small in-scope fixes; challenge a finding contradicted by source. One fix pass and one delta recheck; do not expand or restart review. Do not delegate further. Do not run memo or write shared memory; the parent owns durable capture.
+Commit intended changes, freeze only the unique parent-authorized result ref before finalization, and return the actual commit/tree, cleanliness, changed files, validation results, and open decisions. Relinquish write ownership when reporting completion. Do not call your own report acceptance or publication authority.
 ```
 
-Paste this guardrail into each worker's task, including fix workers:
+Supply the Git handoff recipe in the packet when the worker cannot access the installed reference. For a patch-only transport, supply the recovery capture recipe instead; do not claim a result ref exists across different Git databases.
 
+## Reviewer brief
+
+Reviewers are fresh Pi agents with a read-only role/tool contract and explicit no-project-edit instructions. Returning findings through the configured host artifact is allowed. Provide exact repository/workspace, direct base/head endpoints, the approved criteria, worker evidence, written conventions, and real-use context. A stable diff artifact is acceptable if the host cannot read the Git objects; include required surrounding source, not an unbounded pasted diff. Missing context is unverified, not a guessed pass.
+
+Paste the entire filled contract into **every** reviewer prompt, including fixes and candidate reviews:
+
+<!-- reviewer-contract:start -->
 ```text
-Approved scope outranks reviewer suggestions. Use the smallest safe change; dependencies and abstractions need a job today. Follow named written conventions; taste is not a requirement. Test requests require a real reachable scenario, not coverage percentage or impossible inputs; use the assigned focused obligation: one focused test with independently derived expectations for `new-test`, failing-first only for bug repros and refactor pinning.
-Do not act on raw reviewer output. The parent must first disposition each finding: reject failed gates in one line, authorize a small in-scope fix, or hand a large/out-of-scope fix to the human. Challenge accepted findings that source inspection contradicts instead of silently implementing them. Security findings need a touched boundary, named asset, realistic attacker, and actual path through real use; stolen-secret, broken-TLS, malicious-admin, and generic-hardening stories fail the gate. Missing security facts are unverified, not invented threats.
-Only the parent starts fixes/rechecks. One fix pass, one delta recheck, then ask the human; no third round. After the task, restate its approved goal, compare the result, and choose accept / fix / hand back / ask without resetting that limit. Extra ideas get one line, not code.
+Review <base>..<head> against <approved criteria and non-goals>.
+Written conventions: <named sources and relevant rules, or none found>.
+Real use: <callers, input provenance, environment, touched boundaries>.
+Priority: agreed feature, then correctness, then proven risk. Project written conventions are binding; violations are must-fix. Unwritten taste never blocks.
+Report only a violation of a named requirement or written rule that this change caused or worsened, reachable through real callers, inputs, and environment, with material impact and a proportionate response. Cite the rule, changed location, scenario, impact, and response.
+Security activates only for touched boundaries: untrusted or external input (files, queries, network), credentials, auth, dependency changes. Require a named asset, realistic attacker, and an attack path through real use. Stories requiring stolen secrets, broken TLS, malicious admins, or generic extra hardening are not findings. No boundary touched: write "security: n/a". Security facts missing: mark the criterion unverified; never invent a threat model. Trusted internal callers and user-owned local files are not hostile by default; written safety guarantees still bind.
+Test requests are findings too: name a reachable real scenario or drop them. Coverage percentage is not a reason.
+Large or out-of-scope fixes: one line with the owner decision needed, not an automatic fix-first item. Unrelated issues: one line max, non-blocking. Do not fix, dispatch workers, or start re-reviews; the parent dispositions findings before repair.
+Finish when agreed criteria, real risks, and written rules are covered; zero findings is success. Verdict: pass or fix-first (small in-scope repairs), with any unverified criterion or required human decision explicitly stated. A pass does not clear those decisions or authorize acceptance/publication. Then stop. Do not run memo or write shared memory.
 ```
+<!-- reviewer-contract:end -->
 
-The worker report contains:
+For the one recheck, replace only the opening scope: `Re-review only <priorResultSha>..<fixedResultSha>, the parent-accepted findings <list>, and the behavior the fixes change. Do not re-review settled parts. Report surviving or new material blockers in this delta, then stop; no third round.` For sibling patch reconstructions use the direct prior/replacement endpoints, not merge-base/triple-dot.
 
-- status and commit IDs;
-- changed files;
-- test-obligation evidence: the assigned obligation, named failure mode, commands, and results; for `new-test`, the focused test and its independently derived expectations; for bug repros and refactor pinning, failing test before and passing test after;
-- validation commands and results;
-- the one-sentence approved-task comparison and `accept / fix / hand back / ask` recommendation (the parent still owns acceptance);
-- open decisions and residual risks; and
-- artifact and handoff references, including the complete patch digest, worker tree/cleanliness, runtime cleanup state, and any warnings.
+For candidate review, supply prior review evidence and source-result correspondence. Review previously unreviewed changes and integration effects, without reopening settled findings or resetting the correction budget. The parent still inspects the final combined diff.
 
-## Capture the mutation handoff
+## Result report and questions
 
-Run in the worker checkout after committing all intended changes. The parent supplies a unique `patch` path outside the worktree and the recorded `base_ref`/`base_sha`. Report the emitted identities with the final report, then relinquish write ownership until an authorized fix. A fix emits a new full replacement path; never overwrite prior review inputs.
+Return status (`completed`, `blocked`, or `failed`), actual result identities and clean-check evidence, changed files, focused commands/results with artifact paths, and unresolved decisions/residual risks. For a new test, identify its independent expectation source; for repro/pinning, provide the before/after evidence. Name the approved task and compare the result in one sentence. The parent chooses `accept / fix / hand back / ask`.
 
-```bash
-set -euo pipefail
-set -o noclobber
-stop() { printf 'handoff refusal: %s\n' "$*" >&2; exit 1; }
-: "${base_ref:?pinned ref}" "${base_sha:?recorded base sha}" "${patch:?external handoff path}"
-test "$(git rev-parse "$base_ref^{commit}")" = "$base_sha" || stop "base pin missing or moved"
-status=$(git status --porcelain --untracked-files=all --ignore-submodules=none) || stop "worker status check failed"
-test -z "$status" || stop "worker checkout is dirty"
-worker_sha=$(git rev-parse HEAD)
-expected_tree=$(git rev-parse 'HEAD^{tree}')
-git diff --no-ext-diff --no-textconv --binary --full-index --unified=3 --submodule=short --no-color --no-relative --ignore-submodules=none --src-prefix=a/ --dst-prefix=b/ "$base_sha" "$worker_sha" >"$patch"
-patch_digest=$(git hash-object --no-filters "$patch")
-printf 'worker_sha=%s\nexpected_tree=%s\npatch_digest=%s\n' "$worker_sha" "$expected_tree" "$patch_digest"
-```
-
-Before parent-requested cleanup, verify the external patch/digest and reconstruction, and recheck that the live checkout is clean at the reported worker SHA. Use the explicit status flags above: Git display preferences can hide untracked files or submodule changes, even from worktree removal. A failed status check, missing report, dirty checkout, or changed head blocks removal; archive/cleanup only after writer ownership is released, no consumer needs the checkout, and removal is authorized.
-
-Native finalization may precede parent reconstruction: `pi-subagents` can automatically remove its managed worktree after capturing the handoff. Require the complete external patch/digest and worker identities before finalization, then record the runtime's actual cleanup state. This does not authorize parent-requested removal or acceptance without reconstruction.
-
-The manifest must distinguish four identities: worker provenance (the commit/tree reported by the child), the materialized review commit/tree (the parent-owned reconstruction actually checked), the lane review boundary (`lastReviewedSha` on that reconstruction), and the candidate commit/tree assembled from accepted reviewed lanes. Never copy a clean verdict between these identities. Retain the prior materialized review ref/SHA for a fix: the replacement is reconstructed from the original pinned base but the recheck compares the old and new materialized endpoints, not the full replacement against the base. Record these ranges in the existing review state, not a new ledger.
-
-Workers do not expand scope, assemble other lanes, publish, or delegate further unless the orchestrator explicitly grants that authority.
-
-## Roles and context
-
-| Role | Context | Authority |
-|---|---|---|
-| Orchestrator | Parent | Routing, decisions, acceptance, candidate assembly |
-| Scout/normalizer | Fresh | Read-only repository and input inspection |
-| Worker | Fresh, retained only for the same lane's fix | Sole writer in one isolated worktree; evidence per assigned test obligation |
-| Reviewer | Fresh | Read-only review against the exact task diff |
-| Simplifier | Fresh | Optional read-only complexity challenge |
-| Oracle | Forked, exceptional | Advisory hard-decision escalation |
-
-Profiles represent stable model, tool, thinking, context, or stance differences. Do not create a profile per task. Roles are backend-agnostic: the backend changes lifecycle mechanics (isolation, delivery, signaling, cleanup), never authority.
-
-## Persistent intercom peers
-
-Persistent peers are optional read-only consultants:
-
-- `architecture-peer`: ADR and design consistency;
-- `domain-peer`: product and domain ambiguity; and
-- `quality-peer`: retained quality perspective before candidate assembly.
-
-At configured checkpoints:
-
-1. call `intercom({ action: "list" })`;
-2. ask only live, explicitly configured peers bounded questions;
-3. record advice as evidence in the manifest; and
-4. use the configured missing-peer policy: `fresh-advisor` or `pause`.
-
-Named peers must already be running or be opened separately as visible project panes. Do not claim that intercom created a clean session. Peers may not edit production code, commit, integrate, push, merge, deploy, or release.
+Use the selected route: native Pi supervisor for native children; intercom `ask`/`send` to the verified parent session for Herdr; host follow-up for Paseo; a new `delegate_task` round for T3. Connected Paseo/T3 Pi sessions may use intercom for interactive questions when explicitly configured with a verified parent target. Without such a channel, preserve work and finish blocked with the exact question. Neither an ask timeout nor a delivered message permits guessing an owner decision.

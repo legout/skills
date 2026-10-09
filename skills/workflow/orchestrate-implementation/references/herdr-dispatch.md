@@ -1,12 +1,10 @@
-# Herdr pane dispatch
+# Herdr Pi pane dispatch
 
-Use for explicitly selected visible Pi workers. Read the installed `pi-intercom` skill and verify the caller's current Herdr pane is reachable (`herdr pane current --current`); seeing some other Herdr-hosted session in the intercom roster is not enough. Missing Herdr/intercom support blocks this backend, not permission for a terminal fallback.
-
-Use the shared ownership, handoff, reconstruction, and reviewer contracts in [Pi dispatch](pi-dispatch.md) and [manifest and briefs](manifest-and-briefs.md).
+Read the installed `pi-intercom` skill and current Herdr help. Verify the caller's own Herdr pane is reachable (`herdr pane current --current`), not merely that other panes exist. Missing support blocks this host. Intercom carries messages; Herdr owns pane lifecycle and the parent owns worktree/result acceptance.
 
 ## Allocate the lane
 
-The parent creates one registered mutation worktree on a new lane branch, outside the active source checkout and extension auto-discovery. After pinning the base with the shared recipe, run in the source repository:
+After pinning the base, create one new registered lane branch/worktree outside the active checkout and Pi extension auto-discovery. Use the supplied canonical repository; verify the returned common Git directory, clean initial HEAD, branch, and exclusive ownership before writes. Do not move managed/other people's worktrees.
 
 ```bash
 set -euo pipefail
@@ -18,21 +16,20 @@ test "$(git rev-parse "$base_ref^{commit}")" = "$base_sha" || stop "base pin mis
 git worktree add -b "$worker_branch" "$worker_path" "$base_ref" || stop "lane path or branch unavailable"
 ```
 
-For a fresh fix, supply a distinct `worker_branch` (for example `orchestrator/<run>/fix/<lane>`) and new `worker_path`; keep the original lane ID and base pin, and preserve the prior branch. Record the branch/path and give the pane session sole write ownership. It must not create another worktree or edit the source checkout. Check that Pi at the lane path can load `pi-intercom` and required worker tools; ignored project-local settings/packages do not automatically appear in a new worktree. Missing dependencies pause for setup approval, never trigger silent global installs.
+## Register a fresh Pi session
 
-## Start a fresh session
+1. Discover the parent's intercom session ID and snapshot `intercom({ action: "list-cwd", cwd: "<worker_path>" })`. An existing session there is an ownership conflict, not the next worker.
+2. Send only a registration request with `cwd: "<worker_path>", openProjectPaneIfMissing: true, focus: false`: report session ID, actual cwd/repository/branch/base, Pi model/options, and tools to the parent; do not edit yet. This opens Pi but can reuse a session that registered since the snapshot.
+3. Require `Opened Herdr project pane ...`/`openedProjectPane: true`, record the returned paneId, and refresh the roster. In the fresh roster, match a previously absent session at the exact cwd to the pane actually launched. Confirm its reported placement and required tools/options **before sending the mutation brief**. A reused, missing, or ambiguous identity pauses dispatch. Pin the intercom session ID; address later messages with `to` plus `cwd`, never a pane ID or guessed alias.
 
-1. List the parent's intercom identity and snapshot the lane roster with `intercom({ action: "list-cwd", cwd: "<worker_path>" })`. An existing session at that path is an ownership conflict; do not send it a new lane.
-2. Start with a registration-only message: `intercom({ action: "send", cwd: "<worker_path>", openProjectPaneIfMissing: true, focus: false, message: "Register for lane <run>/<lane>; report your session ID, cwd, and available tools to <parent-session-id>. Do not edit or start work yet." })`. This opens a split pane, but the API can reuse a session that registered since the snapshot.
-3. Require successful delivery explicitly reporting `Opened Herdr project pane ...` (`openedProjectPane: true` when metadata is exposed), not merely `Message sent`; otherwise intercom reused a session and dispatch must pause. Record the returned paneId from the launch response and refresh `list-cwd`. In that fresh roster, verify a session absent from the snapshot at the exact lane cwd whose resolved Herdr pane matches the launch, then confirm its reported session ID and required tools **before sending the mutation brief**. Missing/ambiguous pane identity blocks dispatch. Pin its intercom session ID in the manifest; address later messages with both `to` and `cwd`, not a guessed pane ID or ambiguous alias.
+Intercom opening does not select a model. Explicit model/options require a supported Pi launch/configuration route and reported effective values. For a requested tab, use current `herdr tab create --help` and `herdr pane run` to start a fresh `pi` at the lane path without stealing focus, then use the same registration handshake. Do not resume an unrelated old session.
 
-For a requested tab rather than a split, read the installed `herdr tab create --help`, create an unfocused tab at `worker_path`, record its returned pane, and run `pi` there using `herdr pane run`. Apply the registration-only handshake and refreshed-roster identity checks against that explicitly created pane before dispatch; do not resume an old Pi session.
+Deliver the bounded common brief/inline role contract only after admission. Check ignored local Pi configuration/tool dependencies explicitly; they do not automatically appear in a worktree. New tasks and reviewers use fresh sessions. If the user changes scope in the visible pane, reconcile approval before proceeding.
 
-Deliver the bounded brief and pasted worker guardrails to the verified session ID. Include the parent's intercom ID, the existing lane worktree, and the external handoff paths. New lanes and read-only reviewers need fresh sessions; only an authorized fix continues the same lane's retained context. If the human changes lane scope through the visible session, reconcile the approved sources before continuing.
+## Results, fixes, and cleanup
 
-## Completion, fixes, and cleanup
+Workers use intercom `send` for progress/completion and `ask` for blocking questions; the parent uses `reply`. An ask timeout preserves state and stops guessing. Messages and idle turns prove neither result validity nor ownership release.
 
-- Workers send progress/completion through intercom `send`, and blocking questions through `ask`; the parent uses `reply`. An ask timeout stops work and preserves state rather than authorizing a guessed decision.
-- Capture the clean full handoff at the parent-owned paths before cleanup. Completion means the worker has relinquished write ownership until an authorized fix; a delivered message or idle turn alone proves neither cleanliness nor acceptance.
-- Resume a fix only after verifying the same session's identity, checkout, and ownership. Otherwise resolve the old writer first, then allocate a fresh branch/path from the original pinned base, replay the prior full patch, and dispatch a fresh session. Keep the one-fix/one-delta-recheck budget.
-- Remove only the recorded clean worktree after the verified handoff survives outside it, no writer owns it, no consumer needs it, and cleanup is authorized. Never force removal; preserve failed/uncertain lanes. Closing a visible pane/tab requires separate user approval.
+Commit and freeze the authorized result ref before the completion report, then release write ownership. The parent verifies Git identities and the exact diff/checks; reconstruction is only for patch-only recovery. Resume a fix only after verifying the same session, cwd, and sole ownership; otherwise resolve the old writer and create a fresh lane from the frozen result ref with a new result ref.
+
+Interruption through Herdr's supported agent controls is separate from cleanup. Confirm the writer stopped; preserve available work. Remove only recorded clean worktrees after durable handoff, consumer completion, and applicable authorization. Never force removal. Closing a visible pane/tab needs separate approval.

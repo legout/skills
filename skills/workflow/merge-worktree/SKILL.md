@@ -24,7 +24,7 @@ Use the repository default branch only when unambiguous. If authorization is inc
 
 ## Candidate handoff from orchestrate-implementation
 
-When the source is an orchestrator candidate, accept only a registered parent-owned candidate worktree and branch. The handoff must name the pinned candidate base/head, exact reviewed range, assembled lane commits, focused validation, fresh candidate review evidence, and authorization state. Do not substitute a deleted worker path, the target branch's current `HEAD`, or a worker-reported SHA for the candidate tree. A candidate handoff does not grant push, PR merge, deploy, or release authority.
+When the source is an orchestrator candidate, accept only a registered parent-owned candidate worktree and branch. The handoff must name the pinned candidate base/head, exact reviewed range, assembled lane commits, focused validation, candidate review evidence (fresh independent review when required, or parent inspection for low-risk-only work when permitted), and authorization state. Do not substitute a deleted worker path, the target branch's current `HEAD`, or a worker-reported SHA for the candidate tree. A candidate handoff does not grant push, PR merge, deploy, or release authority.
 
 ## Preflight
 
