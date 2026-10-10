@@ -1,6 +1,6 @@
 # Review and recovery
 
-Every parent review/reconstruction and candidate checkout uses the canonical `<repo-parent>/worktrees/<repo-name>/` root derived from the source repository, just like worker/fix worktrees. Apply `SKILL.md`'s physical-path/symlink/collision preflight before allocation. If the path cannot be registered there, preserve artifacts and block. Never relocate an existing checkout or retry off-root.
+Every newly allocated parent review/reconstruction and candidate checkout uses the shared XDG state root resolved under `SKILL.md`, just like worker/fix worktrees. Use distinct source-checkout/run/lane/role paths and verify the expected repository/common Git directory; never adopt another checkout's resources merely because they share the root. Apply `SKILL.md`'s physical-path/symlink/collision preflight before allocation. If the path cannot be registered there, preserve artifacts and block. Never relocate an existing checkout or retry off-root.
 
 ## Disposition before repair
 

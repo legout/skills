@@ -64,7 +64,8 @@ git -C "$module_origin" commit -qam second
 module_head=$(git -C "$module_origin" rev-parse HEAD)
 
 REPO="$TMP/repo"
-WORKTREE_ROOT="$TMP/worktrees/repo"
+# Exercise the state-root layout without touching the user's real state directory.
+WORKTREE_ROOT="$TMP/state/worktrees"
 mkdir -p "$REPO" "$WORKTREE_ROOT"
 git -C "$REPO" init -q
 git -C "$REPO" config user.name test

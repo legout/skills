@@ -148,12 +148,12 @@ for name, rules in backend_contracts.items():
             errors.append(f"{name}: missing backend contract {rule!r}")
 
 cross_backend_contracts = {
-    "SKILL.md": ("<canonical-repo-parent>/worktrees/<repo-basename>/", "worker/fix", "parent review/reconstruction", "candidate worktrees", "explicit run/lane → project → global → spec default", "zai/glm-5.3", "openai-codex/gpt-6.1-sol", "backend-effective pair"),
-    "references/pi-dispatch.md": ("worktreeProvider", "worktreeBaseDir", "WORKTRUNK_WORKTREE_PATH", "provider/model:thinking-level", "outside the shared root"),
+    "SKILL.md": ("${XDG_STATE_HOME:-$HOME/.local/state}/worktrees/", "allocator-supported subdirectories", "Never migrate existing worktrees", "worker/fix", "parent review/reconstruction", "candidate worktrees", "explicit run/lane → project → global → spec default", "zai/glm-5.3", "openai-codex/gpt-6.1-sol", "backend-effective pair"),
+    "references/pi-dispatch.md": ("worktreeProvider", "worktreeBaseDir", "~/.pi/agent/extensions/subagent/config.json", "WORKTRUNK_WORKTREE_PATH", "provider/model:thinking-level", "outside the shared root"),
     "references/herdr-dispatch.md": ("expected_root", "worker_path", "runtime-effective model/thinking", "before sending the mutation brief"),
     "references/paseo-dispatch.md": ("worktrees.root", "daemon-global", "worktreeSlug", "before `create_workspace`", "thinkingOptionId", "--thinking <verified-option-id>", "block before agent creation"),
     "references/manifest-and-briefs.md": ("expected shared worktree root", "per-field source", "backend-effective representation", "blocked-before-launch reason"),
-    "references/review-and-recovery.md": ("canonical `<repo-parent>/worktrees/<repo-name>/` root", "block."),
+    "references/review-and-recovery.md": ("shared XDG state root", "block."),
 }
 for name, rules in cross_backend_contracts.items():
     text = (workflow / name).read_text()
@@ -161,7 +161,7 @@ for name, rules in cross_backend_contracts.items():
         if rule not in text:
             errors.append(f"{name}: missing cross-backend contract {rule!r}")
 fixture = (workflow / "evals/fixtures/managed-lifecycle.md").read_text()
-for rule in ("$run_root/worktrees/repo/", "exact worker pair", "exact reviewer model/thinking pair", "worker_model", "reviewer_model", "controlled fault", "byte-exact output criterion", "printf 'ready\\n' | cmp -"):
+for rule in ("$expected_root", "exact worker pair", "exact reviewer model/thinking pair", "worker_model", "reviewer_model", "controlled fault", "byte-exact output criterion", "printf 'ready\\n' | cmp -"):
     if rule not in fixture:
         errors.append(f"managed-lifecycle fixture: missing shared-root/model contract {rule!r}")
 if "`workflowScript`" in (workflow / "references/pi-dispatch.md").read_text():

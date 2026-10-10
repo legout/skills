@@ -6,7 +6,7 @@ Use these supplied facts for read-only decision evaluation. Do not probe real ho
 
 Issue #17 in the requested repository, body revision `r1`: correct the documented named export for `total(items)`; behavior and public signature remain unchanged. Acceptance: the existing focused export check passes and no other files change. The owner explicitly approved this revision and delegated execution, with no target integration or publication. Capture checkpoint: no new vocabulary or consequential architectural choice. The checkout is Git-clean at its approved base and the baseline focused check passes. This is an understood bounded change, not a request for a separate spec/plan or a mandatory scout.
 
-Unless a scenario names a blocker, assume the selected Pi role's complete effective model/thinking pair has been resolved with per-field sources and proven executable; mutation-capable hosts have verified allocator placement beneath the canonical source repository's `<repo-parent>/worktrees/<repo-name>/` root. These are supplied facts, not permission to probe or silently reconfigure a host.
+Unless a scenario names a blocker, assume the selected Pi role's complete effective model/thinking pair has been resolved with per-field sources and proven executable; mutation-capable hosts have verified allocator placement beneath the host-resolved `${XDG_STATE_HOME:-$HOME/.local/state}/worktrees/` root, with distinct registered checkouts and verified source-repository identity. These are supplied facts, not permission to probe or silently reconfigure a host.
 
 ## A. Non-Pi runtimes
 

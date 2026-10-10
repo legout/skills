@@ -10,6 +10,7 @@ Use the installed native Pi skill/tool guide, discovered native Pi profiles, and
 set -euo pipefail
 run_root=$(mktemp -d "${TMPDIR:-/tmp}/managed-lifecycle.XXXXXX")
 run_root=$(cd "$run_root" && pwd -P)
+expected_root="${XDG_STATE_HOME:-$HOME/.local/state}/worktrees"
 mkdir -p "$run_root/repo"
 git -C "$run_root/repo" init -q
 git -C "$run_root/repo" config user.name "managed lifecycle fixture"
@@ -19,7 +20,7 @@ git -C "$run_root/repo" add seed.txt
 git -C "$run_root/repo" commit -qm "fixture base"
 ```
 
-This fixture authorizes isolated implementation, review, one deliberate repair scenario, and candidate assembly in **supervised** mode. It does not authorize target integration, push, issue/PR mutation, deploy, or release. The canonical repository is `$run_root/repo`; all worker/fix, review/recovery, and candidate checkouts must be registered beneath `$run_root/worktrees/repo/`. Verify the configured native allocator can honor this root before dispatch; otherwise mark `BLOCKED` without launching a writer, switching allocators, or setting `worktreeBaseDir` to force Worktrunk off. Keep handoff/report artifacts outside disposable checkouts. Resolve every checkout's physical path and common Git directory before writes. Preserve failures; no forced cleanup.
+This fixture authorizes isolated implementation, review, one deliberate repair scenario, and candidate assembly in **supervised** mode. It does not authorize target integration, push, issue/PR mutation, deploy, or release. The canonical repository is `$run_root/repo`; all newly allocated worker/fix, review/recovery, and candidate checkouts must be registered beneath the validated host-resolved `$expected_root`, with unique fixture-owned paths. The shared state root may contain unrelated resources; cleanup must never remove the whole root or another run's checkout. Verify the configured native allocator can honor this root before dispatch; otherwise mark `BLOCKED` without launching a writer, switching allocators, or setting `worktreeBaseDir` to force Worktrunk off. Keep handoff/report artifacts outside disposable checkouts. Resolve every checkout's physical path and common Git directory before writes. Preserve failures; no forced cleanup.
 
 ## Committed-result scenario
 
