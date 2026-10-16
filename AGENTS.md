@@ -1,5 +1,9 @@
 # Agent guidance
 
+## Mandatory guardrails loading
+
+Before implementing, writing or running tests, reviewing, dispatching reviewers, or repairing review findings, load the installed `agent-guardrails` skill by name and follow it as the canonical policy. Two of its routes are load-bearing here: a failure or review finding never widens scope — investigate the named failure, one fix pass, one delta recheck — and green evidence is not rerun for ceremony: reuse still-applicable verified evidence when the relevant code, tests, inputs, and environment match, and rerun only on a relevant delta or a specific hypothesis.
+
 ## Implementation and review ground rules
 
 - Priority: agreed feature, then correctness, then proven risk. Written conventions are binding; violations are must-fix, unwritten taste never blocks. Name the applicable rule. This catalog's conventions are in `skills/skill-authoring/effective-agent-skills/SKILL.md`, `tests/skills_test.sh`, and `README.md`; preserve source attribution and approval/publication gates.

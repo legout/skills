@@ -54,6 +54,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 - **`agent-md-refactor`** — concise agent instructions with scoped references.
 - **`effective-agent-skills`** — Agent Skill authoring, review, and debugging.
 - **`improve-skill`** — skill changes derived from agent-session evidence.
+- **`project-verification`** — portable per-project verification recipes.
 - **`workflow-from-chats`** — durable preferences mined across recent chats.
 
 ### Tools and research
@@ -106,6 +107,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 - `documentation-writer` owns document type and quality; `doc-coauthoring` owns collaborative drafting.
 - `marimo-notebook` edits files; `marimo-pair` works through a live kernel.
 - `effective-agent-skills` covers general authoring; `improve-skill` requires session evidence.
+- `project-verification` generates and maintains project-local `verify-<project>` recipes; `agent-guardrails` and `verification-before-completion` own when evidence is required and what it must prove.
 - `improve-skill` targets one skill/session; `workflow-from-chats` mines cross-cutting preferences across recent chats.
 - `research` follows durable claims to primary sources; `last30days` measures recent community discussion and sentiment.
 - `review-codebase-architecture` identifies candidates; `shape-design` settles one.

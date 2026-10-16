@@ -23,6 +23,8 @@ ADRs explain **why**, specifications define **what**, and plans or tickets defin
 
 Plan the smallest evidence set that establishes the acceptance criteria and addresses concrete material risks. Do not add a test, validation command, reviewer, or review boundary unless it covers a distinct reachable failure mode; if that failure cannot be named, omit the assurance work.
 
+Assign each validation unit as a minimal chain: the named failure it protects → the independent oracle for its expected result (approved criteria, hand-worked example, trusted reference, or real bug) → one focused check, or explicit reuse of applicable existing evidence → the delta that would invalidate that evidence. Reject generic per-layer or per-phase matrices and certification checklists; a named mandatory project/CI gate overrides this default and is carried into the plan as-is.
+
 Classify each validation unit once:
 
 - **low risk** — documentation, mechanical edits, generated output, or internal refactoring with unchanged behavior: use an existing check or the smallest smoke, parse, build, or diff inspection; add no test and no independent task review;
@@ -75,7 +77,7 @@ A task is the smallest coherent deliverable that exposes a real dependency, owne
 - interfaces consumed and produced;
 - prerequisites;
 - behavior and edge cases;
-- its validation unit and test obligation (`new-test`, `existing-check`, or `no-new-test`) with the distinct failure mode it covers;
+- its validation unit and test obligation (`new-test`, `existing-check`, or `no-new-test`) with the distinct failure mode it covers and, when reusing evidence, the applicable prior result and what invalidates it;
 - only the focused commands and expected evidence not already supplied by required CI; and
 - a completion criterion.
 

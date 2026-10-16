@@ -10,18 +10,18 @@ description: Use when about to claim work is complete, fixed, or passing, before
 # Verification before completion
 
 ```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
+NO COMPLETION CLAIMS WITHOUT VERIFICATION EVIDENCE MATCHING THE CLAIM
 ```
 
 Before a success claim, commit, or PR:
 
 1. Identify the command or observation that proves each claim, exercised on the same surface the claim names.
-2. Run that complete focused check now. Add no test or command without a named reachable scenario; coverage percentage and duplicate evidence are not goals. Required project checks still apply.
+2. Base the claim on applicable evidence: run that focused check now, or reuse verified evidence whose relevant code, tests, inputs, and environment still match — an identical tree is a sufficient case, not the only one. Add no test or command without a named reachable scenario; coverage percentage and duplicate evidence are not goals. Required project checks still apply. Current-state claims (a service running now, an artifact present now) need current observation; past results do not establish them.
 3. Read its full relevant output and check exit status and failure counts.
 4. Inspect the VCS diff for delegated or file-changing work.
 5. Restate the approved task in one sentence, compare the result against its requirements and written conventions, and choose `accept / fix / hand back / ask`. Extra ideas get one line, not code. Disposition reviewer findings before repairing: reject failed gates, fix small in-scope violations, hand large/out-of-scope work to the human. One fix pass and one delta recheck; unresolved findings go to the human rather than another round.
-6. Report the actual result with evidence. If a check fails or was not run, say so.
+6. Report the actual result with evidence. If a check fails or was not run, say so, and name what remains unverified. Handoffs, commits, and identical-content merges do not invalidate still-applicable evidence; a rerun needs a relevant delta or a specific hypothesis, not a "final" label.
 
 Evidence must match the claim's surface: compilation proves compilation, and a unit test proves only the behavior it exercises. Match examples to their claim — rendered UI for UI claims, a built or installed CLI for CLI claims, a restart-and-read for persistence claims, and transformed data plus stale-path checks for migration claims. Tests do not prove a build, lint does not prove types, code changes do not prove a bug is fixed, and an agent report does not prove its work. A regression test is credible only after the intended red/green behavior is observed when practical.
 
-Never weaken assertions, skip failing checks, rely on an old run, or use “should”, “probably”, or “seems” as a substitute for evidence.
+Never weaken assertions, skip failing checks, present stale or never-run checks as proof, or use “should”, “probably”, or “seems” as a substitute for evidence. A failing check does not authorize broader suites, relaxed expectations, or repeat-until-green: investigate the named failure, then stop or escalate.

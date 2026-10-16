@@ -24,7 +24,7 @@ Use the repository default branch only when unambiguous. If authorization is inc
 
 ## Candidate handoff from orchestrate-implementation
 
-When the source is an orchestrator candidate, accept only a registered parent-owned candidate worktree and branch. The handoff must name the pinned candidate base/head, exact reviewed range, assembled lane commits, focused validation, candidate review evidence (fresh independent review when required, or parent inspection for low-risk-only work when permitted), and authorization state. Do not substitute a deleted worker path, the target branch's current `HEAD`, or a worker-reported SHA for the candidate tree. A candidate handoff does not grant push, PR merge, deploy, or release authority.
+When the source is an orchestrator candidate, accept only a registered parent-owned candidate worktree and branch. The handoff must name the pinned candidate base/head, exact reviewed range, assembled lane commits, focused validation, candidate review evidence (fresh independent review when required, or parent inspection for low-risk-only work when permitted), and authorization state. Do not substitute a deleted worker path, the target branch's current `HEAD`, or a worker-reported SHA for the candidate tree. A candidate handoff does not grant push, PR merge, deploy, or release authority. Validation evidence in the handoff may be reused where the relevant content and environment still match; the actual integration commit, refs, and artifact identity are still verified fresh.
 
 ## Preflight
 
@@ -33,7 +33,7 @@ When the source is an orchestrator candidate, accept only a registered parent-ow
 3. Require the source to contain at least one commit not reachable from the target. If it is already integrated, report that and skip the merge.
 4. Locate any worktree where the target is checked out. Require it to be clean before updating it.
 5. Inspect the source diff and commits. Stop for unrelated changes, suspected secrets, or unclear ownership.
-6. Read repository instructions and run the smallest relevant validation from the source worktree.
+6. Read repository instructions and run the smallest relevant validation from the source worktree, or accept already-verified evidence whose relevant code, tests, inputs, and environment still match the exact source content; record which evidence was reused.
 7. If the source has intended uncommitted changes, stage only those files and create a concise commit. Do not amend existing commits unless requested.
 8. For PR mode, fetch the selected remote with pruning and stop on authentication failure or ambiguous/diverged target state. For local mode, fetch only if the user asked to integrate against a remote-tracking target.
 
@@ -47,7 +47,7 @@ Keep the target reference unchanged until the candidate merge passes:
 2. Create a temporary integration branch and registered sibling worktree at that SHA.
 3. In the integration worktree, run `git merge --no-ff <source-branch>` with a concise message.
 4. If conflicts occur, trace both sides to their intent and resolve each file deliberately. Do not choose `ours` or `theirs` wholesale. Regenerate conflicted generated files with their owning tool instead of hand-editing them.
-5. Run relevant checks and require the integration worktree to be clean and conflict-free.
+5. Run relevant checks — reusing still-applicable verified evidence when the integrated content is identical to what was already validated and relevant inputs and environment are unchanged — and require the integration worktree to be clean and conflict-free. Always verify the actual merge commit, refs, and artifact identity fresh.
 6. Reconfirm the target still equals the recorded SHA. If it moved, stop with the validated integration worktree intact.
 7. Fast-forward the target to the validated integration commit. If the target is checked out, update it in that clean worktree. Otherwise update the branch reference only when its old value still matches the recorded SHA.
 8. Verify the target now names the integration commit.

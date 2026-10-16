@@ -156,4 +156,28 @@ The following packages were copied from the pinned revisions listed in `sources.
 
 Selected principles from Cursor's `pstack/skills/poteto-mode` at the same pinned commit are also adapted, distributed across existing canonical owners rather than vendoring the package: `simplify-code`, `deslop`, `verification-before-completion`, `systematic-debugging`, `shape-design`, `prototype-question`, `write-implementation-plan`, `orchestrate-implementation`, `effective-agent-skills`, and `improve-skill`. File-level mappings are recorded in `sources.json`; the adoption decision is documented in `UPSTREAM_ADOPTION.md`. No poteto-mode file is redistributed intact.
 
+`project-verification` and its recipe template are adapted from `pstack/skills/create-verification-skill`, `pstack/skills/maintain-verification-skill`, and the feature-map examples of the same package, pinned to commit `f713f14203cd6420cec13cd7c55c32d598dbab68` of [cursor/plugins](https://github.com/cursor/plugins). MIT; Copyright (c) 2026 Lauren Tan.
+
+> MIT License
+>
+> Copyright (c) 2026 Lauren Tan
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
 `improve-skill` and `simplify-code` are local catalog material copied from the installed skill set and have no separate upstream relationship.
