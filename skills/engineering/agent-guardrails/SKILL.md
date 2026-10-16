@@ -1,6 +1,6 @@
 ---
 name: agent-guardrails
-description: Scope and evidence gates for implementing, testing, and reviewing code. Read before any code change, test design or execution, review, reviewer dispatch, or review-finding repair; prevents speculative security/test findings and endless review loops without weakening real requirements.
+description: Scope and evidence gates for implementing, testing, reviewing, and verifying code. Read before any code change, test design or execution, review, reviewer dispatch, review-finding repair, or completion claim; prevents speculative security/test findings, ceremonial reruns, and endless review loops without weakening real requirements.
 ---
 ## When to Use
 Use on every coding task involving implementation, tests, or code review, including fixes after a review and dispatching a fresh-context reviewer. Compose with project rules and specialized skills; written project conventions and explicit user requirements still bind.
@@ -9,21 +9,35 @@ Use on every coding task involving implementation, tests, or code review, includ
 1. Before acting, identify the agreed task, written rules/conventions, real callers, inputs, environment, and any genuine security boundary. Priority: agreed feature, correctness, then proven risk. Written convention violations are must-fix; unwritten reviewer taste does not block. Prefer the smallest safe change. For new non-trivial behavior, one failing test first when practical; use existing focused checks when sufficient. New dependencies and abstractions need a job today.
 2. Only report or accept a finding that names the violated requirement or written rule, shows this change caused or worsened it, demonstrates a reachable scenario in real use, explains material impact, and offers a proportionate response. Do not hide an actual defect because it is security-related or out of scope: flag a proven large/out-of-scope issue to the human.
 3. Security findings require a touched boundary (untrusted or external input through files, queries or network; credentials; auth; dependency changes), a named asset, a realistic attacker, and a working attack path through real callers, inputs, and environment. Do not invent stolen-secret, broken-TLS, malicious-admin or generic hardening stories. If no boundary is touched, say 'security: n/a'. If a genuine security task lacks facts, mark the criterion unverified and ask rather than inventing a threat model. Apply written safety rules even if they are not security findings.
-4. A request for a test is a finding: name the reachable scenario and the regression it would catch. Coverage percentage or unreachable states alone do not justify new tests; run relevant existing checks and report what they actually prove.
+4. A request for a test or check is a finding: name the reachable scenario, the material failure it protects, and the regression it would catch. Apply the evidence rules below: default to zero new tests when applicable coverage already exists, otherwise add one focused test per uncovered behavior. Coverage percentage or unreachable states alone do not justify new tests; run relevant existing checks and report what they actually prove.
 5. When dispatching a fresh reviewer, put the complete dispatch contract below IN the prompt with the specific criteria, written conventions and real-use context. A path or link to this skill is not enough. Reviewer only returns findings and a pass/fix-first verdict; the parent alone decides fixes and re-reviews.
 6. Before repairing reviewer feedback, disposition each finding: fails a gate -> reject in one line; passes with a small in-scope fix -> fix; passes but the right fix is large/out of scope -> hand back to the human in one sentence. Never treat reviewer opinion as authority over the approved task.
 7. A review ends once agreed criteria, real risks and written rules are covered. After a fix, re-review ONLY the fix and the behavior it changes. One fix pass and one delta recheck; if the same finding survives an honest fix, stop and ask the human rather than starting round three.
 8. After each coding task, restate the approved task in one sentence, compare the result, and choose accept / fix / hand back / ask. Record extra ideas in one line, not code. Do not create evidence ledgers or sign-off artifacts for this process.
 
+## Lean verification and evidence
+
+1. Justify every check: a named reachable failure with material impact, an independently justified expected result, and the cheapest stable seam that catches it. Default to zero new tests when applicable coverage already exists; add one focused test per uncovered behavior, not per method, layer, or checkbox.
+2. Independent oracles only: expected values come from approved requirements, hand-worked examples, a trusted reference, or a real bug — never copied from implementation output or another agent's agreement. Test observable behavior; use self-confirming mocks or private-shape assertions only where a concrete contract requires them.
+3. No automatic broad suites, per-phase certification matrices, coverage quotas, mutation campaigns, or repeat-until-green. A named mandatory project or CI gate, or explicit authorization, can require more: surface budget conflicts before execution; never silently waive requirements or expand budget.
+4. Reuse still-applicable evidence. Passing evidence survives parent/reviewer handoffs, commits, and identical-content merges when the relevant code, tests, inputs, and environment still match; an identical tree is a sufficient case, not the only one. No duplicate parent reruns; a rerun needs a relevant delta or a specific hypothesis, not a "final" or "certified" label. Formatting or prose changes normally do not invalidate behavioral proof unless that text is part of the tested contract.
+5. A failure authorizes nothing broader: no wider suites, speculative extra risks, or weakened expectations. Investigate the named failure and stop or escalate rather than loop; keep the one-fix-pass, one-delta-recheck limit.
+6. Retire tests only for explicitly retired behavior; consolidate genuine duplicates while preserving real numerical, permission, persistence, and public contracts. AI authorship alone is not deletion evidence.
+7. Verification is claim-matched evidence of the real artifact or outcome: the actual CLI/UI/protocol path, persisted-state read-back where relevant, and the correct installed/build identity — not compilation, mtime, a running process, a saved toast, or an agent's assertion alone. A strong automated test may already be the full proof; do not add a duplicate live-verification stage for the same claim.
+8. Keep expected and observed separate: source or app exploration cannot redefine correctness. Bind evidence to its surface, scenario, artifact, and relevant environment — CLI proof is not MCP or deployment proof. Current-state claims (a service running now) need current observation; past regression evidence cannot establish them. A feature map is a menu, not a checklist: select one necessary bounded journey (several actions may form one proof) and report narrower verified scope and failed, blocked, or unverified prerequisites honestly.
+9. Skill creation or maintenance grants no product repair, source approval, admission, production-data or user-browser access, dependency installation, restart, PR/push/release, or new-capability authority; no automatic daily audit or verifier swarm.
+
 ## Pitfalls
 - Fresh reviewer agents may not read AGENTS.md or this skill; send the contract inline every time. Do not assume a skill description is an enforcement mechanism.
 - Do not reject reachable security bugs, required tests or documented conventions in the name of avoiding noise. Missing evidence on a genuinely security-sensitive task is unverified, not a pass.
+- Do not rerun green checks for ceremony or a fresh label when the relevant behavior, inputs, and environment are unchanged, and do not widen scope after a failure.
+- A green structural or static check proves structure only, never agent behavioral compliance.
 - Do not reopen the whole change during a delta recheck or let a reviewer initiate an unbounded fix cycle.
 
 ## Verification
 1. Check the final change against the agreed task and written project rules, and run the smallest relevant checks; inspect results before claiming success.
 2. Verify each reviewer finding and each new test demand names a reachable scenario; the review ends with pass or fix-first.
-3. If re-reviewed, verify the prompt scoped the recheck to the fix and that no third round was launched.
+3. If re-reviewed, verify the prompt scoped the recheck to the fix and that no third round was launched. Verify each rerun request names a relevant delta or hypothesis, and each completion claim cites applicable evidence for its exact surface.
 
 ## Reviewer Dispatch
 Paste this block into **every fresh-context reviewer prompt**, replacing placeholders and adding relevant project conventions and real-use context. Never send only a link:
@@ -43,6 +57,10 @@ broken-TLS, malicious-admin or generic-hardening stories. If a genuine
 security boundary lacks facts, mark that criterion unverified.
 Tests: request one only for a named reachable scenario and regression;
 coverage percentage is not a reason.
+Reruns: passing evidence survives this handoff while the relevant code, tests,
+inputs, and environment still match; request a rerun only for a relevant
+delta or specific hypothesis, never a fresh label or ceremony. A failing
+check does not authorize broader suites or weakened assertions.
 Out-of-scope issues: one line max, never blocking; if the right fix is big,
 say so in the verdict rather than listing it as fix-first.
 Cover the criteria, real risks and written rules; verdict: pass or fix-first.

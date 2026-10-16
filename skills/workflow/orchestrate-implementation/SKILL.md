@@ -62,7 +62,9 @@ Run or record the smallest useful baseline. Distinguish pre-existing failures fr
 - `new-test`: a named reachable failure lacks coverage; add one focused test with expected values from the approved criteria or an independent oracle, never copied from implementation output. Bug repros fail before the fix; behavior-affecting refactors pin current behavior before mutation. Add more only for distinct material failure modes.
 - `no-new-test`: docs, metadata, or mechanical/behavior-neutral work; use the meaningful parse, build, smoke, or diff check.
 
-Choose the cheapest stable seam that catches the named failure, never mock the unit under test, and do not relax assertions to force green. Reuse verified focused-check evidence only when the exact tree and relevant environment match. A worker's pass claim alone is not verified evidence. Run required repository checks and affected acceptance checks, not every available command.
+Choose the cheapest stable seam that catches the named failure, never mock the unit under test, and do not relax assertions to force green. Reuse verified focused-check evidence only when the relevant code, tests, inputs, and environment still match; an identical tree is a sufficient case, not the only one, and a parent rerun never duplicates a green result. A rerun needs a relevant delta or a specific hypothesis. A worker's pass claim alone is not verified evidence. Run required repository checks and affected acceptance checks, not every available command.
+
+Give each worker the exact validation scope and budget — named failure, independent oracle, one focused check or the applicable reuse decision, and the invalidating delta — and carry it unchanged into fix and resume briefs and reviewer context. A child never widens its assigned validation, and a failure stops at investigating the named failure; it authorizes no broader suites or relaxed expectations.
 
 ## 4. Dispatch and collect
 
@@ -82,7 +84,7 @@ Disposition findings before repair: reject failed evidence gates in one line, au
 
 ## 6. Deliver and clean up
 
-Assemble in an isolated candidate worktree in dependency order, using accepted upstream candidate commits as dependent lane bases. Preserve source/result refs and record candidate base/head. Validate the combined behavior; reuse prior evidence only where it still applies. Conflicts or changed dependency bases pause for reconciliation, not another writer or automatic scope expansion.
+Assemble in an isolated candidate worktree in dependency order, using accepted upstream candidate commits as dependent lane bases. Preserve source/result refs and record candidate base/head. Validate the combined behavior; reuse prior evidence where the relevant code, tests, inputs, and environment still match, and record which evidence was reused. Conflicts or changed dependency bases pause for reconciliation, not another writer or automatic scope expansion.
 
 Before acceptance, inspect the exact final diff and evidence, resolve every material criterion, and account for every child as terminal or blocked with a next action. Restate the approved task, compare the result, and choose `accept / fix / hand back / ask`; extra ideas get one line, not code. Report skipped checks and residual risks. A reviewer verdict does not authorize target integration or publication.
 

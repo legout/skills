@@ -127,7 +127,7 @@ for name in ("SKILL.md", "references/pi-dispatch.md", "references/review-and-rec
 
 # Verified checks may be reused only on an equivalent acceptance surface.
 text = (workflow / "SKILL.md").read_text()
-for rule in ("Reuse verified focused-check evidence", "exact tree and relevant environment match"):
+for rule in ("Reuse verified focused-check evidence", "relevant code, tests, inputs, and environment still match"):
     if rule not in text:
         errors.append(f"SKILL.md: missing validation reuse gate {rule!r}")
 
