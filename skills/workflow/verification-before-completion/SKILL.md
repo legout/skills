@@ -1,6 +1,6 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires inspecting verification evidence that matches each claim before making any success claims, whether freshly run or still-applicable verified evidence whose relevant code, tests, inputs, and environment match; evidence before assertions always
 ---
 
 > Adapted from [`obra/superpowers`](https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/verification-before-completion) at commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` (MIT).
