@@ -1,6 +1,6 @@
 # Humanizer pattern catalog
 
-> Pattern guidance adapted from [`blader/humanizer`](https://github.com/blader/humanizer/tree/e2e92e7b4b8229253ed5c8e81dc65463fdeddda5) and [`cursor/plugins`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99) at the pinned commits recorded in `sources.json`.
+> Pattern guidance adapted from [`blader/humanizer`](https://github.com/blader/humanizer/tree/8c307f367c91bd974002f10f2be2965d642c13df) and [`cursor/plugins`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99) at the pinned commits recorded in `sources.json`.
 
 ## Content patterns
 
@@ -100,7 +100,7 @@ It also adds clipped endings such as "no guessing" instead of writing a clear cl
 
 ### 10. Forced groups of three
 
-**Problem:** AI writing often forces ideas into groups of three to sound complete.
+**Problem:** AI writing often forces ideas into groups of three to sound complete. Keep real three-part enumerations; remove only redundant padding, never a distinct fact to satisfy a style rule.
 **Before:**
 > The event features keynote sessions, panel discussions, and networking opportunities. Attendees can expect innovation, inspiration, and industry insights.
 **After:**
@@ -142,7 +142,7 @@ Do not ban the repeated word. Fix the repeated sentence pattern. The remaining s
 
 ### 14. Em and en dashes
 
-**Rule:** The final rewrite must not contain em dashes (—) or en dashes (–), unless the writer's sample uses them. Replace a dash with a period, comma, colon, or parentheses, or rewrite the sentence. Also check for spaced dashes (` — `) and double hyphens (` -- `) used as dashes.
+**Problem:** Repeated dash interruptions can create a mechanical rhythm. Reduce distracting clusters rather than banning punctuation. Keep dashes that fit the writer's voice, quotations, ranges, or the target style.
 **Before:**
 > The term is primarily promoted by Dutch institutions—not by the people themselves. You don't say "Netherlands, Europe" as an address—yet this mislabeling continues—even in official documents.
 **After:**
@@ -152,7 +152,7 @@ Do not ban the repeated word. Fix the repeated sentence pattern. The remaining s
 **After:**
 > The new policy, announced without warning, affects thousands of workers. The changes, long overdue according to critics, will take effect immediately.
 
-Before returning the rewrite, search for `—` and `–`. Remove each one unless the writer's sample uses that mark. In that case, match the sample's rate.
+Read the paragraph for rhythm. A missing writing sample is not permission to impose a dash ban or normalize every punctuation choice.
 
 ### 15. Too much bold text
 
@@ -340,7 +340,7 @@ Before returning the rewrite, search for `—` and `–`. Remove each one unless
 ### 33. Fake-candid openings
 
 **Phrases to watch:** Honestly?, Look, Here's the thing, The thing is, Let's be honest, Real talk, when used as standalone hooks or fake-candid pauses before an ordinary point.
-**Problem:** AI writing often starts with a staged pause or claim of honesty before making a routine point. State the point directly.
+**Problem:** AI writing often starts with a staged pause or claim of honesty before making a routine point. State the point directly. Replacing “Let's delve into” with “Here's the thing” keeps the same staged opening; cut the setup instead.
 **Before:**
 > Is it worth the price? Honestly? It depends on how often you'll use it.
 **After:**

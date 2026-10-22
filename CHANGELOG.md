@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+- Selectively refreshed upstream skill guidance: concise, observable skill triggering; mutation-backed debugging evidence; safe Herdr wait retries; voice-preserving humanization; Python display metadata; LiteParse image extraction; and Draw.io geometry/render checks. Documented Draw.io's standalone upstream, deferred larger runtime upgrades, and preserved local approval gates; pins and notices track only adopted material.
+
 - Added a shared harness-aware vision-child policy: preferred Luna, Haiku and Gemini Flash families with owner-ordered providers, native Codex/Claude Code/Copilot/agy routes, runtime ID/image-path checks and bounded contexts. Provider authorization and delegation gates remain explicit; no automatic model retry ladder or installed configuration changes.
 - Added `document-extract` for schema-driven PDF/PNG/JPEG fields and repeating records, with original-source evidence, explicit uncertainty, exact decimal values, a stdlib JSON/CSV exporter and an existing-xlsx handoff. Reuses document-to-markdown's local parsing helpers and privacy gates; no new parser or cloud backend. Added an authored synthetic fixture, export checks and a source-to-result oracle.
 - Simplified document-to-markdown's ordinary routing to native extraction, structural parsing and targeted approved vision while retaining specialist/Office routes. Replaced stale table-extractor handoffs, removed score-based table dropping, and preserved financial section/currency/period meanings. Installed copies and parser versions are unchanged.

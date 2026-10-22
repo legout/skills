@@ -29,6 +29,19 @@ uvx --from liteparse lit parse report.pdf --format markdown --ocr-language deu -
 uvx --from liteparse lit parse report.pdf --format markdown --target-pages "1-5,10" -o report.md
 ```
 
+## Images in Markdown
+
+The default image mode emits placeholder references without extracting image bytes. Do not deliver those references as working image links. When images are required, check the installed `lit parse --help` supports extraction, then use:
+
+```bash
+uvx --from liteparse lit parse report.pdf --format markdown --image-mode embed \
+  --extract-images --image-output-dir ./images -o report.md
+```
+
+Deliver the image directory with the Markdown and verify the generated links. For text-only output use `--image-mode off` only when omitting images is consistent with the requested fidelity.
+
+Authority: [LiteParse CLI documentation](https://github.com/run-llama/liteparse). Installed help remains authoritative for available flags.
+
 ## Rules
 
 - Local only: bundled Tesseract (the default). Never `--ocr-server-url` at a public endpoint.

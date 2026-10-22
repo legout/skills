@@ -46,16 +46,16 @@ Mental model: skills are to LLMs what man pages, runbooks, and team handbooks ar
 
 The architectural core. Three-stage loading:
 
-**Level 1 — Discovery (~100 tokens per skill, always in context):**
-Only `name` + `description` from frontmatter are injected into the system prompt at startup. Agent knows the skill exists and when it applies. You can install dozens of skills with negligible overhead.
+**Level 1 — Discovery (host-budgeted metadata):**
+The agent initially sees the skill's name and description. Hosts may shorten descriptions or omit skills when their discovery budget is exhausted; front-load the main use case and check that the skill was discovered.
 
 **Level 2 — Activation (<5,000 tokens, loaded on match):**
 When the user's request matches a skill's description, the agent reads the full `SKILL.md` body into context.
 
-**Level 3 — Execution (unbounded, on demand):**
+**Level 3 — Execution (on demand):**
 The agent reads referenced files (`references/foo.md`) or runs scripts (`scripts/validate.py`) only as needed. Scripts can execute without their source being loaded into context at all.
 
-This is why bundled content has no practical limit. Files don't consume tokens until accessed.
+Bundled files consume context when read. Keep references focused so a needed read fits the host's context and output limits.
 
 ---
 
@@ -84,7 +84,8 @@ description: What this skill does AND when to use it. Include trigger phrases th
 
 Frontmatter constraints:
 
-- `name` is lowercase, hyphens only, 1–64 chars, **exactly matches the parent folder name**
+- `name` is 1–64 lowercase letters, digits, or hyphens, **exactly matches the parent folder name**, and has no leading, trailing, or consecutive hyphens
+- `description` is non-empty and at most 1,024 characters; this catalog uses one concise line
 - Avoid `<` and `>` in frontmatter (they can inject into the system prompt)
 - Invalid YAML silently prevents loading
 - **Never put `:` (colon + space) inside an unquoted `description`** — strict YAML parsers (e.g. Pi's) reject it as a nested mapping ("Nested mappings are not allowed in compact mappings"), even though lenient parsers (Claude Code) accept it. If the text needs a mid-sentence colon, single-quote the whole value and double any inner apostrophes: `description: 'Differentiator: finds gaps in David''s knowledge.'`
@@ -133,15 +134,11 @@ A mature setup uses both. Pattern A gives the agent better tools. Pattern B give
 
 ### Description as routing contract
 
-The description is the only thing the agent sees before deciding to load the skill. If your skill doesn't trigger, the description is wrong 95% of the time, not the body.
+The name and description help the agent decide whether to load the body. Use one or two short sentences naming the capability and concrete tasks, inputs, or file types users mention. Put the important terms first; the character limit is a ceiling, not a target. Add a boundary only when it prevents confusion with another skill.
 
-Include three elements:
+Pattern: `"[Capability]. Use when [specific tasks or situations]."`
 
-1. **What** the skill does (one phrase)
-2. **When** to use it (trigger phrases, situations)
-3. **Differentiator** vs related skills (prevents routing conflicts)
-
-Pattern: `"X via Y. Use for [situations]. [Differentiator: no Z required / faster than W / handles edge case V]."`
+Authority: [Agent Skills description guidance](https://agentskills.io/skill-creation/optimizing-descriptions), [format specification](https://agentskills.io/specification), and [Codex skills documentation](https://developers.openai.com/codex/build-skills).
 
 **Never summarize the full workflow in the description.** If the description contains a step-by-step summary of *how* the skill works, the agent tends to follow that summary and skip loading the body. Describe *what* and *when*, never *how*. The description answers "should I open this skill now?" — not "what are the steps?"
 
@@ -285,12 +282,12 @@ Skills can execute arbitrary code and steer agent behavior. A malicious skill is
 
 ## 9. Testing and debugging
 
-- **"Which skill did you use?"** — ask the agent post-task. Fastest routing debug.
-- **Routing fails → description problem.** Add specific trigger phrases.
+- **Verify actual activation.** Inspect runtime logs or file reads for a `SKILL.md` load; YAML validity and an agent's self-report do not prove activation.
+- **Wrong or missed activation.** Check discovery and invocation settings before changing the description.
 - **Execution fails → body problem.** Add explicit steps, examples, or validation.
-- **Skills snapshot at session start.** Edits during a session require a restart.
+- **Use fresh sessions for trigger tests.** Some clients snapshot skills at startup; others detect edits automatically. Follow the target runtime's documented reload behavior.
 - **Test against the weakest model you'll deploy on.** Stronger models forgive vague skills; weaker models expose them.
-- **Run an eval suite.** A handful of representative prompts that should and shouldn't trigger the skill, with expected outputs.
+- **Test both directions.** Use realistic requests and near-misses that share keywords but belong to a neighboring skill. Repeat ambiguous cases and use fresh prompts to avoid overfitting.
 
 ---
 

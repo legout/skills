@@ -206,3 +206,10 @@ Rules: swatch colors come from the active palette (preset or the table above) wi
 - For tree/hierarchical layouts: assign nodes to layers (rows), connect only between adjacent layers to minimize crossings
 - For star/hub layouts: place the hub center, satellites around it — edges stay short and radial
 - When an edge must span multiple rows/columns, route it along the outer corridor, not through the middle of the diagram
+
+### Decision diamonds and precise edge pins
+
+- A branch leaving a diamond vertex should initially travel outward. For two targets below the diamond, consider straight `edgeStyle=none` branches from its lower edge midpoints (`exitX=0.25;exitY=0.75` and `exitX=0.75;exitY=0.75`) to the targets' top centers instead of inward-crossing elbows.
+- For vertical alignment, calculate `entryX = (sourceCenterX - target.x) / target.width` without rounding to two decimals; small offsets can introduce an unintended bend near the arrowhead.
+- Keep short decision labels on the line. Offset longer labels into empty space and inspect their rendered bounds.
+- The XML validator does not prove these paths are readable. Inspect the rendered diagram and, when routing is disputed, its DOM paths as described in [troubleshooting](troubleshooting.md).

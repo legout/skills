@@ -1,6 +1,6 @@
 # anydoc — Office and text-PDF leg
 
-Rust binary (via `@firecrawl/anydoc` on npm). Pure local parsing, no ML models, median < 5 ms per document. Every format renders through one GitHub-Flavored Markdown serializer, so escaping, tables, heading anchors, and footnotes behave identically for a `.doc` from 2003 or a `.pptx` from yesterday.
+Rust binary (via `@firecrawl/anydoc` on npm). The default conversion path runs locally without ML models; the optional hosted OCR path does not. Every format renders through one GitHub-Flavored Markdown serializer, so escaping, tables, heading anchors, and footnotes behave identically for a `.doc` from 2003 or a `.pptx` from yesterday.
 
 ## CLI
 
@@ -45,4 +45,6 @@ Notes:
 - Python: `import anydoc; anydoc.to_markdown("report.docx")`
 - Rust: `cargo add anydoc`
 
-Never use the hosted OCR option (`--ocr hosted` / `ocr: 'hosted'`) — it uploads the document. This skill's OCR leg is local RapidOCR instead.
+Never use the hosted OCR option (`--ocr hosted` / `ocr: 'hosted'`) — it uploads the whole document, not just scanned pages. This skill's OCR leg is local RapidOCR instead.
+
+Check installed `--help` for version-specific options; the [canonical anydoc documentation](https://github.com/firecrawl/anydoc) describes the local/hosted boundary.

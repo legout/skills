@@ -5,7 +5,7 @@ description: Diagnose bugs, test failures, build failures, performance regressio
 
 # Systematic Debugging
 
-> Consolidates Matt Pocock's [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/engineering/diagnosing-bugs/SKILL.md) feedback-loop method with Obra's [`systematic-debugging`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging/SKILL.md), [`root-cause-tracing`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging/root-cause-tracing.md), and [`condition-based-waiting`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging/condition-based-waiting.md) guidance (all MIT). Exact pins are recorded in `sources.json`.
+> Consolidates Matt Pocock's [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/5beb35b040e3de97e54fa9e386d7e42d15c295c2/skills/engineering/diagnosing-bugs/SKILL.md) feedback-loop method with Obra's [`systematic-debugging`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging/SKILL.md), [`root-cause-tracing`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging/root-cause-tracing.md), and [`condition-based-waiting`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/systematic-debugging/condition-based-waiting.md) guidance (all MIT). Exact pins are recorded in `sources.json`.
 >
 > Evidence-traced fixes, speculative-guard rejection, and measured baselines are adapted from Cursor's [`poteto-mode`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99/pstack/skills/poteto-mode) at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor).
 
@@ -54,7 +54,7 @@ After three failed fix attempts, stop and question the architecture with the use
 When a correct test seam exists:
 
 1. convert the minimized repro into a failing regression test;
-2. observe the intended failure;
+2. observe the intended failure; if a deliberate code or fixture mutation created the red state, diff against a pristine copy to confirm the mutation actually landed;
 3. make one minimal root-cause fix;
 4. observe the regression test pass; and
 5. rerun the original unminimized loop.

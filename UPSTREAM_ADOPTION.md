@@ -150,6 +150,41 @@ not a pin-integrity failure. Use `--strict-upstream` for a deliberate freshness
 audit. Review the emitted compare links and selectively update relationships only
 when adopting changes; do not bump pins to make the warning disappear.
 
+## Catalog-wide source review (2026-10-22)
+
+Read the 43 skill entrypoints and relevant companion guidance, compared the content of all 503 pinned file relationships against their recorded branches across 16 repositories, and checked external documentation links. This is a source/instruction review, not an exhaustive runtime audit of every bundled script or an agent-behavior evaluation.
+
+All 503 pinned sources were available and all six vendored hash pairs matched. At the original source paths, 190 relationships changed, 135 were unchanged, and 178 were absent at the current branch head. Those counts include multiple local adaptations of the same source file. Missing current paths do not invalidate historical pins:
+
+- Draw.io moved to [Agents365-ai/drawio-skill](https://github.com/Agents365-ai/drawio-skill/tree/57270820d3cd71cbdf4fb6b2f7091d4fb37bb019/skills/drawio-skill). All 61 mapped files exist there; 40 have identical Git blob content and 21 differ. The [changelog](https://github.com/Agents365-ai/drawio-skill/blob/57270820d3cd71cbdf4fb6b2f7091d4fb37bb019/CHANGELOG.md) confirms retirement of marketplace distribution.
+- Archify moved 88 of the 112 missing mapped paths out of `archify/` into the repository root; the other 24 were not found at that corresponding location. Its new diagram types and renderer changes require a coordinated package migration, not just a new `SKILL.md`.
+- David Ondrej's Pi-model and vision-interview sources disappeared at their old paths; retain their available pins and local installed-version/approval contracts.
+- Matt Pocock renamed `CONTEXT-FORMAT.md` to `GLOSSARY-FORMAT.md`; retain local project-configured context ownership rather than renaming users' documents.
+- last30days removed `scripts/lib/reddit_rss.py` at the checked head and changed substantial engine/provider behavior. Retain the coherent existing package pending a scoped runtime upgrade.
+
+### Disposition by local owner
+
+| Skills | Decision |
+| --- | --- |
+| `effective-agent-skills` | Adopt concise front-loaded descriptions, discovery-budget awareness, actual-load evidence, and near-miss trigger tests. Remove unsupported routing percentages and universal restart claims. |
+| `systematic-debugging` | Adopt proof that a deliberately injected red-state mutation actually landed. Keep local feedback-loop and evidence gates. |
+| `terminal-session-control` | Refresh canonical Herdr factual guidance: retained identities can be backgrounded, waits do not prove background work finished, and failed waits must not trigger duplicate submissions. Do not add remote-machine management or topology authority. |
+| `modern-python` | Adopt display metadata only; retain local migration safety and CC-BY-SA attribution. |
+| `humanizer` | Adopt structural-pattern refinements and align the pattern catalog with the existing voice-preservation rule; no blanket dash ban or deletion of real three-part facts. |
+| `document-to-markdown` | Clarify LiteParse placeholders versus extracted image assets and anydoc's whole-document hosted-OCR boundary; hosted OCR remains prohibited. |
+| `drawio-skill` | Adopt selected geometry/render-verification guidance and cite the standalone source; retain bundled script pins. No new importers, MCP server, or runtime migration. |
+| `archify`, `last30days` | Defer substantial runtime/asset upgrades; no claim that the bundled engines are current. |
+| `domain-modeling`, `grilling`, `shape-design`, `write-implementation-plan`, `orchestrate-implementation`, `prototype-question`, `review-codebase-architecture` | Retain local artifact paths, workflow owners, scoped verification, approval gates, and report-only boundaries. Upstream filename changes, ticket defaults, broader delegation, and implementation authority are not portable updates. |
+| `deslop`, `simplify-code`, `improve-skill`, `verification-before-completion` | Retain selected pstack principles and local guardrails. Do not import its expanded orchestration, mandatory rituals, or autonomy policy. |
+| `handoff`, `excalidraw`, `marimo-pair` | Retain local adaptations: upstream prose/metadata changes do not justify invocation-policy changes; marimo cell-boundary/dataflow guidance is already in the local references. |
+| `agent-md-refactor`, `project-verification`, `workflow-from-chats`, `chrome-cdp`, `marimo-notebook`, `research`, `merge-worktree`, `doc-coauthoring`, `documentation-writer` | Referenced source file content unchanged; no pin bump for unrelated repository commits. |
+| `pi-custom-model`, `capture-project-vision` | Retain usable historical pins despite absent current paths. |
+| `agent-guardrails`, `planning-contract`, `make-release`, `second-brain`, `document-extract`, `docx`, `pdf`, `pptx`, `xlsx` | Local owners with no imported-file relationship to update. Keep local contracts; review relevant cited documentation rather than inventing an upstream package. |
+
+The Markdown URL inventory contained 145 distinct links: 62 fetched successfully, 52 immutable provenance links were classified separately, 18 were local/examples, 11 were illustrative citations or runtime endpoints, and two remained unverified after HTTP 403 responses ([ReportLab](https://docs.reportlab.com/reportlab/userguide/) and [OpenAI brand](https://openai.com/brand/)). A successful fetch proves reachability, not correctness of every claim or permission to upload data. Retain those blocked links rather than guessing replacements. Office/PDF, document-parser, Agent Skills, Codex, Diátaxis, wiki-format, and terminal/worktree documentation informed the selective review; external examples never override local permission gates.
+
+Only adopted relationships advance in `sources.json`; this review does not install skills, update parser dependencies, rebuild real vaults, or authorize publication.
+
 ## Cursor pstack `poteto-mode` review
 
 Source pin: `cursor/plugins@93b00b89ef425a9c1bac0d0b317dfc49c930ac99`, `pstack/skills/poteto-mode`.

@@ -61,3 +61,11 @@ cmd.exe /c start "" "$(wslpath -w "$TMP")"
 
 On native Windows the same `.url`-file trick applies (`start "" "%TEMP%\d.url"`).
 On macOS/Linux just `open "$URL"` / `xdg-open "$URL"` — no workaround needed.
+
+## Verify the actual render
+
+A screenshot of a browser error page is not a diagram preview. Confirm the expected diagram shapes, labels, and page identity before accepting an export; file size or a nonblank image is insufficient.
+
+When a screenshot cannot settle an edge-routing question, inspect the renderer DOM: SVG `<path d>` segments reveal crossings and unexpected bends; label `foreignObject` bounds reveal overlaps. Compare those paths and bounds with the intended geometry rather than trusting a vision verdict alone.
+
+Prefer local rendering. A hosted viewer loads third-party code that can access the diagram even when its data is in a URL fragment; obtain approval before opening private diagrams there. Only after that boundary is satisfied, an isolated Chromium headless run with `--dump-dom` can capture the viewer DOM. Do not attach to the user's browser or add an unbounded retry loop.

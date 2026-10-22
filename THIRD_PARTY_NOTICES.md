@@ -136,10 +136,20 @@ Source: Anthropic's [`doc-coauthoring`](https://github.com/anthropics/skills/blo
 
 `terminal-session-control` also cites canonical product guidance from:
 
-- [herdrdev/herdr](https://github.com/herdrdev/herdr/tree/3150bd92d6162ba248bc28fd4d40bd0d6238e1af), Apache-2.0, pinned to `3150bd92d6162ba248bc28fd4d40bd0d6238e1af`;
+- [herdrdev/herdr](https://github.com/herdrdev/herdr/tree/5bd900d88c80d95f5b145397e45bbeea398b8165), Apache-2.0, pinned to `5bd900d88c80d95f5b145397e45bbeea398b8165`;
 - [manaflow-ai/cmux](https://github.com/manaflow-ai/cmux/tree/4256df053a63339d7e786157a9846a765762b4cf), GPL-3.0-or-later, pinned to `4256df053a63339d7e786157a9846a765762b4cf`.
 
 These entries are citations only. No Herdr or GPL-licensed cmux source text is redistributed in this repository.
+
+## Selective source refresh
+
+The original package attributions below remain applicable. These files additionally incorporate selected later material; unchanged files retain their original pins:
+
+- `effective-agent-skills/SKILL.md` and its authoring guide: [David Ondrej `41cb3f0`](https://github.com/davidondrej/skills/tree/41cb3f03deb34567cd0d3d5eae016e6408cce1fa), MIT, Copyright (c) 2026 David Ondrej.
+- `systematic-debugging/SKILL.md`: [Matt Pocock `5beb35b`](https://github.com/mattpocock/skills/tree/5beb35b040e3de97e54fa9e386d7e42d15c295c2), MIT, Copyright (c) 2026 Matt Pocock.
+- `modern-python/agents/openai.yaml`: [Trail of Bits `f0dd11d`](https://github.com/trailofbits/skills/tree/f0dd11d2b1da17a1ff8c403741fbe1f6bca0f871), still CC-BY-SA-4.0, Copyright Trail of Bits.
+- `humanizer/references/pattern-catalog.md`: [blader/humanizer `8c307f3`](https://github.com/blader/humanizer/tree/8c307f367c91bd974002f10f2be2965d642c13df), MIT, Copyright (c) 2025 Siqi Chen; local adaptations preserve the writer's punctuation and factual enumerations.
+- `drawio-skill/SKILL.md`, `references/xml-authoring.md`, and `references/troubleshooting.md`: standalone [Agents365-ai/drawio-skill `5727082`](https://github.com/Agents365-ai/drawio-skill/tree/57270820d3cd71cbdf4fb6b2f7091d4fb37bb019), MIT, copyright Agents365-ai. Only selected instruction changes are adopted; the bundled runtime remains at its original marketplace revision.
 
 ## Additional adopted skills
 

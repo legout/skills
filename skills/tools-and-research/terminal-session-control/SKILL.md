@@ -48,7 +48,9 @@ herdr agent prompt <agent-name-or-pane-id> "<prompt>" --wait --timeout 120000
 
 For an ordinary process, use the pane commands advertised by the installed help, such as `pane read`, `pane run`, and `pane wait-output`. Prefer `--current` or an explicit pane ID over UI focus. Parse returned IDs and state from JSON rather than guessing.
 
-A successful wait means the requested lifecycle or output condition was observed; it does not prove semantic correctness. If an agent is `blocked` or `unknown`, inspect its state and recent output, then ask the user what to do.
+A successful wait means the requested lifecycle or output condition was observed; it does not prove semantic correctness or completion of background jobs. A retained agent identity may belong to a suspended process while a shell is in the foreground: inspect the pane before sending. If an agent is `blocked` or `unknown`, inspect its state and recent output, then ask the user what to do.
+
+After a timeout or `agent_prompt_stalled`, read state and output before retrying: the prompt may already have been delivered. Do not send it twice merely because the wait failed.
 
 ## cmux
 
@@ -83,4 +85,4 @@ Report:
 
 ## Sources and Adaptations
 
-Herdr behavior is based on the canonical Apache-2.0 [`herdr` skill](https://github.com/herdrdev/herdr/blob/3150bd92d6162ba248bc28fd4d40bd0d6238e1af/skills/herdr/SKILL.md). cmux command vocabulary is fact-checked against the canonical GPL-3.0 [`cmux` skill](https://github.com/manaflow-ai/cmux/blob/4256df053a63339d7e786157a9846a765762b4cf/skills/cmux/SKILL.md) without copying its text. The narrow existing-target workflow adapts MIT guidance from David Ondrej's [`herdr`](https://github.com/davidondrej/skills/blob/11dee2ebc2d045806b686ba0b57746f1e3d7e331/skills/agent-orchestration/herdr/SKILL.md) and [`cmux`](https://github.com/davidondrej/skills/blob/11dee2ebc2d045806b686ba0b57746f1e3d7e331/skills/agent-orchestration/cmux/SKILL.md) skills. Exact relationships and pins are recorded in `sources.json`.
+Herdr behavior is based on the canonical Apache-2.0 [`herdr` skill](https://github.com/herdrdev/herdr/blob/5bd900d88c80d95f5b145397e45bbeea398b8165/skills/herdr/SKILL.md). cmux command vocabulary is fact-checked against the canonical GPL-3.0 [`cmux` skill](https://github.com/manaflow-ai/cmux/blob/4256df053a63339d7e786157a9846a765762b4cf/skills/cmux/SKILL.md) without copying its text. The narrow existing-target workflow adapts MIT guidance from David Ondrej's [`herdr`](https://github.com/davidondrej/skills/blob/11dee2ebc2d045806b686ba0b57746f1e3d7e331/skills/agent-orchestration/herdr/SKILL.md) and [`cmux`](https://github.com/davidondrej/skills/blob/11dee2ebc2d045806b686ba0b57746f1e3d7e331/skills/agent-orchestration/cmux/SKILL.md) skills. Exact relationships and pins are recorded in `sources.json`.

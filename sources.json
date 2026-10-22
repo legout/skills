@@ -28,7 +28,7 @@
       "source": "skills/skill-authoring/effective-agent-skills/SKILL.md",
       "repository": "https://github.com/davidondrej/skills",
       "branch": "main",
-      "commit": "11dee2ebc2d045806b686ba0b57746f1e3d7e331",
+      "commit": "41cb3f03deb34567cd0d3d5eae016e6408cce1fa",
       "license": "MIT",
       "copyright": "Copyright (c) 2026 David Ondrej",
       "mode": "adapted"
@@ -220,7 +220,7 @@
       "source": "skills/engineering/diagnosing-bugs/SKILL.md",
       "repository": "https://github.com/mattpocock/skills",
       "branch": "main",
-      "commit": "3cca18b368ae95cdbdebbff572ccafa662551015",
+      "commit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
       "license": "MIT",
       "copyright": "Copyright (c) 2026 Matt Pocock",
       "mode": "adapted"
@@ -300,7 +300,7 @@
       "source": "skills/herdr/SKILL.md",
       "repository": "https://github.com/herdrdev/herdr",
       "branch": "master",
-      "commit": "3150bd92d6162ba248bc28fd4d40bd0d6238e1af",
+      "commit": "5bd900d88c80d95f5b145397e45bbeea398b8165",
       "license": "Apache-2.0",
       "copyright": "Herdr contributors",
       "mode": "referenced"
@@ -340,7 +340,7 @@
       "source": "plugins/modern-python/skills/modern-python/agents/openai.yaml",
       "repository": "https://github.com/trailofbits/skills",
       "branch": "main",
-      "commit": "d3323cefbcf645678b8dc481de204b02ad3d02dc",
+      "commit": "f0dd11d2b1da17a1ff8c403741fbe1f6bca0f871",
       "license": "CC-BY-SA-4.0",
       "copyright": "Trail of Bits",
       "mode": "adapted"
@@ -579,10 +579,10 @@
     },
     {
       "local": "skills/visualization/drawio-skill/SKILL.md",
-      "source": "plugins/drawio/skills/drawio-skill/SKILL.md",
-      "repository": "https://github.com/Agents365-ai/365-skills",
+      "source": "skills/drawio-skill/SKILL.md",
+      "repository": "https://github.com/Agents365-ai/drawio-skill",
       "branch": "main",
-      "commit": "08f4791bbe21f42ef8e4013c7bd15c92347b916f",
+      "commit": "57270820d3cd71cbdf4fb6b2f7091d4fb37bb019",
       "license": "MIT",
       "copyright": "Agents365-ai",
       "mode": "adapted"
@@ -2639,10 +2639,10 @@
     },
     {
       "local": "skills/visualization/drawio-skill/references/troubleshooting.md",
-      "source": "plugins/drawio/skills/drawio-skill/references/troubleshooting.md",
-      "repository": "https://github.com/Agents365-ai/365-skills",
+      "source": "skills/drawio-skill/references/troubleshooting.md",
+      "repository": "https://github.com/Agents365-ai/drawio-skill",
       "branch": "main",
-      "commit": "08f4791bbe21f42ef8e4013c7bd15c92347b916f",
+      "commit": "57270820d3cd71cbdf4fb6b2f7091d4fb37bb019",
       "license": "MIT",
       "copyright": "Agents365-ai",
       "mode": "adapted"
@@ -2659,10 +2659,10 @@
     },
     {
       "local": "skills/visualization/drawio-skill/references/xml-authoring.md",
-      "source": "plugins/drawio/skills/drawio-skill/references/xml-authoring.md",
-      "repository": "https://github.com/Agents365-ai/365-skills",
+      "source": "skills/drawio-skill/references/xml-authoring.md",
+      "repository": "https://github.com/Agents365-ai/drawio-skill",
       "branch": "main",
-      "commit": "08f4791bbe21f42ef8e4013c7bd15c92347b916f",
+      "commit": "57270820d3cd71cbdf4fb6b2f7091d4fb37bb019",
       "license": "MIT",
       "copyright": "Agents365-ai",
       "mode": "adapted"
@@ -4552,7 +4552,7 @@
       "source": "SKILL.md",
       "repository": "https://github.com/blader/humanizer",
       "branch": "main",
-      "commit": "e2e92e7b4b8229253ed5c8e81dc65463fdeddda5",
+      "commit": "8c307f367c91bd974002f10f2be2965d642c13df",
       "license": "MIT",
       "copyright": "Copyright (c) 2025 Siqi Chen",
       "mode": "adapted"
@@ -4562,7 +4562,7 @@
       "source": "skills/skill-authoring/effective-agent-skills/SKILL.md",
       "repository": "https://github.com/davidondrej/skills",
       "branch": "main",
-      "commit": "11dee2ebc2d045806b686ba0b57746f1e3d7e331",
+      "commit": "41cb3f03deb34567cd0d3d5eae016e6408cce1fa",
       "license": "MIT",
       "copyright": "Copyright (c) 2026 David Ondrej",
       "mode": "adapted"
