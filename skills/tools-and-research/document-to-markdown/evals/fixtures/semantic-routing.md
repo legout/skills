@@ -24,3 +24,10 @@ and VAT row `10.00 | 12,01 | 13,21 | 1,20`.
 Acceptance is source-based: keep the university under Department, preserve the
 blank company cell, verify all three selection states, keep regions separate,
 and preserve the different totals rather than make them consistent.
+
+## Deliverable routing
+
+A faithful Markdown view belongs to document-to-markdown, including the tables.
+Only requested attendee/selection records as CSV belong to document-extract,
+which reuses parsing evidence but does not require an intermediate Markdown file.
+Low-scoring tables remain accounted for; neither route may silently drop them.

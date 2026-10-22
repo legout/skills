@@ -24,4 +24,6 @@ uvx --from 'markitdown[all]' markitdown report.docx -o report.md
 - `llm_client`/`llm_model` image descriptions
 - Audio transcription, YouTube URLs, `az-doc-intel`/`az-content-understanding` extras (cloud services)
 
-Local document formats only. OCR belongs to the RapidOCR leg ([ocr.md](ocr.md)), not to markitdown.
+Local document formats only. For OCR, select by layout: [RapidOCR](ocr.md) for
+simple single-column scans, structural parsing for tables/forms/columns, and
+approved vision only for unresolved regions. Markitdown is not an OCR escalation.

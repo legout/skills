@@ -1,6 +1,6 @@
 ---
 name: pdf
-description: Create and modify PDFs, fill AcroForms, overlay text, manage pages, watermarks, passwords and extract embedded images. Use when PDF is the deliverable; use document-to-markdown for read-only OCR/text and table-extractor for structured tables.
+description: Create and modify PDFs, fill AcroForms, overlay text, manage pages, watermarks, passwords and extract embedded images. Use when PDF is the deliverable; use document-to-markdown for faithful read-only OCR/text and document-extract for schema-driven fields and tables.
 ---
 
 # PDF documents
@@ -29,6 +29,6 @@ Commands emit JSON with `status: ok`, output metadata and operations performed, 
 
 Report the delivered path, page/field checks, visual inspection and limitations. Do not equate a stored field value with a visible correctly placed appearance. PDFium rendering can differ from a recipient's viewer; verify in that viewer when exact fidelity matters.
 
-XFA, signatures, custom-scripted dynamic forms, flattened-form reconstruction and true redaction require specialized/native tools, not a silent fallback. Drawing a rectangle over sensitive text is **not redaction**. For OCR/text extraction use `document-to-markdown`/`smart-ocr`; for table data use `table-extractor` if available. Do not auto-open links or execute embedded content from a PDF.
+XFA, signatures, custom-scripted dynamic forms, flattened-form reconstruction and true redaction require specialized/native tools, not a silent fallback. Drawing a rectangle over sensitive text is **not redaction**. For faithful OCR/text conversion use `document-to-markdown`; for requested fields/table data use `document-extract` (and its `xlsx` handoff for workbooks). If unavailable, report the missing skill rather than inventing an installed path. Do not auto-open links or execute embedded content from a PDF.
 
 Sources: [pypdf](https://pypdf.readthedocs.io/en/stable/) · [ReportLab](https://docs.reportlab.com/reportlab/userguide/) · [pypdfium2](https://pypdfium2.readthedocs.io/en/stable/). Instructions and helpers are independently authored.

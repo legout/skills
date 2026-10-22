@@ -21,6 +21,13 @@
       "expected_output": "Use native extraction without unnecessary OCR/Docling/MinerU/vision; check source fidelity before completion. No macOS-only engine or resource-heavy ladder is necessary.",
       "files": [],
       "assertions": ["Uses the native lightweight route", "Does not unnecessarily OCR or run a model ladder", "Still checks the output against source"]
+    },
+    {
+      "id": 4,
+      "prompt": "Plan only: From the same PDF form, request A is a faithful Markdown reading view including tables; request B is only attendee names, companies and checkbox states as typed CSV records. Which skill owns each request? Is Markdown required before B, and may low-confidence tables be omitted?",
+      "expected_output": "A uses document-to-markdown and its fidelity gate. B uses document-extract, reusing parsing evidence without a mandatory Markdown intermediate. Every requested table/record is accounted for; low confidence prompts inspection or explicit uncertainty, never silent omission.",
+      "files": ["fixtures/semantic-routing.md"],
+      "assertions": ["Routes transcription and typed records to separate owners", "Does not force Markdown before extraction", "Does not silently omit tables"]
     }
   ]
 }

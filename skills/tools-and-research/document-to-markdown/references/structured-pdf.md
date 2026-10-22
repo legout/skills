@@ -19,8 +19,9 @@ uv run <skill-dir>/scripts/convert_docling.py input.pdf candidate-docling
 
 The bundled helper pins the tested Docling/RapidOCR/ONNX versions, uses full-page
 German-capable OCR by default, accurate table recognition and CPU inference.
-`--language iso:en` selects another supported recognition language; `--native-text`
-retains the hybrid native-text path instead of forcing OCR on digital pages.
+`--language iso:en` selects another supported recognition language. Pass
+`--native-text` for usable digital text: it retains the hybrid native-text path
+instead of forcing OCR. The no-flag full-page OCR default remains for scans.
 
 It writes raw Markdown, per-page exports, `document-paged.md`, structured JSON,
 referenced picture assets and `run.json`. Page markers are provenance aids, not

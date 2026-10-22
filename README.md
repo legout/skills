@@ -18,6 +18,16 @@ npx skills add legout/skills --skill '*' --global --agent pi --yes --copy
 
 The catalog uses nested categories; skill names and `/skill:<name>` commands remain unchanged.
 
+For structured document extraction, install both skills explicitly (the installer
+does not resolve skill dependencies):
+
+```bash
+npx skills add legout/skills --skill document-extract --skill document-to-markdown --global --agent pi --yes --copy
+```
+
+Add `xlsx` only when workbook delivery is needed. These commands are user-run
+installation steps, not permission for a skill to install dependencies automatically.
+
 ## Versioning
 
 The whole catalog shares one semantic version in [`VERSION`](VERSION), starting at `0.1.0`. Individual skills do not have independent versions. [`CHANGELOG.md`](CHANGELOG.md) records notable changes; entries stay under **Unreleased** until release preparation. `VERSION` is the prepared version, not proof of publication: only the matching immutable Git tag (`vMAJOR.MINOR.PATCH`) identifies a released snapshot.
@@ -60,6 +70,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 ### Tools and research
 
 - **`chrome-cdp`** — approved control of an existing local Chrome session.
+- **`document-extract`** — schema-driven PDF/image fields and records as evidence-backed JSON/CSV; reuses document-to-markdown and hands workbooks to xlsx.
 - **`document-to-markdown`** — local-first, semantic-fidelity-first document conversion with structural parsing and approved vision escalation.
 - **`docx`** — create and edit Word files with python-docx.
 - **`pdf`** — create and change PDFs with pypdf and ReportLab.
@@ -158,8 +169,9 @@ bash tests/skills_test.sh
 bash tests/orchestrator_handoff_test.sh
 # Office real-file checks require uv and LibreOffice; optional output directory keeps previews.
 uv run --no-project tests/office_skills_test.py
-# Synthetic PDF artifact checks; no private inputs or model inference required.
+# Synthetic PDF artifact/export checks; no private inputs or model inference required.
 uv run --script tests/document_to_markdown_test.py
+uv run --script tests/document_extract_test.py
 # Pinned-source integrity; add --strict-upstream for a deliberate freshness audit.
 bash scripts/check-skill-sources.sh
 git diff --check

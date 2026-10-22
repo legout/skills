@@ -1,29 +1,35 @@
-# Tables — when the deliverable is data, not markdown
+# Tables: faithful transcription versus structured records
 
-Two different asks, two different paths:
+For Markdown transcription, preserve tables and relationships in the reading view;
+a GFM table is only a candidate. Apply the main skill's coverage and semantic gates.
+For requested fields, rows or tables as JSON/CSV, discover `document-extract`; it
+owns recipes, source evidence, uncertainty and data export. Workbook delivery goes
+to `xlsx`. A missing skill is a prerequisite to report, not permission to assume a
+sibling path or install it automatically.
 
-| Ask | Path |
-| --- | --- |
-| "Convert this document to markdown" (tables included) | anydoc — it already emits GFM tables. Done, nothing here. |
-| "Extract the tables from this PDF as CSV/DataFrames" | camelot, below — or defer to the **table-extractor** skill for full depth |
+## Optional Camelot technique
 
-## Quick path (camelot via uv)
+For a suitable digital PDF with a text layer, Camelot can produce candidate cell
+data. Prefer existing tools and consult installed `--help`/API documentation for
+backend requirements; do not install or run it merely to add a second parser.
 
 ```python
-# run: uv run --with "camelot-py[base]" --with pymupdf python extract.py input.pdf
 import camelot
 
-tables = camelot.read_pdf("input.pdf", pages="all", flavor="lattice")  # bordered tables
-if not tables:
-    tables = camelot.read_pdf("input.pdf", pages="all", flavor="stream")  # borderless
-
-for t in tables:
-    if t.accuracy >= 80:
-        t.df.to_csv(f"table_p{t.page}_{t.order}.csv", index=False)
-        print(f"page {t.page} · accuracy {t.accuracy:.0f}% · {t.df.shape}")
+tables = camelot.read_pdf("input.pdf", pages="all", flavor="lattice")  # ruled tables
+# Use stream instead when text positions, rather than ruling lines, define cells.
+for table in tables:
+    print(table.page, table.order, table.parsing_report)
+    # Inspect table.df against the original page; keep every candidate accounted for.
 ```
 
-- `lattice` = ruled tables, needs ghostscript (`brew install ghostscript`).
-- `stream` = borderless, uses text positions.
-- Accuracy below ~80 → tune `line_scale`/`row_tol` or hand the job to the **table-extractor** skill (visual debugging, column hints, multi-page merge).
-- Scanned tables: camelot needs a text layer — OCR first does not restore the grid. State the ceiling; don't fabricate structure.
+Accuracy scores are inspection signals, not acceptance thresholds. Never silently
+drop a table because its score is low; record it as unresolved or reprocess the
+named failed region. High scores do not prove column placement, blank cells,
+multiline rows or page continuity. Retain source page/table identities and check
+associations before exporting through the extraction workflow.
+
+For scanned/complex tables, prefer structural parsing rather than assuming OCR
+restores the grid. If the source remains unclear, retain its image and explicit
+uncertainty. Neither successful CSV serialization nor arithmetic agreement makes
+the candidate source-faithful.
