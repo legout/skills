@@ -12,6 +12,8 @@ New bundles use `_raw/` for explicitly preserved acquired originals; existing lo
 
 `index.md` contains navigation, `log.md` records changes and `.history/` preserves prior maintained-page bytes. Keep human-curated text outside generated index blocks; prefer current maintained pages as entry points. `index.db` is generated FTS5 and can be rebuilt from Markdown.
 
+Search indexes frontmatter `aliases` as well as page content. Inline lists (`aliases: ["alternate name"]`) and block lists are supported. Existing bundles need one authorized `index` rebuild to add aliases to older databases; `lint` reports their FTS drift. Search and evaluation never rebuild implicitly.
+
 New atomic notes use `notes/YYYY-MM-DD/slug.md`. Indexing creates navigation for day folders and continues to include legacy flat notes. Initialization and rebuilding do not relocate existing notes or change their links.
 
 ## Structural checks are not compilation

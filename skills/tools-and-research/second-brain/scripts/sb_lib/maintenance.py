@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+from itertools import combinations
 import os
 import posixpath
 import re
@@ -28,7 +29,7 @@ from .common import (
 )
 from .index import (
     cmd_index,
-    index_directories,
+    index_catalog,
     render_index,
 )
 
@@ -36,18 +37,17 @@ def iter_concepts(vault: Path):
     for p in note_files(vault):
         yield p, p.read_text(encoding="utf-8", errors="replace")
 
-def index_drift(vault: Path) -> list[Path]:
-    directories = index_directories(vault)
-    return [directory / "index.md" for directory in directories
+def index_drift(vault: Path, catalog: dict[Path, list[dict]]) -> list[Path]:
+    return [directory / "index.md" for directory in catalog
             if not (directory / "index.md").exists()
             or (directory / "index.md").read_text(encoding="utf-8", errors="replace")
-            != render_index(vault, directory, directories)]
+            != render_index(vault, directory, catalog)]
 
 def fts_drift(vault: Path) -> bool:
     db = db_path(vault)
     if not db.exists():
         return True
-    columns = ("path", "title", "type", "tags", "relevance", "status", "stale_after", "verified", "body")
+    columns = ("path", "title", "type", "tags", "relevance", "status", "stale_after", "verified", "body", "aliases")
     try:
         con = sqlite3.connect(db)
         try:
@@ -86,7 +86,8 @@ def cmd_lint(vault: Path, fix: bool) -> int:
             resolved = resolve_link(vault, p, target).resolve()
             if not resolved.is_relative_to(vault) or not resolved.exists():
                 broken.append((p, label, target))
-    for directory in index_directories(vault):
+    catalog = index_catalog(vault)
+    for directory in catalog:
         index = directory / "index.md"
         if not index.exists():
             continue
@@ -95,7 +96,7 @@ def cmd_lint(vault: Path, fix: bool) -> int:
             resolved = resolve_link(vault, index, target).resolve()
             if not resolved.is_relative_to(vault) or not resolved.exists():
                 broken.append((index, label, target))
-    drifted_indexes = index_drift(vault)
+    drifted_indexes = index_drift(vault, catalog)
     stale_fts = fts_drift(vault)
     print(f"[sb] lint: {len(broken)} broken links, {len(unsupported_wikilinks)} unsupported wikilinks, "
           f"{len(drifted_indexes)} index drift, FTS {'drift' if stale_fts else 'current'}, "
@@ -154,9 +155,7 @@ def cmd_dedup(vault: Path, threshold: float) -> int:
             index.setdefault(sh, []).append(i)
     pairs: set[tuple[int, int]] = set()
     for bucket in index.values():
-        for a in range(len(bucket)):
-            for b in range(a + 1, len(bucket)):
-                pairs.add((bucket[a], bucket[b]))
+        pairs.update(combinations(bucket, 2))
     found = 0
     for a, b in sorted(pairs):
         sa, sb = entries[a][1], entries[b][1]
@@ -272,26 +271,22 @@ def cmd_codegraph(vault: Path, root: Path) -> int:
         symbols: dict[str, list[str]] = {}
         imports: dict[str, set[str]] = {}
         for kind, patterns in pats.items():
-            if kind not in ("import", "from"):
-                for pattern in patterns:
-                    for m in run_pattern(binary, pattern, lang, root):
-                        f = match_file(root, m)
+            for pattern in patterns:
+                for m in run_pattern(binary, pattern, lang, root):
+                    f = match_file(root, m)
+                    if kind not in ("import", "from"):
                         symbols.setdefault(f, []).append(f"{kind} `{meta_name(m)}` (L{line_of(m)})")
-            else:
-                for pattern in patterns:
-                    for m in run_pattern(binary, pattern, lang, root):
-                        f = match_file(root, m)
-                        mv = (m.get("metaVariables") or {}).get("single", {})
-                        node = mv.get("MOD") or {}
-                        mod = node.get("text") if isinstance(node, dict) else None
-                        if mod:
-                            target = resolve_import(lang, str(mod), f, known)
-                            if target:
-                                # Use inline code, not a link: the target is outside the
-                                # bundle and would create permanently broken wiki links.
-                                imports.setdefault(f, set()).add(f"`{mod}` -> `{target.relative_to(root)}`")
-                            else:
-                                imports.setdefault(f, set()).add(f"`{mod}` -> (external)")
+                        continue
+                    mv = (m.get("metaVariables") or {}).get("single", {})
+                    node = mv.get("MOD") or {}
+                    mod = node.get("text") if isinstance(node, dict) else None
+                    if mod:
+                        target = resolve_import(lang, str(mod), f, known)
+                        if target:
+                            # The target is outside the bundle; a link would be broken.
+                            imports.setdefault(f, set()).add(f"`{mod}` -> `{target.relative_to(root)}`")
+                        else:
+                            imports.setdefault(f, set()).add(f"`{mod}` -> (external)")
         for f in sorted(set(symbols) | set(imports)):
             lines = [f"## {f}"]
             lines += [f"- {s}" for s in sorted(symbols.get(f, []))]
@@ -313,13 +308,12 @@ def cmd_codegraph(vault: Path, root: Path) -> int:
     return cmd_index(vault)
 
 def cmd_stats(vault: Path) -> int:
-    files = note_files(vault)
-    # Parse frontmatter, not whole-file regexes; body lines like 'status: …' must not affect counts.
-    concepts = [p for p in files if p.relative_to(vault).parts[0] != "personal"]
-    deprecated = sum(1 for p in concepts if parse_note(p, vault).get("status") == "deprecated")
+    catalog = index_catalog(vault)
+    rows = [row for notes in catalog.values() for row in notes]
+    personal = sum(row["path"].startswith("personal/") for row in rows)
     print(f"Bundle:      {vault} (OKF v0.2)")
-    print(f"Markdown:    {len(files)} files ({len(concepts)} concepts, {len(files) - len(concepts)} personal)")
-    print(f"Navigation:  {len(index_directories(vault))} directory indexes ({len(index_drift(vault))} drift)")
+    print(f"Markdown:    {len(rows)} files ({len(rows) - personal} concepts, {personal} personal)")
+    print(f"Navigation:  {len(catalog)} directory indexes ({len(index_drift(vault, catalog))} drift)")
     fts = "stale" if fts_drift(vault) else "current"
     print(f"FTS only:    {db_path(vault)} ({fts})")
     return 0

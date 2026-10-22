@@ -64,7 +64,7 @@ def connect(vault: Path, target: Path | None = None) -> sqlite3.Connection:
     try:
         con.execute(
             "CREATE VIRTUAL TABLE IF NOT EXISTS notes USING fts5("
-            "path, title, type, tags, relevance, status, stale_after, verified, body,"
+            "path, title, type, tags, relevance, status, stale_after, verified, body, aliases,"
             " tokenize='porter unicode61')"
         )
     except sqlite3.OperationalError as exc:
@@ -72,13 +72,16 @@ def connect(vault: Path, target: Path | None = None) -> sqlite3.Connection:
         sys.exit(f"[sb] FTS5 unavailable ({exc}). Grep fallback: rg -i <term> {vault}")
     return con
 
+FRONTMATTER_FIELD = re.compile(r"""^(\w[\w-]*|"[^"\n]+"|'[^'\n]+'):[ \t]*(.*)$""", re.M)
+
 def _frontmatter_fields(lines: list[str]) -> dict[str, str]:
     fields: dict[str, str] = {}
     for index, line in enumerate(lines):
-        km = re.match(r"^(\w[\w-]*):\s*(.*)$", line.strip())
+        km = FRONTMATTER_FIELD.match(line)
         if km:
+            key = km.group(1).strip("'\"")
             raw = km.group(2).strip()
-            if km.group(1) == "origin_projects" and not raw:
+            if key in ("origin_projects", "aliases", "tags") and not raw:
                 items = []
                 for entry in lines[index + 1:]:
                     item = re.fullmatch(r"\s*-\s+(.+)", entry.rstrip("\r\n"))
@@ -92,7 +95,7 @@ def _frontmatter_fields(lines: list[str]) -> dict[str, str]:
                 parsed = raw.strip("'\"[]")
             if isinstance(parsed, list):
                 parsed = ", ".join(str(value) for value in parsed)
-            fields[km.group(1)] = str(parsed)
+            fields[key] = str(parsed)
     return fields
 
 CLI_PATH = Path(__file__).resolve().parent.parent / "sb.py"
@@ -121,6 +124,7 @@ def parse_note(path: Path, vault: Path) -> dict:
         "title": (title_m.group(1).strip() if title_m else path.stem),
         "type": ntype,
         "tags": fields.get("tags", ""),
+        "aliases": fields.get("aliases", ""),
         "relevance": fields.get("relevance") or "medium",
         "status": status,
         "stale_after": fields.get("stale_after", ""),
@@ -143,8 +147,12 @@ def _verified_field(fields: dict[str, str], meta: str) -> str:
 
 def note_files(vault: Path) -> list[Path]:
     # Current and legacy original archives stay intact and outside knowledge indexes.
-    files = [p for p in vault.rglob("*.md") if p.name not in RESERVED
-             and p.relative_to(vault).parts[0] not in ("_raw", "raw", ".history")]
+    files = []
+    for directory, dirs, names in os.walk(vault):
+        if Path(directory) == vault:
+            dirs[:] = [name for name in dirs if name not in ("_raw", "raw", ".history")]
+        files.extend(Path(directory) / name for name in names
+                     if name.endswith(".md") and name not in RESERVED)
     return sorted(files)
 
 def md_links(text: str) -> list[tuple[str, str]]:
@@ -196,7 +204,8 @@ def format_markdown_body(text: str, title: str) -> str:
         )
 
     lines = text.splitlines()
-    _, unclosed_fence = _mask_fenced_code(text)
+    visible, unclosed_fence = _mask_fenced_code(text)
+    has_fence = visible != lines
     if unclosed_fence:
         raise ValueError("unclosed fenced code block")
 
@@ -206,6 +215,10 @@ def format_markdown_body(text: str, title: str) -> str:
             raise ValueError("body must not start with a different H1; pass the title as the first argument")
         lines = lines[1:]
         text = "\n".join(lines).strip()
+
+    # Reflowing a fenced example can change executable code and literal whitespace.
+    if has_fence:
+        return text
 
     blocks = re.split(r"\n[ \t]*\n+", text)
     formatted = []

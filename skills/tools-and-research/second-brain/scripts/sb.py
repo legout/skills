@@ -111,7 +111,7 @@ def main() -> int:
     ap_page.add_argument("--body-file", required=True, help="complete Markdown body; '-' reads stdin")
     ap_page.add_argument("--source", action="append", default=[], help="source URL or file:// path (repeatable)")
     ap_page.add_argument("--related", action="append", default=[], help="bundle-relative evidence/related note (repeatable)")
-    ap_page.add_argument("--tags", default="")
+    ap_page.add_argument("--tags", help="replace tags; omit to retain existing tags, or pass '' to clear")
     ap_page.add_argument("--status", choices=("draft", "stable"), default="draft")
     ap_page.add_argument("--expect-sha256", default="", help="required to revise an existing page")
     ap_page.add_argument("--reason", default="", help="required change reason for revisions")

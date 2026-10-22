@@ -25,29 +25,30 @@ from .common import (
     parse_note,
 )
 
-def index_directories(vault: Path) -> list[Path]:
-    directories = {vault, *(vault / name for name in ("notes", "sources", *PAGE_FOLDERS.values(), "personal"))}
+def index_catalog(vault: Path) -> dict[Path, list[dict]]:
+    """Read each note once for navigation and FTS, grouped by its owning directory."""
+    catalog = {vault: [], **{vault / name: [] for name in
+               ("notes", "sources", *PAGE_FOLDERS.values(), "personal")}}
     for note in note_files(vault):
+        catalog.setdefault(note.parent, []).append(parse_note(note, vault))
         directory = note.parent
-        while directory.is_relative_to(vault):
-            directories.add(directory)
-            if directory == vault:
-                break
+        while directory != vault:
             directory = directory.parent
-    return sorted(directories, key=lambda path: (len(path.relative_to(vault).parts), path.as_posix()))
+            catalog.setdefault(directory, [])
+    return dict(sorted(catalog.items(), key=lambda item:
+                       (len(item[0].relative_to(vault).parts), item[0].as_posix())))
 
-def index_block(vault: Path, directory: Path, directories: list[Path]) -> str:
+def index_block(vault: Path, directory: Path, catalog: dict[Path, list[dict]]) -> str:
     index = directory / "index.md"
-    notes = [path for path in note_files(vault) if path.parent == directory]
-    children = [path for path in directories if path.parent == directory]
+    notes = catalog[directory]
+    children = [path for path in catalog if path.parent == directory]
     lines = [INDEX_START, "## Documents", ""]
     special = [f"- {markdown_link(index, vault / 'schema.md', 'Wiki schema')}"] if directory == vault else []
     if notes or special:
         lines.extend(special)
-        for note in notes:
-            meta = parse_note(note, vault)
+        for meta in notes:
             kind = f" — `{meta['type']}`" if meta["type"] else ""
-            lines.append(f"- {markdown_link(index, note, meta['title'])}{kind}")
+            lines.append(f"- {markdown_link(index, vault / meta['path'], meta['title'])}{kind}")
     else:
         lines.append("_No documents yet._")
     lines.extend(("", "## Folders", ""))
@@ -59,7 +60,7 @@ def index_block(vault: Path, directory: Path, directories: list[Path]) -> str:
     lines.append(INDEX_END)
     return "\n".join(lines)
 
-def render_index(vault: Path, directory: Path, directories: list[Path]) -> str:
+def render_index(vault: Path, directory: Path, catalog: dict[Path, list[dict]]) -> str:
     path = directory / "index.md"
     title = f"{vault.name} — Knowledge Index" if directory == vault else f"{directory.name} — Index"
     existing = path.read_text(encoding="utf-8", errors="replace") if path.exists() else f"# {title}\n"
@@ -67,7 +68,7 @@ def render_index(vault: Path, directory: Path, directories: list[Path]) -> str:
     # Preserve removal of legacy German placeholders during index migration.
     existing = existing.replace("* [Titel](notes/<slug>.md) - Einzeiler-Claim\n", "")
     existing = existing.replace("Kuratierte Einstiegszeilen (OKF §8-Form):\n\n", "")
-    block = index_block(vault, directory, directories)
+    block = index_block(vault, directory, catalog)
     lines = existing.splitlines(keepends=True)
     visible, _ = _mask_fenced_code(existing)
     ranges = []
@@ -90,13 +91,14 @@ def render_index(vault: Path, directory: Path, directories: list[Path]) -> str:
 def cmd_index(vault: Path) -> int:
     vault = vault.resolve()
     ensure_bundle(vault)
-    rows = [parse_note(p, vault) for p in note_files(vault)]
+    catalog = index_catalog(vault)
+    rows = sorted((row for notes in catalog.values() for row in notes), key=lambda row: Path(row["path"]))
     untyped = [r["path"] for r in rows if not r["type"] and not r["path"].startswith("personal/")]
-    directories = index_directories(vault)
-    indexes = [(directory / "index.md", render_index(vault, directory, directories))
-               for directory in directories]
+    indexes = [(directory / "index.md", render_index(vault, directory, catalog))
+               for directory in catalog]
     for path, text in indexes:
-        atomic_write_text(path, text)
+        if not path.exists() or path.read_text(encoding="utf-8", errors="replace") != text:
+            atomic_write_text(path, text)
 
     fd, temp_name = tempfile.mkstemp(prefix=".index.db.", suffix=".tmp", dir=vault)
     os.close(fd)
@@ -107,8 +109,8 @@ def cmd_index(vault: Path) -> int:
             with con:
                 for row in rows:
                     con.execute(
-                        "INSERT INTO notes(path, title, type, tags, relevance, status, stale_after, verified, body) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (row["path"], row["title"], row["type"], row["tags"], row["relevance"], row["status"], row["stale_after"], row["verified"], row["body"]),
+                        "INSERT INTO notes(path, title, type, tags, relevance, status, stale_after, verified, body, aliases) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (row["path"], row["title"], row["type"], row["tags"], row["relevance"], row["status"], row["stale_after"], row["verified"], row["body"], row["aliases"]),
                     )
         finally:
             con.close()
@@ -128,8 +130,8 @@ def ranked_rows(con: sqlite3.Connection, query: str, limit: int, show_all: bool)
     return con.execute(
         "SELECT path, title, type, tags, relevance, status, stale_after, verified,"
         " snippet(notes, 8, '>>', '<<', '…', 12)"
-        " FROM notes WHERE notes MATCH ? AND status != ? ORDER BY rank LIMIT ?",
-        (query, "" if show_all else "deprecated", limit),
+        " FROM notes WHERE notes MATCH ? AND (? OR status != 'deprecated') ORDER BY rank LIMIT ?",
+        (query, show_all, limit),
     ).fetchall()
 
 def cmd_search(vault: Path, query: str, limit: int, show_all: bool) -> int:
@@ -210,8 +212,6 @@ def cmd_eval(vault: Path, cases_file: Path) -> int:
             con.close()
     except sqlite3.Error as exc:
         sys.exit(f"[sb] eval: cannot read index: {exc}")
-    if len(cases) != len(ranks):
-        sys.exit("[sb] eval: internal case/rank count mismatch")
     for i, (line_no, query, _) in enumerate(cases):
         rank = ranks[i]
         print(f"[sb] eval line {line_no}: {'rank=' + str(rank) if rank else 'MISS'} q={json.dumps(query, ensure_ascii=False)}")

@@ -31,7 +31,7 @@ from .common import (
 from .index import (
     cmd_index,
     cmd_search,
-    index_directories,
+    index_catalog,
 )
 from .write import (
     cmd_add,
@@ -49,6 +49,151 @@ from .maintenance import (
 
 def _ns(**kw):
     return argparse.Namespace(**kw)
+
+def index_order_check() -> bool:
+    with tempfile.TemporaryDirectory() as td:
+        vault = Path(td)
+        for rel in ("notes/a-b.md", "notes/a/b.md"):
+            path = vault / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("---\ntype: observation\n---\n# Same\n\nlegacytie\n", encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            cmd_index(vault)
+            cmd_search(vault, "legacytie", 1, False)
+        return str(vault / "notes/a/b.md") in output.getvalue()
+
+
+def regression_checks() -> dict[str, bool]:
+    """Exercise reported failures through the public CLI in a disposable bundle."""
+    with tempfile.TemporaryDirectory() as td:
+        vault = Path(td) / "vault"
+
+        def run(*args: str, body: str = "") -> subprocess.CompletedProcess:
+            return subprocess.run(
+                [sys.executable, str(CLI_PATH), "--vault", str(vault), *args],
+                input=body, capture_output=True, text=True,
+            )
+
+        capture = run("capture", "Evidence", "--source", "https://example.org/evidence",
+                      "--body-file", "-", body="uniquesourcetoken")
+        source = next((vault / "sources").glob("*/evidence.md"))
+        search = run("search", "uniquesourcetoken", "--all")
+        fenced = "~~~text\nfirst line  \n\nsecond line\nthird line\n~~~"
+        note = run("add", "Fenced example", "--body-file", "-", body=fenced)
+        note_path = next((vault / "notes").glob("*/fenced-example.md"))
+        reserved = []
+        for title in ("Index", "Log", "Schema"):
+            target = vault / "concepts" / f"{title.lower()}.md"
+            before = target.read_bytes() if target.exists() else None
+            result = run("page", "concept", title, "--body-file", "-",
+                         "--related", source.relative_to(vault).as_posix(), body="A supported claim.")
+            after = target.read_bytes() if target.exists() else None
+            reserved.append(result.returncode != 0 and before == after)
+        indexes = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in vault.rglob("index.md")}
+        rebuilt = run("index")
+        return {
+            "unchanged navigation is not rewritten": rebuilt.returncode == 0
+                and all((p.read_bytes(), p.stat().st_mtime_ns) == old for p, old in indexes.items()),
+            "search --all retains source captures": capture.returncode == search.returncode == 0
+                and str(source) in search.stdout,
+            "fenced bodies preserve whitespace and line boundaries": note.returncode == 0
+                and fenced in note_path.read_text(encoding="utf-8"),
+            "maintained pages cannot collide with navigation filenames": all(reserved),
+        }
+
+
+def integrity_checks() -> dict[str, bool]:
+    """Protect originals, round-trip owner metadata, and retrieve aliases via the CLI."""
+    with tempfile.TemporaryDirectory() as td:
+        vault = Path(td) / "vault"
+
+        def run(*args: str, body: str = "") -> subprocess.CompletedProcess:
+            return subprocess.run(
+                [sys.executable, str(CLI_PATH), "--vault", str(vault), *args],
+                input=body, text=True, capture_output=True,
+            )
+
+        assert run("init").returncode == 0
+        originals = ["personal/owner.md", "_raw/original.md", "raw/legacy.md", ".history/prior.md"]
+        sources = ["sources/snapshot.md", "notes/source-outside-sources.md"]
+        for rel in originals + sources:
+            path = vault / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            kind = "source" if rel in sources else "observation"
+            path.write_text(f"---\ntype: {kind}\n---\n# Original\n\nOriginal bytes.\n", encoding="utf-8")
+        (vault / "notes/redirect.md").symlink_to(vault / originals[0])
+        protected = []
+        for rel in originals + sources + ["notes/redirect.md"]:
+            before = {p: p.read_bytes() for p in vault.rglob("*") if p.is_file()}
+            rejected = run("add", "Must not exist", "--supersedes", rel, "-b", "Replacement.")
+            protected.append(rejected.returncode != 0 and before == {
+                p: p.read_bytes() for p in vault.rglob("*") if p.is_file()})
+            if rel not in sources:
+                rejected = run("verify", rel, "--by", "human:test")
+                protected.append(rejected.returncode != 0 and before == {
+                    p: p.read_bytes() for p in vault.rglob("*") if p.is_file()})
+        # Revising a symlinked page must not rewrite a protected source either.
+        linked_page = vault / "concepts/original.md"
+        linked_page.symlink_to(vault / sources[0])
+        original = (vault / sources[0]).read_bytes()
+        rejected_page = run("page", "concept", "Original", "--body-file", "-",
+                            "--related", originals[0], "--expect-sha256", hashlib.sha256(original).hexdigest(),
+                            "--reason", "Attempted revision", body="Replacement.")
+        protected.append(rejected_page.returncode != 0 and linked_page.is_symlink()
+                         and (vault / sources[0]).read_bytes() == original)
+        linked_page.unlink()
+        verified_source = run("verify", sources[0], "--by", "human:test")
+        protected.append(verified_source.returncode == 0
+                         and "human:test" in (vault / sources[0]).read_text())
+
+        page_args = ("page", "concept", "Metadata", "--body-file", "-", "--related", sources[0])
+        assert run(*page_args, body="A supported claim.").returncode == 0
+        page = vault / "concepts/metadata.md"
+        owner_meta = ('aliases:\n  - rarealias\n  - "alternate phrase"\n'
+                      'stale_after: 2000-01-01\nsummary: |-\n  Owner summary.\n  Second line.\n'
+                      'custom:\n  status: deprecated\n  tags: nested-value\n')
+        page.write_text(page.read_text().replace("---\n", "---\n" + owner_meta
+                        + 'tags: ["owner-tag"]\nverified: {by: "human:old"}\n', 1))
+        old = page.read_bytes()
+        revised = run(*page_args, "--expect-sha256", hashlib.sha256(old).hexdigest(),
+                      "--reason", "New evidence", body="A revised supported claim.")
+        after = page.read_text()
+        metadata_ok = (revised.returncode == 0 and owner_meta in after and 'tags: ["owner-tag"]' in after
+                       and "verified:" not in after and parse_note(page, vault)["status"] == "draft"
+                       and any(p.read_bytes() == old for p in (vault / ".history/concepts/metadata").glob("*.txt")))
+        replaced_tags = run(*page_args, "--tags", "new-tag", "--expect-sha256", file_sha256(page),
+                            "--reason", "Retag", body="A revised supported claim.")
+        metadata_ok &= replaced_tags.returncode == 0 and 'tags: ["new-tag"]' in page.read_text()
+        cleared_tags = run(*page_args, "--tags", "", "--expect-sha256", file_sha256(page),
+                           "--reason", "Clear tags", body="A revised supported claim.")
+        metadata_ok &= (cleared_tags.returncode == 0 and owner_meta in page.read_text()
+                        and not _capture_fields(page).get("tags"))
+
+        # Alias coverage is independent of revision behavior, so both bugs can fail separately.
+        inline = vault / "concepts/inline.md"
+        inline.write_text('---\ntype: concept\naliases: ["inlinealias"]\n---\n# Inline\n\nA fact.\n')
+        block = vault / "concepts/block.md"
+        block.write_text('---\ntype: concept\naliases:\n  - blockalias\n---\n# Block\n\nA fact.\n')
+        con = sqlite3.connect(vault / "index.db")
+        con.execute("DROP TABLE notes")
+        con.execute("CREATE VIRTUAL TABLE notes USING fts5(path,title,type,tags,relevance,status,stale_after,verified,body)")
+        con.close()
+        legacy_drift = run("lint")
+        rebuilt = run("index")
+        alias_ok = rebuilt.returncode == 0 and "FTS drift" in legacy_drift.stdout
+        for term, expected in (("inlinealias", inline), ("blockalias", block)):
+            result = run("search", term)
+            alias_ok &= result.returncode == 0 and str(expected) in result.stdout
+        cases = Path(td) / "aliases.jsonl"
+        cases.write_text(json.dumps({"q": "blockalias", "gold": ["concepts/block.md"]}) + "\n")
+        evaluated = run("eval", str(cases))
+        alias_ok &= evaluated.returncode == 0 and "MRR@10=1.000" in evaluated.stdout
+        alias_ok &= "FTS current" in run("lint").stdout
+        return {"write commands preserve protected originals": all(protected),
+                "page revisions preserve owner metadata and reset verification": bool(metadata_ok),
+                "rebuilt indexes retrieve inline and block aliases": bool(alias_ok)}
+
 
 def cmd_selftest() -> int:
     with tempfile.TemporaryDirectory() as td:
@@ -622,8 +767,8 @@ def cmd_selftest() -> int:
                 and legacy_asset.read_bytes() == original.read_bytes()
                 and not any(p.is_file() for p in (legacy_asset_vault / "_raw").rglob("*")),
             "new and legacy original archives are excluded from knowledge indexes": not note_files(archive_vault)
-                and archive_vault / "_raw" not in index_directories(archive_vault)
-                and archive_vault / "raw" not in index_directories(archive_vault),
+                and archive_vault / "_raw" not in index_catalog(archive_vault)
+                and archive_vault / "raw" not in index_catalog(archive_vault),
             "add and idea use day folders without dating their titles":
                 old.parent == vault / "notes" / dt.date.today().isoformat()
                 and old.name == "uv-workspace-gotcha.md"
@@ -862,6 +1007,9 @@ def cmd_selftest() -> int:
                 ("space", "space note.md"),
             ],
         }
+        checks.update(regression_checks())
+        checks.update(integrity_checks())
+        checks["tied search ranks retain Path ordering"] = index_order_check()
         failed = [k for k, v in checks.items() if not v]
         if failed:
             sys.exit(f"[sb] selftest FAILED: {failed}\n{out}")

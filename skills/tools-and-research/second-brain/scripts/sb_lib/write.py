@@ -16,6 +16,7 @@ from pathlib import Path
 from .common import (
     ACTOR,
     CLI_PATH,
+    FRONTMATTER_FIELD,
     HOOK_BLOCK,
     PAGE_FOLDERS,
     RESERVED,
@@ -41,6 +42,17 @@ from .common import (
 from .index import (
     cmd_index,
 )
+
+def mutable_note(vault: Path, rel: str, *, allow_source: bool = False) -> Path:
+    target = (vault / rel).resolve()
+    if (not target.is_relative_to(vault) or not target.is_file()
+            or target.name in RESERVED or target.suffix.lower() != ".md"):
+        sys.exit(f"[sb] not a regular Markdown concept in the bundle: {rel}")
+    folder = target.relative_to(vault).parts[0]
+    if (folder in ("personal", "_raw", "raw", ".history")
+            or not allow_source and (folder == "sources" or _capture_fields(target).get("type") == "source")):
+        sys.exit(f"[sb] cannot modify protected original: {rel}")
+    return target
 
 def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     vault = vault.resolve()  # Normalize once; target links are resolved paths.
@@ -89,10 +101,7 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
 
     predecessor = None
     if args.supersedes:
-        target = (vault / args.supersedes).resolve()
-        if (not target.is_relative_to(vault) or not target.is_file()
-                or target.name in RESERVED):
-            sys.exit(f"[sb] --supersedes: not a regular concept file in the bundle: {args.supersedes}")
+        target = mutable_note(vault, args.supersedes)
         if not re.match(r"^---\s*\n.*?\n---\s*\n?", target.read_text(encoding="utf-8"), re.S):
             sys.exit(f"[sb] --supersedes: concept has no frontmatter: {args.supersedes}")
         predecessor = target
@@ -147,6 +156,10 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
     if not title or any(c in title for c in "\r\n"):
         sys.exit("[sb] page title must be a single nonempty line")
     page = vault / PAGE_FOLDERS[args.kind] / f"{slugify(title)}.md"
+    if page.name in RESERVED:
+        sys.exit("[sb] page title resolves to a reserved navigation filename; choose another title")
+    if page.exists():
+        mutable_note(vault, str(page.relative_to(vault)))
     old = page.read_bytes() if page.exists() else None
     digest = hashlib.sha256(old).hexdigest() if old is not None else ""
     if old is None and (args.expect_sha256 or args.reason):
@@ -183,7 +196,7 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
         sys.exit(str(exc))
     fm = f"type: {json.dumps(args.kind)}\nstatus: {args.status}\n"
     fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\n"
-    if args.tags.strip():
+    if args.tags and args.tags.strip():
         fm += f"tags: {json.dumps([t.strip() for t in args.tags.split(',') if t.strip()], ensure_ascii=False)}\n"
     if origins:
         fm += f"origin_projects: {json.dumps(origins)}\n"
@@ -191,6 +204,20 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
         fm += "sources:\n" + "".join(
             f"  - {{ resource: {json.dumps(source, ensure_ascii=False)} }}\n" for source in args.source
         )
+    if old is not None:
+        header = re.match(r"^---\s*\n(.*?)\n---\s*\n?", old.decode("utf-8"), re.S)
+        if header:
+            # Preserve owner YAML verbatim rather than reserializing a partial parse.
+            metadata = header.group(1) + "\n"
+            replaced = {"type", "status", "generated", "verified", "sources", "origin_projects"}
+            if args.tags is not None:
+                replaced.add("tags")
+            fields = list(FRONTMATTER_FIELD.finditer(metadata))
+            fm += metadata[:fields[0].start()] if fields else metadata
+            for i, field in enumerate(fields):
+                if field.group(1).strip("'\"") not in replaced:
+                    end = fields[i + 1].start() if i + 1 < len(fields) else len(metadata)
+                    fm += metadata[field.start():end]
     sections = [f"# {title}", body]
     if related:
         sections.extend(("## Related", "\n".join(f"- {link}" for link in related)))
@@ -318,9 +345,7 @@ def cmd_verify(vault: Path, rel: str, by: str) -> int:
     by = by.strip()
     if not re.fullmatch(r"[\w@./:+-]+", by):
         sys.exit("[sb] --by may contain only letters, numbers and @./:+-")
-    target = (vault / rel).resolve()
-    if not target.is_relative_to(vault) or not target.is_file() or target.name in RESERVED:
-        sys.exit(f"[sb] verify: not a regular concept file in the bundle: {rel}")
+    target = mutable_note(vault, rel, allow_source=True)
     text = target.read_text(encoding="utf-8")
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n?", text, re.S)
     if not m:

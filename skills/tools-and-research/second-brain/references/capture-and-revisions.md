@@ -56,6 +56,10 @@ Owner language rules govern authored prose, not the skill's instruction language
 - **Maintained page:** read it, calculate its current SHA-256, then pass a complete replacement body, complete current sources/related set, `--expect-sha256` and `--reason` to `page`. A mismatched hash aborts; exact previous bytes are retained under `.history/` and the reason is logged.
 - **Source capture:** new evidence creates a new capture, not a factual rewrite of an earlier snapshot.
 
+`page` revisions preserve owner metadata such as `aliases`, `stale_after`, summaries and custom fields. They replace CLI-owned type, status, generation and source fields, merge project origins, and remove prior verification. Omitted `--tags` retains existing tags; an explicit value replaces them, and `--tags ''` clears them. The complete body and current evidence set are still required.
+
+Supersession and page revision reject source captures, including `type: source` files outside `sources/`. Mutation commands reject `personal/`, `_raw/`, legacy `raw/` and `.history/` targets, including links resolving into those folders. `verify` remains allowed on source captures solely to record review metadata.
+
 Use standard relative Markdown links, not `[[wikilinks]]`. Keep existing paths stable; title changes must not silently create a replacement page or break links. Do not reorganize existing documents during initialization or compilation without explicit authorization.
 
 New atomic notes live in `notes/YYYY-MM-DD/slug.md`; new source captures live in `sources/YYYY-MM-DD/slug.md`, with the exact capture timestamp in `generated.at`. The date is a folder, not part of the filename. Existing flat notes and captures remain valid search and link targets and are never moved automatically. CLI-generated links account for the source page's depth, including cross-day supersession and links from dated capture folders. `--related` and `--supersedes` arguments remain bundle-relative, not note-relative.
