@@ -1,6 +1,6 @@
 ---
 name: project-verification
-description: Create or update a project-specific verification recipe skill under .agents/skills (verify-PROJECT) that documents how to launch the project and prove one real user-facing journey with independently derived expectations. Use when asked to create, generate, update, or maintain a project verification skill, recipe, or feature map, or to record how to verify this project's startup, UI, CLI, or persistence behavior. Not a test policy, automatic verifier, scheduled audit, or product-repair authority.
+description: Create or update a project-local recipe for a real UI, CLI, service, or persistence journey. Use when explicitly asked to generate or maintain a verification skill or feature map; not for formal invariants or automatic audits.
 ---
 
 # Project Verification Recipes
@@ -12,9 +12,9 @@ A manual, explicitly invoked generator and maintainer. It produces project-speci
 ## Create mode
 
 1. Interview the repository before asking the user anything: documented startup commands, the real user surface (CLI, UI, protocol), existing driving harnesses and checks, observable evidence, and isolation constraints. Prefer existing harnesses and fixtures; never generate a custom control CLI or install a framework.
-2. Confirm with the user: the target project name, the one important journey to start from, and whether execution is already authorized in this session.
+2. Resolve the project name, one important journey, and applicable execution authority from the request and repository. Ask only about unresolved choices or missing permission; do not reconfirm an explicit decision.
 3. Generate `.agents/skills/verify-<project>/SKILL.md` from [the recipe template](references/recipe-template.md): target identity (how to confirm the correct installed/build identity), prerequisites and permissions including what is not authorized, launch to a usable state (not merely an answering process) with teardown, a read-only readiness check, concrete drive commands or selectors on the user-facing surface, independently derived expected outcomes, evidence capture including side effects and persisted-state read-back, and cleanup of only owned resources. Add `features/` files only when separate recipes genuinely earn their own file.
-4. Demonstrate once, end to end, only if execution is already authorized: record command, output, exit code, and the read-back observation, then clean up owned resources. Otherwise label the generated skill clearly as a draft whose instructions are unproved, and state exactly what remains unverified.
+4. Demonstrate once, end to end, only within applicable execution authority: record command, output, exit code, and read-back, clean up owned resources, then confirm the named evidence remains. Clean up owned residue after a failed attempt too. Otherwise label the recipe as an unproved draft and state exactly what remains unverified; a stand-in environment never proves the setup steps it bypassed.
 
 ## Update mode
 

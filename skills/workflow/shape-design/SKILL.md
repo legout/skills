@@ -62,7 +62,7 @@ Apply the heavier techniques below only when the problem warrants them; routine 
 - For stateful or branch-heavy behavior, name the data shape first and the simplest organizing structure that removes repeated shape assumptions or makes illegal states unrepresentable — a state machine, table, typed model, or reducer. Never add structure that does not delete branches, assumptions, or invalid states.
 - For a new requirement reshaping an existing design, describe the target as if the requirement had been foundational, then compare it with the minimum safe migration from current code.
 - Validate external input at each system boundary and keep trusted internal logic direct; do not duplicate boundary guards throughout the core.
-- For commands, jobs, migrations, and lifecycle operations, address retries and make the operation idempotent — an accidental re-run converges to the same end state.
+- For commands, jobs, migrations, and lifecycle operations, address retries and make the operation idempotent — an accidental re-run converges to the same end state. When a named ordering or state invariant has a material gap in existing evidence, propose one bounded formal check; use an existing project recipe, or explicitly scope recipe creation through [`project-formal-verification`](../../skill-authoring/project-formal-verification/SKILL.md). A state machine alone is not a reason to add a checker.
 - Try to remove shared mutable state before adding locks or serialization.
 
 The artifact scales with task size; the approval gate does not.

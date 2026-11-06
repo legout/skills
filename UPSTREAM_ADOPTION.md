@@ -218,6 +218,18 @@ Source pin: `cursor/plugins@f713f14203cd6420cec13cd7c55c32d598dbab68`, `pstack/s
 
 **Rejected as workflow defaults:** daily scheduled maintenance, verifier swarms, fresh per-PR shipping verification, full-feature-map audits, and any product-repair or execution authority derived from creating or maintaining a verifier. The new `project-verification` skill is a manual, explicitly invoked generator/maintainer of project-local `verify-<project>` recipes; whether a check is justified, its oracle, and its budget stay in `agent-guardrails`, and what evidence supports a completion claim stays in `verification-before-completion`.
 
+## Cursor pstack formal-verification recipes
+
+Source pin: `cursor/plugins@2776ddd2355d6d6c8747d3964600f28daf62f049`, `pstack/skills/create-formal-verification-skill` and `pstack/skills/maintain-formal-verification-skill` (MIT, Copyright (c) 2026 Lauren Tan).
+
+**Adopted:** one explicit generator/maintainer, `project-formal-verification`, with one named property, independently grounded expectations, tool choice driven by the claim, real atomic boundaries, code/model correspondence, stated assumptions and bounds, one authorized negative control, and affected-diff maintenance. A model result is not automatically a code result; correspondence and a passing property are separate facts. Product violations remain findings, and property/scope changes require approved intent. Project-local recipes own concrete commands; planning and orchestration select them within existing validation units and evidence-reuse rules.
+
+**Adapted:** create/update share one skill under `skill-authoring`; output uses portable `.agents/skills/verify-<project>-<area>`. Missing tools or authority yield an explicit draft/blocker, not installation or repair. Dirty changes, moved functions and new state writers invalidate correspondence when relevant. A negative control on a separate model demonstrates both the modeled violation and the source-change alignment check, not automatic code-regression coverage. Generator success and product correctness remain separate claims.
+
+**Not adopted:** a new universal verification stage, repo-wide invariant audits, automatic dependency installation, mandatory `statechart`/Java/TLC/Pele tooling, routine reruns after identical merges, mutation campaigns, product repair, or publication authority. Runtime routing and a real formal-verification pilot remain unqualified until separately exercised; static catalog checks do not prove agent behavior.
+
+The existing normal creator, maintainer and feature-map examples are unchanged between the prior `f713f14203cd6420cec13cd7c55c32d598dbab68` pin and this source snapshot. Their pins remain unchanged. The empirical recipe now makes isolation, stand-in setup gaps, dry-run side effects, readiness recovery and surviving cleanup evidence explicit, without changing its one-journey/menu policy. File-level provenance is in `sources.json`; the shared Lauren Tan notice is in `THIRD_PARTY_NOTICES.md`.
+
 ## Post-ADR artifact policy
 
 An ADR explains why a durable decision was made; it is not a behavioral specification. Bounded changes proceed from an approved in-chat design directly to orchestration. Architectural or behavior-heavy changes get a written specification with observable acceptance examples, followed by the smallest executable plan. Tracker tickets are created only for established tracker workflows, explicit requests, or coordination that must outlive one run; the ticket set replaces rather than duplicates the implementation plan. Independent subsystems become separate plans or ticket groups instead of one oversized plan.

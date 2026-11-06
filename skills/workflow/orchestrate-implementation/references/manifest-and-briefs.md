@@ -20,7 +20,7 @@ Give a fresh Pi worker one cold-start packet:
 1. Task goal, relevant source reference/revision, acceptance criteria, and non-goals.
 2. Exact repository/common Git directory, expected shared root and host-bound cwd/branch (runtime-supplied for native managed children), complete role model/thinking pair with sources/effective form, pinned base ref/SHA, and unique authorized result ref.
 3. Owned files/contracts, upstream interfaces, relevant written conventions and real callers/inputs/environment.
-4. Assigned minimal validation unit — verification, `new-test`, `existing-check`, or `no-new-test`; named failure mode and independent oracle, focused command, any required project checks, the evidence-reuse decision with its invalidating delta, and the no-widening/no-duplicate-rerun budget. Carry this scope unchanged into fix and resume briefs.
+4. Assigned minimal validation unit — verification, `new-test`, `existing-check`, or `no-new-test`; named failure mode and independent oracle, focused command, any required project checks, the evidence-reuse decision with its invalidating delta, and the no-widening/no-duplicate-rerun budget. Include the selected recipe path; for a formal check, pass its property source, code correspondence, bounds/assumptions, and tool configuration rather than only a green result. Carry this scope unchanged into fix and resume briefs.
 5. Allowed actions, explicit no-publication boundary, report destination outside the worktree, and host-specific escalation route.
 
 Paste these guardrails into initial and fix briefs; do not send only a link:
