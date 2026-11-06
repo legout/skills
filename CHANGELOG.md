@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+## 0.1.0 - 2026-11-06
+
 - Added `project-formal-verification`, an explicitly requested creator/maintainer for project-local invariant, model-check and code-proof recipes, with bounded negative controls, code/model correspondence and no implicit installation or product-repair authority. Planning, shaping, orchestration briefs and completion claims now distinguish formal scope from empirical evidence without adding a mandatory verification stage. Clarified the existing empirical recipe's isolation, stand-in limits, dry-run effects, readiness recovery and retained evidence. Pinned the new pstack adaptations and preserved the existing normal-verification pins; runtime routing and a product pilot remain unqualified.
 
 - Verification-first planning and orchestration: `write-implementation-plan` now plans empirical verification of the real artifact (per `project-verification`, preferring an installed `verify-<project>` recipe) before tests — new tests only for regression risks that outlive the plan, thorough verification once in a final verification task after all implementation tasks, and adversarial review as a scoped exception (written-convention conformance, high-risk integration effects, explicit requirement) instead of a per-unit default. `orchestrate-implementation` accepts on verification plus parent inspection, dispatches independent reviewers only where execution evidence cannot reach, and runs the plan's final verification task on the assembled candidate; the `merge-worktree` candidate handoff names the exact verified range, final verification evidence, and only required review evidence.
