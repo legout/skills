@@ -136,6 +136,8 @@ for rule in ("Reuse verified focused-check evidence", "relevant code, tests, inp
 backend_contracts = {
     "references/herdr-dispatch.md": ("action: \"list-cwd\"", "focus: false", "openedProjectPane", "returned paneId", "fresh roster", "before sending the mutation brief"),
     "references/paseo-dispatch.md": ("projectPath", "branchName", "Agent-scoped MCP", "CLI/top-level", "paseo wait"),
+    "references/bb-dispatch.md": ("--parent-self", "--provider pi", "--new-environment worktree", "bb thread wait", "Cancellation is not cleanup"),
+    "references/orca-dispatch.md": ("worker-start", "--agent pi", "end the turn", "send --to dispatch:", "Orca owns placement"),
     "references/manifest-and-briefs.md": ("outside every disposable worker worktree", "Approved scope outranks reviewer suggestions", "Do not run memo"),
     "references/pi-dispatch.md": ("native Pi", "external-cli", "direct", "workflow: true", "before native finalization"),
     "references/t3-dispatch.md": ("driverKind", "pi", "currently read-only", "hasPendingChildRuns", "task_cancel", "Cancellation is not cleanup"),
@@ -148,7 +150,7 @@ for name, rules in backend_contracts.items():
             errors.append(f"{name}: missing backend contract {rule!r}")
 
 cross_backend_contracts = {
-    "SKILL.md": ("${XDG_STATE_HOME:-$HOME/.local/state}/worktrees/", "allocator-supported subdirectories", "Never migrate existing worktrees", "worker/fix", "parent review/reconstruction", "candidate worktrees", "explicit run/lane → project → global → spec default", "zai/glm-5.3", "openai-codex/gpt-6.1-sol", "backend-effective pair"),
+    "SKILL.md": ("${XDG_STATE_HOME:-$HOME/.local/state}/worktrees/", "allocator-supported subdirectories", "Never migrate existing worktrees", "worker/fix", "parent review/reconstruction", "candidate worktrees", "explicit run/lane → project → global → spec default", "zai/glm-5.3", "openai-codex/gpt-6.1-sol", "backend-effective pair", "BB_THREAD_ID", "ORCA_PANE_KEY", "strict only when the user explicitly asks"),
     "references/pi-dispatch.md": ("worktreeProvider", "worktreeBaseDir", "~/.pi/agent/extensions/subagent/config.json", "WORKTRUNK_WORKTREE_PATH", "provider/model:thinking-level", "outside the shared root"),
     "references/herdr-dispatch.md": ("expected_root", "worker_path", "runtime-effective model/thinking", "before sending the mutation brief"),
     "references/paseo-dispatch.md": ("worktrees.root", "daemon-global", "worktreeSlug", "before `create_workspace`", "thinkingOptionId", "--thinking <verified-option-id>", "block before agent creation"),

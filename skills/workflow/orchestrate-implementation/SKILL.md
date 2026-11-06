@@ -23,6 +23,8 @@ State the requested/configured mode, otherwise `supervised`:
 - **`supervised`**: implement, validate, and review, including disposable candidate assembly; pause before target integration.
 - **`autonomous`**: keep the same loop moving while safe work is ready; neither the label nor candidate assembly grants target integration or publication authority.
 
+**Supervision level.** Light is the default; strict only when the user explicitly asks for strict supervision or stage-by-stage confirmation. Light interrupts the human only for critical decisions: approval gates the planning contract already requires, irreversible or destructive actions, target integration/push/publication authority, material scope or authority changes, and unresolved material conflicts that block progress. Everything else — including continuation of safe work, disposable-resource cleanup after acceptance, and non-material naming or ordering choices — proceeds with the smallest safe default, recorded in run state and reported at handoff; batch non-critical questions instead of blocking safe work. Strict additionally confirms each stage boundary: briefs before dispatch, each review disposition, and cleanup.
+
 An execution request authorizes isolated candidate preparation, not changing the user's target branch. Explicit user restrictions override this default. Target integration, push, issue comments/closure, PR creation/merge, deploy, and release each require applicable authority. Hand approved integration to `merge-worktree`; do not treat a mode as publication permission.
 
 ## 1. Read and authorize
@@ -35,10 +37,12 @@ Stop on conflicting criteria or unresolved material decisions. Route missing beh
 
 ## 2. Select the Pi host
 
-Resolve explicit per-role/lane selection, then the requested/configured run default, then the verified current host. In T3 use its child-capable **Pi** instance; in an agent-scoped Paseo session use its **Pi** provider; in Herdr use a fresh Pi pane; otherwise use available native Pi subagents. Tool presence alone is not host detection. Record the chosen host and the evidence that it can perform the requested role; ask if ambiguous. A detected or selected host without the required capability blocks that role, not permission to silently switch hosts or runtimes.
+Resolve explicit per-role/lane selection first; otherwise auto-detect the current harness from its session environment: BB (`BB_THREAD_ID`) uses BB child threads, Orca (`ORCA_PANE_KEY`/`ORCA_TAB_ID`/`ORCA_WORKTREE_ID`) uses Orca orchestration, T3 uses its child-capable **Pi** instance, an agent-scoped Paseo session uses its **Pi** provider, Herdr uses a fresh Pi pane, and none detected falls back to available native Pi subagents. Tool presence alone is not host detection. Record the chosen host and the evidence that it can perform the requested role; ask only when detection leaves the host genuinely ambiguous. A detected or selected host without the required capability blocks that role, not permission to silently switch hosts or runtimes.
 
 Read only the selected adapter and its installed runtime guidance before dispatch:
 
+- [BB dispatch](references/bb-dispatch.md): `bb thread spawn`, BB child threads in BB-managed worktree environments.
+- [Orca dispatch](references/orca-dispatch.md): `orchestration worker-start`, Orca-run Pi workers in Orca-managed workspaces.
 - [Native Pi dispatch](references/pi-dispatch.md): `pi-subagents`, native Pi children only.
 - [Herdr dispatch](references/herdr-dispatch.md): `herdr-pane`, fresh visible Pi sessions.
 - [Paseo dispatch](references/paseo-dispatch.md): `paseo`, Pi provider and explicitly bound workspace.
@@ -72,7 +76,7 @@ Give fresh children the bounded brief and inline role contract from [manifest an
 
 Prefer asynchronous host completion notifications. Keep independent safe work moving; yield when only children remain. A timeout, idle turn, message receipt, or attention signal is not terminal success. Use the host's status/control API to resolve ownership before a replacement writer. Cancellation stops execution and preserves available work; cleanup is a separate decision.
 
-Use `pi-intercom` for Herdr registration, progress, questions, and explicitly named Pi peers. Paseo/T3 Pi sessions may also use it if both endpoints have connected tools and the same reachable broker. Native children use their supervisor channel by default. Intercom is messaging, not workspace placement, lifecycle authority, or proof of completion; remote hosts do not inherit local paths or broker connectivity.
+Use `pi-intercom` for Herdr registration, progress, questions, and explicitly named Pi peers. Paseo/T3 Pi sessions may also use it if both endpoints have connected tools and the same reachable broker. Native children use their supervisor channel by default. BB children end their turn with questions and rely on parent notifications; Orca workers use orchestration `ask`/`send`/`reply`. Intercom is messaging, not workspace placement, lifecycle authority, or proof of completion; remote hosts do not inherit local paths or broker connectivity.
 
 ## 5. Verify, review, and correct
 
