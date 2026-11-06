@@ -6,63 +6,81 @@
       "name": "plan-only-task-graph",
       "prompt": "Use orchestrate-implementation in plan-only mode with the supplied feature plan. Return a compact source/readiness summary, dependency order, ownership, and two bounded worker briefs. Do not edit source files, create worktrees, or launch children.",
       "expected_output": "Preserves plan-only authority, identifies Task 2 as dependent on Task 1, and returns bounded briefs rather than another full plan or accumulated history.",
-      "files": ["fixtures/feature-plan.md"]
+      "files": [
+        "fixtures/feature-plan.md"
+      ]
     },
     {
       "id": 2,
       "name": "conflict-preflight",
       "prompt": "Use orchestrate-implementation to preflight the conflicting input fixture. Do not dispatch a worker or mutate anything. Report the exact conflict, why implementation pauses, and the owner decision needed.",
       "expected_output": "Stops before writer/worktree allocation and identifies the incompatible public signatures; does not invent approval or choose one source silently.",
-      "files": ["fixtures/conflicting-inputs.md"]
+      "files": [
+        "fixtures/conflicting-inputs.md"
+      ]
     },
     {
       "id": 3,
       "name": "bounded-issue-pi-only",
       "prompt": "Use orchestrate-implementation and the supplied host-admission facts for the approved bounded issue and scenario A, including its unavailable-Pi and native external-runner variants. State readiness, the selected runtime/profile, and the smallest execution shape. This is a read-only decision evaluation: do not probe real hosts, launch agents, or edit files.",
       "expected_output": "The approved bounded issue needs no separate spec/plan or mandatory scout. Chooses Pi, never a generic Codex implementer profile or native external runner. Unavailable selected Pi runtime blocks; does not switch host/model/runtime silently. Uses a direct child for one bounded task, not a mandatory workflow script.",
-      "files": ["fixtures/host-admission.md"]
+      "files": [
+        "fixtures/host-admission.md"
+      ]
     },
     {
       "id": 4,
       "name": "managed-lifecycle-native-acceptance",
-      "prompt": "Execute the live managed-lifecycle fixture with native Pi in a disposable repository only. The fixture authorizes supervised isolated candidate assembly and its disclosed synthetic repair, not target integration or publication. Discover native Pi profiles, retain committed results before finalization, verify them after cleanup and parent movement, apply one descendant fix and delta recheck, then deliver a reviewed candidate. Separately exercise optional patch recovery/refusals. Report BLOCKED on missing native prerequisites without another-host/CLI fallback. Live status is currently PENDING; do not substitute offline results.",
+      "prompt": "Execute the live managed-lifecycle fixture with native Pi in a disposable repository only. The fixture authorizes supervised isolated candidate assembly and its disclosed synthetic repair, not target integration or publication. Discover native Pi profiles, retain committed results before finalization, verify them after cleanup and parent movement, apply one descendant fix and delta recheck, then deliver a verified candidate. Separately exercise optional patch recovery/refusals. Report BLOCKED on missing native prerequisites without another-host/CLI fallback. Live status is currently PENDING; do not substitute offline results.",
       "expected_output": "An evidence-backed PASS for actual native result retention, exact review/fix endpoints, supervised candidate review before the target-integration pause, and patch refusal cases; otherwise FAIL or an exact BLOCKED reason. Never marks PENDING live work passed because static/offline tests passed. No forced cleanup or unrelated-project mutation.",
-      "files": ["fixtures/managed-lifecycle.md"]
+      "files": [
+        "fixtures/managed-lifecycle.md"
+      ]
     },
     {
       "id": 5,
       "name": "review-guardrail-scenarios",
       "prompt": "Use orchestrate-implementation with the review-guardrail fixture. Run A and C once as fresh read-only Pi reviews with the full contract from references/manifest-and-briefs.md pasted into each task. Disposition B in the parent; D is the single delta recheck with the same full contract. No edits or extra rounds. Report actual outputs and unmet expectations, not predicted success.",
       "expected_output": "A passes with security: n/a and no new-test demand; B rejects pseudo-findings, hands large repairs back, and leaves missing auth facts unverified; C reports the wrong result and named-export violation; D checks only the fix without reopening settled scope or resetting the budget.",
-      "files": ["fixtures/review-guardrails.md"]
+      "files": [
+        "fixtures/review-guardrails.md"
+      ]
     },
     {
       "id": 6,
       "name": "t3-placement-and-early-cancellation",
       "prompt": "Use orchestrate-implementation and only the supplied facts for host-admission scenarios B and C. State admissible T3 Pi roles, the mutation-placement decision, and how to interrupt before final handoff. Do not call real tools, create threads, launch children, or mutate anything.",
       "expected_output": "Filters for driverKind pi but blocks mutation without documented child workspace binding. Allows read-only review on a stable bound workspace. A worktree path/cd in the prompt is insufficient; no top-level thread or silent native fallback. Cancellation can occur before a report; preserves artifacts and resolves pending/nested ownership without treating cancellation as cleanup.",
-      "files": ["fixtures/host-admission.md"]
+      "files": [
+        "fixtures/host-admission.md"
+      ]
     },
     {
       "id": 7,
       "name": "supervised-review-order",
       "prompt": "Use orchestrate-implementation and only the supplied facts for host-admission scenario D and its explicit no-assembly variant. State the next actions and approval boundary. Do not call real tools, dispatch children, or edit files.",
       "expected_output": "Default supervised execution assembles/checks/reviews the isolated candidate once before asking for target integration. Parent-inspected lanes pending candidate review are not accepted yet. Explicit prohibition of assembly overrides that default and is reported as an unmet review gate, not bypassed.",
-      "files": ["fixtures/host-admission.md"]
+      "files": [
+        "fixtures/host-admission.md"
+      ]
     },
     {
       "id": 8,
       "name": "herdr-identity-and-remote-messaging",
       "prompt": "Use orchestrate-implementation and only the supplied facts for host-admission scenarios E and F. State identity/ownership and transport blockers and the correct question route. Do not call real tools, create sessions, or edit files.",
       "expected_output": "Refuses to treat reused Herdr delivery as fresh-worker admission; does not grant writes or close the existing pane. Does not assume local Git refs/artifacts/intercom connectivity reach a remote daemon; asks for the approved transport and uses blocked host reports/follow-ups until verified interactive messaging exists.",
-      "files": ["fixtures/host-admission.md"]
+      "files": [
+        "fixtures/host-admission.md"
+      ]
     },
     {
       "id": 9,
       "name": "routing-plan-writing-near-miss",
       "prompt": "Write an implementation plan for this approved feature. I want to review the plan before anyone implements it. Do not delegate or begin implementation.",
       "expected_output": "Routes to write-implementation-plan rather than executing orchestrate-implementation. No children, implementation worktrees, source mutations, or invented execution authority.",
-      "files": ["fixtures/feature-plan.md"]
+      "files": [
+        "fixtures/feature-plan.md"
+      ]
     }
   ]
 }

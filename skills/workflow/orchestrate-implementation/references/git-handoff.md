@@ -73,7 +73,7 @@ For a fix, retain the prior result/ref and review evidence. Resume the writer on
 
 ## Assemble the candidate
 
-The parent owns a separate registered candidate branch/path and records its original run base. Both execution modes allow this isolated preparation unless the user forbids it. Initial assembly consumes the lane's `base_sha..result_sha`; a descendant fix consumes only `priorResultSha..fixedResultSha` after confirming the prior result is already represented in this candidate. Set `assembly_from` accordingly and record that correspondence before running the recipe. Deferred independent review follows assembly, before acceptance or target integration.
+The parent owns a separate registered candidate branch/path and records its original run base. Both execution modes allow this isolated preparation unless the user forbids it. Initial assembly consumes the lane's `base_sha..result_sha`; a descendant fix consumes only `priorResultSha..fixedResultSha` after confirming the prior result is already represented in this candidate. Set `assembly_from` accordingly and record that correspondence before running the recipe. Deferred independent review, where required, follows assembly, before acceptance or target integration.
 
 Run in the source repository. Supply a new `candidate_path`/`candidate_branch` for the first assembly; an existing path must be the recorded candidate in this repository. Verify the result with the recipe above first. No merges are inferred or resolved automatically.
 
@@ -106,6 +106,6 @@ status=$(git -C "$candidate_path" status --porcelain --untracked-files=all --ign
 test -z "$status" || stop "candidate hook left a dirty checkout"
 ```
 
-Inspect the assembled diff/tree correspondence and focused evidence after cherry-picking: hooks and combined changes can invalidate prior evidence. Never copy a verdict to an altered tree blindly. Record the candidate base/head, source-result mapping, checks, review, and authority in the `merge-worktree` handoff.
+Inspect the assembled diff/tree correspondence and focused evidence after cherry-picking: hooks and combined changes can invalidate prior evidence. Never copy a verdict to an altered tree blindly. Record the candidate base/head, source-result mapping, checks, final verification evidence, any required review, and authority in the `merge-worktree` handoff.
 
 A patch-reconstructed full replacement may be a sibling, not a descendant fix. Preserve the old candidate and rebuild from the original run base using current lane results in dependency order; do not append a full replacement to the superseded result. If downstream lanes were based on replaced code, reconcile their prerequisites before reuse. Rebuilding does not reset the review budget.

@@ -11,7 +11,7 @@ The parent inspects each finding at the exact reviewed head. Require a named req
 - **Hand back** large/out-of-scope repairs with the human decision needed; do not quietly accept a material defect.
 - **Ask** about unverified material criteria, including missing facts at a genuinely touched security boundary.
 
-One fix pass, one delta recheck. No third round, no renewed budget at candidate assembly, and no loop for optional polish. Recheck only the fix and affected behavior; surviving or new material blockers require a human decision. Parent inspection applies to all results; independent review happens before high-risk/contract consumption or once on the candidate. Candidate review covers unreviewed changes and integration effects, not settled findings again. Explicit project/user review requirements still bind.
+One fix pass, one delta recheck. No third round, no renewed budget at candidate assembly, and no loop for optional polish. Recheck only the fix and affected behavior; surviving or new material blockers require a human decision. Parent inspection applies to all results; empirical verification is the default acceptance evidence, and independent review happens only where execution evidence cannot reach — before high-risk/contract consumption, for written-convention conformance, or under an explicit project/user requirement. Any review covers unreviewed changes and integration effects, not settled findings again.
 
 ## Ordinary fixes and interruptions
 
