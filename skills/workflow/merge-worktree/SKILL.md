@@ -8,7 +8,7 @@ compatibility: Requires git; GitHub PR mode also requires an authenticated gh CL
 
 > Branch-finishing safety patterns are adapted from the MIT-licensed [`finishing-a-development-branch`](https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/skills/finishing-a-development-branch/SKILL.md) workflow. Exact pin and relationship are recorded in `sources.json`.
 
-Integrate one registered Git worktree with a merge commit. This skill owns integration and worktree cleanup; implementation workflows must hand off to it rather than merging for themselves.
+Integrate one registered Git worktree with a merge commit. This skill owns integration and worktree cleanup; implementation workflows must hand off to it rather than merging for themselves. End-to-end landing — push, issue closure, and orchestrator run cleanup after integration — is sequenced by [`land-changes`](../land-changes/SKILL.md).
 
 ## Resolve Authorization
 
