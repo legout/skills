@@ -123,7 +123,7 @@ The installed `~/.agents/skills` packages were checked before adoption. Support 
 | --- | --- | --- |
 | Chrome CDP | Adapt | `chrome-cdp`, from `pasky/chrome-cdp-skill@ffea76a24b0471663ddd9d9f24335bbc442b6266` |
 | Matt Pocock architecture improvement | Merge | `review-codebase-architecture` owns the read-only review and optional HTML report; selected candidates route to `shape-design` |
-| Codebase simplification / overcomplexity removal | Keep two distinct scopes | `deslop` is the Cursor-derived broad cleanup workflow; `simplify-code` is the local completion-boundary diff pass |
+| Codebase simplification / overcomplexity removal | Consolidate | `deslop` owns proposal-first simplification and authorized edits for settled diffs, files, directories, and projects |
 | AI-writing cleanup | Merge | `humanizer` owns the rewrite workflow and a shared pattern catalog incorporates the useful Cursor-derived plain-speech checks |
 | Marimo notebooks | Adapt | `marimo-notebook` (the requested “marimo-notebooks” package) and `marimo-pair` |
 | Recent community research | Adapt | `last30days`, including its engine, references, and runtime assets |
@@ -136,9 +136,15 @@ The installed `~/.agents/skills` packages were checked before adoption. Support 
 | Durable primary-source research | Adapt | `research`; `last30days` remains the separate recent-community owner |
 | Working-preference mining | Adapt | `workflow-from-chats`; `improve-skill` remains the owner for one skill from a specific session |
 
-The visual report from the requested architecture package is now an optional reference under `review-codebase-architecture`; design interrogation routes to `shape-design` instead of duplicating it. The requested `deslop` URL resolves to Cursor's `cursor-team-kit/skills/deslop`; useful material from `pstack/skills/unslop` is merged into `humanizer`. `codebase-deslop` was removed because it duplicated `deslop` exactly. `simplify-code` remains the distinct recent-diff simplifier copied from the installed Pi skill set.
+The visual report from the requested architecture package is now an optional reference under `review-codebase-architecture`; design interrogation routes to `shape-design` instead of duplicating it. The requested `deslop` URL resolves to Cursor's `cursor-team-kit/skills/deslop`; useful material from `pstack/skills/unslop` is merged into `humanizer`. `codebase-deslop` was removed because it duplicated `deslop` exactly. The local recent-diff simplifier formerly shipped as `simplify-code` is now consolidated into `deslop`, including its Reuse/Quality/Efficiency perspectives and optional reviewer contract.
 
-Trigger either cleanup workflow only on an explicit user request or as one model-offered pass at the completion boundary before commit, PR, or handoff. Do not run either on every edit, documentation-only work, generated artifacts, or mechanical changes.
+Use `deslop` on a cleanup request or after acceptance of one completion-boundary offer. The offer states the action and scope; proposal-only work does not authorize edits. Do not run it automatically on every edit, documentation-only work, generated artifacts, or mechanical changes.
+
+### Cleanup consolidation — 2026-11-06
+
+The owner approved one cleanup entrypoint: scope is an input, not a second skill. The default remains one bounded proposal pass; selected proposals or explicit direct-cleanup authority permit edits. Reuse, Quality, and Efficiency remain search perspectives, not mandatory reviewer jobs. Only an explicit request or project requirement with applicable delegation authority activates the optional review brief. Behavior preservation, independent expectations, deliberate structures, and approval gates remain binding.
+
+The `simplify-code` invocation is retired without a wrapper. Update active callers and manually migrate installed copies; catalog edits do not authorize installation. This incompatible invocation change requires a minor release while the catalog is 0.x. Existing source pins remain unchanged and the old adaptations move to `deslop` and its review reference. Earlier plans and research retain their historical names with explicit supersession notes.
 
 ## Selective upstream refresh
 
@@ -175,7 +181,7 @@ All 503 pinned sources were available and all six vendored hash pairs matched. A
 | `drawio-skill` | Adopt selected geometry/render-verification guidance and cite the standalone source; retain bundled script pins. No new importers, MCP server, or runtime migration. |
 | `archify`, `last30days` | Defer substantial runtime/asset upgrades; no claim that the bundled engines are current. |
 | `domain-modeling`, `grilling`, `shape-design`, `write-implementation-plan`, `orchestrate-implementation`, `prototype-question`, `review-codebase-architecture` | Retain local artifact paths, workflow owners, scoped verification, approval gates, and report-only boundaries. Upstream filename changes, ticket defaults, broader delegation, and implementation authority are not portable updates. |
-| `deslop`, `simplify-code`, `improve-skill`, `verification-before-completion` | Retain selected pstack principles and local guardrails. Do not import its expanded orchestration, mandatory rituals, or autonomy policy. |
+| `deslop`, `improve-skill`, `verification-before-completion` | Retain selected pstack principles and local guardrails. Do not import its expanded orchestration, mandatory rituals, or autonomy policy. |
 | `handoff`, `excalidraw`, `marimo-pair` | Retain local adaptations: upstream prose/metadata changes do not justify invocation-policy changes; marimo cell-boundary/dataflow guidance is already in the local references. |
 | `agent-md-refactor`, `project-verification`, `workflow-from-chats`, `chrome-cdp`, `marimo-notebook`, `research`, `merge-worktree`, `doc-coauthoring`, `documentation-writer` | Referenced source file content unchanged; no pin bump for unrelated repository commits. |
 | `pi-custom-model`, `capture-project-vision` | Retain usable historical pins despite absent current paths. |
@@ -189,12 +195,11 @@ Only adopted relationships advance in `sources.json`; this review does not insta
 
 Source pin: `cursor/plugins@93b00b89ef425a9c1bac0d0b317dfc49c930ac99`, `pstack/skills/poteto-mode`.
 
-`poteto-mode` is a 45-file Cursor-specific package with 23 playbooks, a mandatory todolist ritual, fixed per-role models, a `poteto-agent` subagent wrapper, and autopilot/babysit/shipping orchestration. It was evaluated in full and **not adopted as a standalone owner**: vendoring it would add a second dispatcher competing with `orchestrate-implementation`, `shape-design`, and the cleanup pair. Selected portable principles were distributed to the existing canonical owners instead:
+`poteto-mode` is a 45-file Cursor-specific package with 23 playbooks, a mandatory todolist ritual, fixed per-role models, a `poteto-agent` subagent wrapper, and autopilot/babysit/shipping orchestration. It was evaluated in full and **not adopted as a standalone owner**: vendoring it would add a second dispatcher competing with `orchestrate-implementation`, `shape-design`, and the cleanup entrypoint. Selected portable principles were distributed to the existing canonical owners instead:
 
 | Local owner | Materially used upstream files |
 | --- | --- |
-| `simplify-code` | `poteto-mode/SKILL.md`, `playbooks/refactoring.md`, `playbooks/opening-a-pr.md` |
-| `deslop` | `poteto-mode/SKILL.md`, `playbooks/refactoring.md` |
+| `deslop` (including its optional review brief) | `poteto-mode/SKILL.md`, `playbooks/refactoring.md`, `playbooks/opening-a-pr.md` |
 | `verification-before-completion` | `poteto-mode/SKILL.md` |
 | `systematic-debugging` | `playbooks/bug-fix.md`, `playbooks/perf-issue.md` |
 | `shape-design` | `poteto-mode/SKILL.md`, `playbooks/feature.md` |
@@ -204,7 +209,7 @@ Source pin: `cursor/plugins@93b00b89ef425a9c1bac0d0b317dfc49c930ac99`, `pstack/s
 | `effective-agent-skills` | `poteto-mode/SKILL.md`, `playbooks/authoring-a-skill.md` |
 | `improve-skill` | `poteto-mode/SKILL.md`, `playbooks/eval.md` |
 
-The `AGENTS.md` completion-boundary routing (offer `simplify-code` once; widen to `deslop` only when findings show broader systemic scope and the user accepts) adapts the package's deslop-before-commit habit. File-level relationships for skill-owned adaptations are recorded in `sources.json`; this note also records the repository-level routing adaptation.
+The `AGENTS.md` completion-boundary routing (offer one scoped `deslop` pass; run only the accepted action and scope) adapts the package's deslop-before-commit habit. File-level relationships for skill-owned adaptations are recorded in `sources.json`; this note also records the repository-level routing adaptation.
 
 **Adopted:** narrating- and phase-label comment cleanup with non-obvious-why retention; reader-load evidence; smallest behavior pins before risky rewrites; subtraction-first cleanup with earn-your-place structure; behavior-change separation; migrate-callers-then-delete-legacy sequencing with compatibility only for demonstrated consumers; same-surface verification with concrete surface examples and compilation-proves-compilation; evidence-traced fixes with speculative-guard rejection, disproven-hypothesis reverts, and baseline-plus-after performance measurement; conditional data-shape, boundary, idempotency, and shared-state analysis; observable-uncertainty routing to prototypes without displacing user-owned decisions; runnable-check task sequencing with removal conditions; smallest safe decomposition with shared-write separation and parent-owned review of child diffs; bounded child context; recurring-correction executable enforcement with pre-change/post-change comparison.
 

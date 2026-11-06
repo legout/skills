@@ -1,98 +1,59 @@
 ---
 name: deslop
-description: Evidence-driven cleanup that removes dead code, duplication, unnecessary indirection, and accidental complexity while preserving supported behavior.
+description: Find and apply behavior-preserving KISS simplifications in a diff, file, directory, or project. Use for simplify, deslop, cleanup proposals, explicit direct cleanup, or an accepted completion-boundary pass; not bug fixing or architecture-only audits.
 ---
 
 > Adapted from [`cursor/plugins`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99), `cursor-team-kit/skills/deslop/SKILL.md`, at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor). Subtraction-first, caller-migration, legacy-deletion, and behavior-pin principles are additionally adapted from `pstack/skills/poteto-mode` at the same commit.
 
-Use for an explicit broad codebase cleanup request, or when the model offers a cleanup pass at a commit or PR boundary. Do not run it automatically on every edit.
+# Deslop: simpler code, same behavior
 
-# Deslop code safely
+Reduce unnecessary code, concepts, indirection, and reader effort. Prefer clear structure over fewer lines; a clever one-liner or another helper layer is not automatically simpler. Load `agent-guardrails` before analysis or changes; it owns evidence and validation budgets.
 
-Make the requested scope materially smaller and easier to understand without changing its supported behavior.
+## Intent and scope
 
-## Resolve the scope
+- **Default: propose, then wait.** A bare `deslop` or a request to inspect, simplify, or suggest improvements produces concrete proposals without editing project files. Do not create planning artifacts or run validation suites just to produce the report.
+- **Explicit direct cleanup: apply.** “Simplify this directly”, “clean up src/ now”, or “apply S1 and S3” authorizes bounded behavior-preserving edits without another selection round. State the scope and proceed. Ambiguous intent stays proposal-only; material scope, behavior, or architectural decisions still require approval.
+- At a completion boundary, name the settled diff and whether the offered pass proposes changes or also applies them. Acceptance authorizes only that stated action, not a broader cleanup. Skip docs-only, generated, mechanical, or trivial changes.
+- Honor named targets: current diff, a file, one or more directories/modules, or the whole project. Resolve ambiguous paths before analysis. Read adjacent callers for evidence; editing outside the named scope needs approval.
+- Without a target, use the current diff, not the whole repository. Include staged and unstaged tracked changes; for branch work include commits since the verified base. State the comparison range. Do not guess a base or silently ignore local changes. If no meaningful diff exists, ask for a target.
+- Preserve pre-existing user changes. Exclude generated/vendor code, caches, build artifacts, and user-owned untracked files unless explicitly included. A whole-project pass must name uninspected areas instead of claiming exhaustive coverage.
 
-1. Treat every supplied target as a scope item. Accept repository roots, directories, package/module names, and files.
-2. Resolve paths relative to the current working directory. Resolve module names through the project's language conventions and code search.
-3. If no target is supplied, use the current Git repository root, or the current directory when outside Git.
-4. If a target is missing or resolves to multiple places, ask the user before editing.
-5. Inspect callers, dependents, tests, configuration, entry points, and documentation outside the scope when needed to prove safety. Keep production edits inside the requested scope unless a directly dependent file must change to preserve correctness. Explain any necessary scope expansion.
-6. Exclude vendored dependencies, generated output, caches, build artifacts, and user-owned untracked files unless the user explicitly includes them.
+## Find worthwhile simplifications
 
-## Establish evidence first
+Read project instructions, deliberate design decisions, relevant code, and actual callers. Use one bounded pass across these three perspectives; zero worthwhile proposals is valid. Additional reviewers are optional, only when explicitly requested or required by project rules and delegation is authorized; then read [the review brief](references/review.md).
 
-Before editing:
+- **Reuse:** demonstrably equivalent duplicate logic or work already done by a helper, standard library, framework, or platform guarantee. Cite the alternative; different contracts need not be merged.
+- **Quality:** dead code/state, narration comments, needless nesting, pass-through wrappers, parameter sprawl, and fragmented ownership. Check exports, routes, registrations, configuration, reflection, and external consumers before deleting; missing imports or a single caller are not proof. Prefer direct data flow and locality, while preserving deliberate wrappers, meaningful modules, and intentional duplication.
+- **Efficiency:** concrete repeated computation/reads, unused work, or overly broad operations. Show the actual cost and behavior-equivalent reduction; do not turn a hypothetical speedup into a concurrency or interface change.
 
-- Read repository instructions and architecture/domain documentation.
-- Record the working tree and preserve pre-existing user changes.
-- Identify the relevant validation commands from project configuration and CI.
-- Run a representative baseline with deployment-specific environment variables isolated when they would make local validation non-hermetic.
-- Record baseline file counts and line counts for the requested scope.
-- Map runtime entry points and reachability using imports, exports, routes, registrations, configuration, dynamic loading, reflection, and external/public API commitments.
+For each candidate, explain the current complexity cost and the smallest simpler alternative. AI authorship, style preference, file count, and line-count reduction alone are not reasons. Keep uncertain deletions as questions rather than recommendations to remove code. Separate discovered bugs from cleanup; do not silently fix behavior under a simplification request.
 
-A test-only reference does not by itself prove that a production seam is live. Conversely, absence from ordinary imports does not prove code is dead when the project uses plugins, reflection, configuration, templates, or generated registration.
+## Proposals and selection
 
-## Classify cleanup candidates
+Rank useful proposals by benefit and risk, with no quota. Give each a stable ID and:
 
-Remove or simplify code only when evidence supports at least one classification:
+- file/symbol locations, supporting evidence, and the concrete change;
+- why the result is easier to understand or review;
+- behavior/contracts to preserve, dependencies, risks, and uncertainty;
+- the smallest verification needed, or applicable evidence to reuse; and
+- whether it is a bounded edit or needs design first.
 
-- **Dead:** unreachable from supported runtime entry points and not part of a documented public contract.
-- **Duplicate:** repeats behavior already owned elsewhere and can use one canonical implementation.
-- **Overcomplex:** abstractions, modes, branches, layers, deeply nested control flow, callback pyramids, or interacting boolean states exceed the behavior the application actually supports.
-- **Boilerplate/slop:** narration comments, milestone notes, placeholder metadata, redundant docstrings, needless wrappers, defensive handling for impossible trusted states, type-system bypasses, speculative compatibility paths, or tests that preserve deleted implementation seams rather than behavior.
-- **Fragmented:** a small module or file adds navigation cost without providing a meaningful boundary and can be merged into its natural owner.
+In proposal mode, stop here and ask which IDs to apply or develop through the workflow skills. Keep proposals in the conversation unless the user requests a saved report. In direct mode, use the same criteria internally, apply only authorized bounded changes, and report the result rather than requiring a proposal approval round.
 
-When evidence is uncertain, keep the code or ask the user. Do not label code dead merely because its name looks old.
+## Apply authorized changes
 
-## Refactor incrementally
+1. Recheck selected proposals against current code; missing IDs or changed assumptions require clarification. Inspect the working tree and preserve unrelated edits.
+2. Subtract before introducing structure. Keep interfaces, error semantics, persisted data, resource cleanup, concurrency, performance obligations, security, and accessibility intact. Never remove boundary validation or data-loss-preventing handling as “slop”. Add an abstraction only when it removes concrete complexity.
+3. Make small coherent edits. For internal replacements, migrate all supported callers, remove the obsolete path, and check stale references within the approved scope. Retain compatibility required by real public, persisted, deployed, external, or dependent-branch consumers; request scope expansion rather than leave a broken caller.
+4. Use applicable existing evidence or establish the smallest behavior pin before a risky rewrite. Verify the combined selected changes after implementation; check earlier only when a dependency or disappearing evidence makes it necessary. Prefer claim-matched real-artifact verification; an existing focused test may already be sufficient. No automatic full suites, new tests per edit, or duplicate live checks. Required project gates remain binding.
+5. Follow `agent-guardrails` on failures: investigate the named failure, one fix pass and one delta recheck, then ask. Never weaken assertions or delete tests for still-supported behavior to force green.
 
-1. Start with the highest-confidence, lowest-risk deletions.
-2. Subtract before adding: delete dead weight, collapse one-caller wrappers, and drop redundant validators before introducing any new shape. Name the target structure — what the code would look like if built today — and prefer fewer concepts, modes, fields, branches, and files.
-3. Flatten nested control flow with guard clauses, early exits, simpler state models, and direct data flow. Remove unnecessary `else` branches after exits.
-4. Extract a helper only when it creates a meaningful boundary or names a coherent operation. Moving nested code into tiny wrappers does not reduce complexity.
-5. Keep interfaces as narrow as their real callers allow.
-6. For an internal API replacement, migrate every caller, verify the migrated callers, delete the legacy path, and search for stale references to it in one cleanup. Keep a compatibility path only for a demonstrated public, persisted, deployed, or external consumer.
-7. Update directly affected tests and documentation to describe current behavior, not removed compatibility seams.
-8. Inspect each diff for accidental churn, formatting noise, behavior changes, and unrelated edits.
-9. Run focused validation after each coherent change and fix failures before continuing.
+Report what changed, what stayed, actual verification and its limits, and residual risks. No automatic commit, push, installation, or cleanup of unrelated resources.
 
-Do not replace removed complexity with compatibility shims, aliases, silent fallbacks, TODOs, broad exception handling, suppressions, hidden assumptions, or another abstraction layer.
+## Workflow handoff
 
-## Preserve behavior
+Small understood edits need only the user's scoped approval, not an ADR/spec/plan ceremony. For selected architectural or multi-step proposals, load [`planning-contract`](../../workflow/planning-contract/SKILL.md) (Contract version: 1), then route to [`shape-design`](../../workflow/shape-design/SKILL.md). If the contract is unavailable, stop the handoff and request it rather than inventing approval rules.
 
-- Before a structural rewrite that existing coverage cannot establish, add the smallest behavior pin — a characterization test, snapshot, or equivalence check — and keep it green through the move.
-- Preserve supported runtime behavior and public interfaces unless the user explicitly authorizes a change.
-- Never delete or weaken tests just to make validation pass. Remove tests only when they exclusively exercise code proven dead; retain or add coverage for the surviving behavior.
-- Keep security, authentication, authorization, input validation, resource bounds, error semantics, data integrity, and concurrency behavior intact.
-- Do not discard, overwrite, stage, commit, or reformat unrelated user changes.
-- Prefer the simplest design that remains robust. Do not remove necessary validation, error handling, resource cleanup, or concurrency safeguards merely to flatten code.
-- Do not chase line-count reduction at the expense of clarity. A smaller design matters more than compressed syntax.
+Carry selected IDs, evidence, affected surfaces, behavior-preservation criteria, unresolved choices, and authorization state. Findings are evidence, not approved designs. `shape-design` uses `domain-modeling` for qualifying ADRs or vocabulary; [`write-implementation-plan`](../../workflow/write-implementation-plan/SKILL.md) decomposes approved behavior and creates tickets only when requested or required for coordination. Never fabricate approval or maintain duplicate task bodies. Record contract version and available provenance, or `unknown`, in the handoff.
 
-## Validate completion
-
-Run all validation relevant to the affected scope, including the repository's existing local CI command when available:
-
-- focused and full tests
-- formatter and lint checks
-- type checks and language-server diagnostics
-- build/package checks
-- application, CLI, rendering, or generated-artifact smoke checks
-- stale-reference searches for deleted files and symbols
-- final diff and working-tree audit
-
-If credentials, services, hardware, network access, or a product decision prevent required validation, stop without claiming completion. Report what was attempted, the exact blocker, the unverified requirements, and the input needed.
-
-## Report
-
-Finish with:
-
-- structural simplifications and ownership changes
-- files removed, merged, or retained despite review
-- dead, duplicated, or overcomplex behavior removed
-- behavior-preservation and validation evidence
-- exact diff statistics: lines added, lines removed, and net change
-- scope file count and line count before and after
-- any intentionally untouched user changes or unavailable live checks
-
-Keep working while a safe, evidence-backed cleanup or required verification step remains. Mark a long-running goal complete only after mapping every requirement to fresh evidence.
+Architecture-only seam analysis belongs to `review-codebase-architecture`; bug diagnosis belongs to `systematic-debugging`, not an implicit cleanup fix.

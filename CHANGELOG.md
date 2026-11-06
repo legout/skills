@@ -6,6 +6,10 @@ matching Git tag exists.
 
 ## Unreleased
 
+- **Breaking:** Retired the separate `simplify-code` skill and consolidated settled-change and broader cleanup under `deslop`. Reuse, Quality, and Efficiency remain perspectives in one bounded pass; additional reviewers are opt-in or project-required, with the full contract in an optional reference. Updated callers, tests, source relationships and migration guidance. Existing installed copies require manual migration; runtime routing evaluations remain unrun. This invocation change calls for a minor release under the catalog's 0.x policy; no version bump or publication is included.
+
+- Reworked `deslop` into a behavior-preserving KISS workflow for diffs, files, directories, and projects: concrete proposals and user selection by default; explicit direct cleanup proceeds without another selection round. Added selected-proposal handoff to the existing design/ADR/plan/ticket workflow, removed blanket validation and per-edit check defaults, and aligned README/agent routing with the unified cleanup entrypoint.
+
 ## 0.1.0 - 2026-11-06
 
 - Added `project-formal-verification`, an explicitly requested creator/maintainer for project-local invariant, model-check and code-proof recipes, with bounded negative controls, code/model correspondence and no implicit installation or product-repair authority. Planning, shaping, orchestration briefs and completion claims now distinguish formal scope from empirical evidence without adding a mandatory verification stage. Clarified the existing empirical recipe's isolation, stand-in limits, dry-run effects, readiness recovery and retained evidence. Pinned the new pstack adaptations and preserved the existing normal-verification pins; runtime routing and a product pilot remain unqualified.

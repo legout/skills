@@ -1,0 +1,47 @@
+{
+  "skill_name": "deslop",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Deslop bitte: Prüfe den aktuellen Diff auf KISS-Vereinfachungen. Ich möchte weniger unnötige Ebenen und besser lesbaren Code bei gleicher Funktionalität.",
+      "expected_output": "Resolve and state the actual diff and baseline, including relevant staged/unstaged changes. Read changed code and necessary callers, then report only evidence-backed proposals with selection IDs, locations, preservation constraints and minimal verification. Do not edit, run a blanket suite, spawn a reviewer panel, or widen to the whole project when the diff is empty. Ask which proposals to apply or shape.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Deslop src/ bitte direkt umsetzen, nicht erst eine Vorschlagsrunde. Funktionalität und öffentliche Schnittstellen müssen gleich bleiben. Ein dokumentierter API-Wrapper wird nur einmal intern aufgerufen; den bitte nicht als tot behandeln.",
+      "expected_output": "Treat the explicit direct request as authorization for small, evidence-backed behavior-preserving edits in src/, without another selection confirmation. Inspect real callers and preserve the documented API wrapper, user changes, contracts and safety checks. Hand back consequential behavior/interface choices or uncertain deletions. Verify the resulting change with the smallest applicable evidence, without per-edit full suites or commit/publication actions.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Aus deinen Vorschlägen: Setze nur S1 um. S2 möchte ich erst mit den Workflow-Skills zu einem Design und anschließend Plan/Tickets ausarbeiten. S3 bleibt unverändert.",
+      "expected_output": "Recover the actual prior proposals and inspect current code before acting; ask if IDs or context are missing. Implement only the approved bounded S1 and verify it proportionately. Route S2 to shape-design with planning-contract, ADR capture only when warranted, and planning/ticket handoff only after source approval. Do not implement S2, change S3, manufacture approvals, or duplicate task bodies. Do not require ADR/spec/plan for the small S1 just to proceed.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "vereinfache src/",
+      "expected_output": "Load deslop for the named directory, not a separate settled-change skill. Resolve src/ and inspect its code and relevant callers. Propose bounded behavior-preserving simplifications with selection IDs; do not edit or dispatch reviewers from this bare request. Actual SKILL.md loads and unchanged project files are the routing/execution evidence, not the agent's self-report.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Ja, führe den angebotenen Deslop-Abschluss-Pass auf dem gerade abgeschlossenen Diff aus, einschließlich der kleinen verhaltenserhaltenden Änderungen. Keine weiteren Reviewer und keine Ausweitung auf den Rest des Projekts.",
+      "expected_output": "Use deslop on the actual offered settled diff, recovering its scope or asking only if that context is absent. Apply the explicitly authorized bounded changes without another proposal-selection round. Consider Reuse, Quality and Efficiency in one pass, preserve deliberate structures and behavior, and verify proportionately. Do not expand scope, launch reviewers, commit or publish.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Seit gestern stürzt die CLI beim Speichern ab. Finde die Ursache und repariere den Fehler, statt src/ allgemein zu vereinfachen.",
+      "expected_output": "Route diagnosis to systematic-debugging, not a cleanup pass. Do not let the words simplify or src/ trigger deslop when the requested outcome is a bug fix. Inspect actual skill loads to establish this near-miss result.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Deslop für den aktuellen Diff: Ich beauftrage drei unabhängige, parallele Reviewer für Reuse, Quality und Efficiency. Nur Befunde, noch keine Änderungen.",
+      "expected_output": "Read deslop and its optional review reference. Resolve the actual diff and provide every authorized reviewer its exact scope, relevant perspective, criteria, real-use context, applicable evidence and the complete inline contract. Do not require a specially named agent or silently replace unavailable independent review with self-review. Reviewers return findings only; do not edit, expand scope or start another review round.",
+      "files": []
+    }
+  ]
+}

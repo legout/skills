@@ -74,6 +74,8 @@ for path in sorted(skills_root.rglob("SKILL.md")):
 
 if not names:
     errors.append("no skills found")
+if "simplify-code" in names:
+    errors.append("simplify-code is retired; deslop is the single cleanup entrypoint")
 
 link_pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 markdown = [root / "README.md", *skills_root.rglob("*.md")]
@@ -98,7 +100,7 @@ for path in sorted(markdown):
 workflow = skills_root / "workflow/orchestrate-implementation"
 for relative in (
     "workflow/orchestrate-implementation/references/manifest-and-briefs.md",
-    "engineering/simplify-code/SKILL.md",
+    "engineering/deslop/references/review.md",
 ):
     text = (skills_root / relative).read_text()
     start = text.find("<!-- reviewer-contract:start -->")

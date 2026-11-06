@@ -1,5 +1,7 @@
 # Poteto principles integration plan
 
+> Cleanup routing superseded on 2026-11-06: `deslop` now owns both settled-change and broader cleanup; `simplify-code` is retired. The former split, paths and acceptance items below are historical, not current execution instructions. See [the consolidation decision](../../UPSTREAM_ADOPTION.md#cleanup-consolidation--2026-11-06).
+
 ## Goal
 
 Integrate the highest-value, portable principles from Cursor pstack's `poteto-mode` into the existing canonical skills without adding `poteto-mode`, duplicating workflow ownership, or importing Cursor-specific orchestration.

@@ -28,6 +28,10 @@ npx skills add legout/skills --skill document-extract --skill document-to-markdo
 Add `xlsx` only when workbook delivery is needed. These commands are user-run
 installation steps, not permission for a skill to install dependencies automatically.
 
+### Unreleased cleanup migration
+
+`deslop` now covers both settled changes and wider cleanup. The separate `simplify-code` skill is retired; use `/skill:deslop` with the desired scope. When installing this revision, inspect any local customizations and manually remove obsolete installed `simplify-code` copies, then refresh skill discovery. Also remove or retarget host prompt templates that still invoke the retired skill, such as Pi's `~/.pi/agent/prompts/simplify-code.md`; its old mandatory-reviewer instructions must not survive the migration. Updating the catalog alone does not remove installed copies or templates. No compatibility wrapper or second automatic trigger is provided.
+
 ## Versioning
 
 The whole catalog shares one semantic version in [`VERSION`](VERSION), starting at `0.1.0`. Individual skills do not have independent versions. [`CHANGELOG.md`](CHANGELOG.md) records notable changes; entries stay under **Unreleased** until release preparation. `VERSION` is the prepared version, not proof of publication: only the matching immutable Git tag (`vMAJOR.MINOR.PATCH`) identifies a released snapshot.
@@ -54,9 +58,8 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 
 ### Engineering
 
-- **`deslop`** — broad evidence-driven codebase cleanup.
+- **`deslop`** — behavior-preserving KISS simplification for settled diffs, files, directories, or projects; proposals first, edits when authorized.
 - **`modern-python`** — uv, Ruff, and ty setup or migration.
-- **`simplify-code`** — behavior-preserving cleanup of settled changed code.
 - **`systematic-debugging`** — reproducible root-cause diagnosis.
 
 ### Skill authoring
@@ -115,7 +118,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 
 ## Boundaries
 
-- `deslop` owns broad cleanup; `simplify-code` owns settled changed-code cleanup.
+- `deslop` owns both settled-change and broader cleanup: proposals by default, edits after selection or explicit direct authorization. Reuse, Quality, and Efficiency are perspectives, not mandatory reviewer jobs. Completion-boundary offers name the action and scope; acceptance never widens either.
 - `documentation-writer` owns document type and quality; `doc-coauthoring` owns collaborative drafting.
 - `marimo-notebook` edits files; `marimo-pair` works through a live kernel.
 - `effective-agent-skills` covers general authoring; `improve-skill` requires session evidence.

@@ -144,6 +144,8 @@ After approval, use the existing `orchestrate-implementation` handoff contract w
 
 ## Execution outcome — 2026-10-22
 
+> Historical record: the `simplify-code` offer below and in completed T3 used the then-current name. Since 2026-11-06, use `deslop` for future completion-boundary cleanup; this does not rerun or change the recorded outcome.
+
 T1–T3 completed by the parent as the only repository writer; two fresh native Pi
 children exercised the synthetic journey/routing and reviewed the stable candidate.
 Both children completed; no pending supervisor requests. Independent review found

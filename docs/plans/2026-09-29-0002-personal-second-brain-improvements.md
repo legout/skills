@@ -1,5 +1,7 @@
 # Personal Second-Brain Improvements — Proposed Implementation Plan
 
+> Routing update, 2026-11-06: the optional completion-boundary cleanup now uses `deslop`; the approved product scope and authorization boundary below are unchanged.
+
 **Status:** Approved plan; implementation has not been authorized. **Date:** 2026-09-29. **Planning contract:** v1; installed catalog revision unknown. **Approval:** Owner replied “approve” on 2026-09-29 to the proposed behavioral contract and execution map, draft SHA-256 `549f9855d204f05e59c4d7e9c295c3ce2ce59b9e6ed5541c0cf2ef62521caf02` (only approval/status text changed afterward).
 
 ## Goal and source
@@ -64,7 +66,7 @@ Improve the **personal** second-brain's evidence-backed answers, honest capture 
 
 - [ ] Run `bash tests/skills_test.sh` (includes `sb.py selftest`), `bash scripts/check-skill-sources.sh`, and `git diff --check`; inspect the complete changed skill and CLI help against the approved criteria.
 - [ ] In a disposable vault, exercise one full capture, one excerpt, a duplicate, a changed-source successor, `sb index`, `sb lint`, and `sb eval`; check historical files and `personal/` content bytes remain intact. Review only concrete regressions or written-rule violations; at most one fix and delta recheck.
-- [ ] Report exact evidence and residual limitations. Do not commit, publish, change the installed skill copy, or enable background automation without separate authorization. Before a substantive code handoff, offer the repository-required optional `simplify-code` pass; run it only if accepted.
+- [ ] Report exact evidence and residual limitations. Do not commit, publish, change the installed skill copy, or enable background automation without separate authorization. Before a substantive code handoff, offer the repository-required optional `deslop` pass; run it only if accepted.
 
 ## Requirement map and gates
 

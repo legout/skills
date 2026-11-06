@@ -4688,7 +4688,7 @@
       "mode": "adapted"
     },
     {
-      "local": "skills/engineering/simplify-code/SKILL.md",
+      "local": "skills/engineering/deslop/references/review.md",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "repository": "https://github.com/cursor/plugins",
       "branch": "main",
@@ -4698,7 +4698,7 @@
       "mode": "adapted"
     },
     {
-      "local": "skills/engineering/simplify-code/SKILL.md",
+      "local": "skills/engineering/deslop/references/review.md",
       "source": "pstack/skills/poteto-mode/playbooks/refactoring.md",
       "repository": "https://github.com/cursor/plugins",
       "branch": "main",
@@ -4708,7 +4708,7 @@
       "mode": "adapted"
     },
     {
-      "local": "skills/engineering/simplify-code/SKILL.md",
+      "local": "skills/engineering/deslop/SKILL.md",
       "source": "pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
       "repository": "https://github.com/cursor/plugins",
       "branch": "main",

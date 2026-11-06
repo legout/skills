@@ -164,7 +164,7 @@ The following packages were copied from the pinned revisions listed in `sources.
 
 `deslop`, `workflow-from-chats`, and part of `humanizer`'s pattern catalog are adapted from the MIT-licensed Cursor plugins repository, [cursor/plugins](https://github.com/cursor/plugins), pinned to commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (Copyright (c) 2026 Cursor).
 
-Selected principles from Cursor's `pstack/skills/poteto-mode` at the same pinned commit are also adapted, distributed across existing canonical owners rather than vendoring the package: `simplify-code`, `deslop`, `verification-before-completion`, `systematic-debugging`, `shape-design`, `prototype-question`, `write-implementation-plan`, `orchestrate-implementation`, `effective-agent-skills`, and `improve-skill`. File-level mappings are recorded in `sources.json`; the adoption decision is documented in `UPSTREAM_ADOPTION.md`. No poteto-mode file is redistributed intact.
+Selected principles from Cursor's `pstack/skills/poteto-mode` at the same pinned commit are also adapted, distributed across existing canonical owners rather than vendoring the package: `deslop` (including its optional review brief), `verification-before-completion`, `systematic-debugging`, `shape-design`, `prototype-question`, `write-implementation-plan`, `orchestrate-implementation`, `effective-agent-skills`, and `improve-skill`. File-level mappings are recorded in `sources.json`; the adoption decision is documented in `UPSTREAM_ADOPTION.md`. No poteto-mode file is redistributed intact.
 
 `project-verification` and its recipe template are adapted from `pstack/skills/create-verification-skill`, `pstack/skills/maintain-verification-skill`, and the feature-map examples of the same package, pinned to commit `f713f14203cd6420cec13cd7c55c32d598dbab68` of [cursor/plugins](https://github.com/cursor/plugins). `project-formal-verification` and its recipe template adapt `pstack/skills/create-formal-verification-skill` and `pstack/skills/maintain-formal-verification-skill` at commit `2776ddd2355d6d6c8747d3964600f28daf62f049` of the same repository. Both adaptations are MIT; Copyright (c) 2026 Lauren Tan.
 
@@ -190,4 +190,4 @@ Selected principles from Cursor's `pstack/skills/poteto-mode` at the same pinned
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-`improve-skill` and `simplify-code` are local catalog material copied from the installed skill set and have no separate upstream relationship.
+`improve-skill` and the local cleanup material originally shipped as `simplify-code` were copied from the installed skill set. The latter is now consolidated into `deslop`; its selected pstack adaptations retain their pinned file-level relationships in `sources.json`.

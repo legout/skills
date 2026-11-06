@@ -16,6 +16,6 @@ Before implementing, writing or running tests, reviewing, dispatching reviewers,
 
 ## Completion-boundary cleanup
 
-Before committing, opening a pull request, or handing off substantive code, offer one `simplify-code` pass on the changed code. Run it only after a user request or that completion-boundary offer is accepted. Do not run it on every edit, docs-only work, generated artifacts, or mechanical changes.
+Before committing, opening a pull request, or handing off substantive code, offer one `deslop` pass on the settled changed code. State whether the offer proposes changes or also applies them; acceptance authorizes only that action and scope. Do not run it automatically, on every edit, docs-only work, generated artifacts, or mechanical changes.
 
-Suggest `deslop` only when `simplify-code` findings reveal broader systemic scope, and widen to it only after the user accepts. Otherwise use `deslop` only for an explicit broad codebase cleanup request or a deliberately offered deep cleanup pass. It is not an alias for `simplify-code`, and the two cleanup skills are never chained by default.
+`deslop` is the single cleanup entrypoint for a diff, file, directory, or project. It proposes first and edits only after selection or an explicit direct-cleanup request. Direct authorization needs no redundant selection round. Reuse, Quality, and Efficiency are perspectives in one pass; extra reviewers require an explicit request or project requirement and applicable delegation authority. Never widen scope automatically.
