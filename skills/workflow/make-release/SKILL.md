@@ -6,9 +6,7 @@ compatibility: Requires git and gh; Python publishing requires uv; Node releases
 
 # Make Release
 
-Create one release from a clean default branch: select or bump the version, finalize the changelog, validate the release, commit, push, tag, publish a GitHub Release, and optionally publish a Python package to PyPI. A skill catalog uses its root `VERSION` and Git snapshot; do not invent a package manifest or package build.
-
-If specialized changelog, commit, GitHub, or uv skills are installed, they may assist; this workflow remains complete without them.
+Create one release from a clean default branch: select or bump the version, finalize the changelog, validate the release, commit, push, tag, publish a GitHub Release, and optionally publish a Python package to PyPI. A skill catalog uses its root `VERSION` and Git snapshot.
 
 ## Inputs
 
@@ -27,10 +25,10 @@ Ask only for unresolved choices. A Python project's first PyPI release must also
 3. Detect the version source:
    - Python: static `[project].version` in `pyproject.toml`.
    - Node: `version` in the selected `package.json`.
-   - Skill catalog: a root `VERSION` explicitly designated by repository docs, containing one stable `MAJOR.MINOR.PATCH` value without a `v` prefix. It versions the catalog, not individual skills, upstream pins/schema versions, or nested vendored package manifests.
+   - Skill catalog: a root `VERSION` explicitly designated by repository docs, containing one stable `MAJOR.MINOR.PATCH` value without a `v` prefix.
 4. If multiple canonical version sources or multiple packages are present, select one package unless their manifests clearly describe the same release and currently have the same version. Never silently synchronize unrelated packages.
 5. Calculate the next semantic version from the requested bump and documented repository compatibility policy. For catalog `initial`, keep the prepared `VERSION`; refuse if a prior catalog release exists. Stop on non-semantic or dynamically generated versions rather than guessing.
-6. Verify that the intended `v<version>` tag and published version are absent locally, remotely, and on GitHub Releases, plus the selected package registry when applicable. A catalog's prepared VERSION file is not an existing publication. Catalog-only releases have no npm/PyPI registry check.
+6. Verify that the intended `v<version>` tag and published version are absent locally, remotely, and on GitHub Releases, plus the selected package registry when applicable; catalog-only releases skip the registry check, and a prepared `VERSION` file is not a prior publication.
 7. Inspect commits since the latest release tag and confirm there is a releasable change. For `initial`, inspect the current catalog and available history as the baseline; do not invent an earlier release.
 
 ## First PyPI setup
@@ -51,7 +49,7 @@ Ask the user to choose one method, with no default:
 
 1. Require `uv` and a configured `UV_PUBLISH_TOKEN`, or obtain the token through a secure interactive mechanism that does not expose it to the model or shell history.
 2. Do not create `.pypirc`: `uv publish` does not use it. Do not commit credentials or place them in `pyproject.toml`.
-3. Never infer publishing mode from credential availability. Reuse an established repository publishing workflow; otherwise ask the user to choose local or GitHub publishing for this release.
+3. Never infer publishing mode from credential availability. Reuse an established repository publishing workflow.
 
 ## Release plan and approval
 

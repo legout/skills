@@ -29,17 +29,17 @@ Invoke `grilling` only for an explicit stress-test or grill request. Ordinary sh
 
 ## Capture checkpoint
 
-Before handing a shaped change to planning or implementation, run the capture checkpoint defined in `planning-contract` — the sole canonical procedure; never restate or re-edit its vocabulary, decision, behavior, or uncertainty steps here. Record the outcome with the handoff itself, never as a standalone checklist document. Consumer routes: capture resolved vocabulary through `domain-modeling`, lazily — the owning glossary is created when the first term is actually resolved, never as a placeholder — and take consequential decisions to `domain-modeling`'s ADR criteria rather than manufacturing an ADR for every question.
+Before handing a shaped change to planning or implementation, run the capture checkpoint defined in `planning-contract` — the sole canonical procedure; never restate or re-edit its vocabulary, decision, behavior, or uncertainty steps here. Record the outcome with the handoff itself, never as a standalone checklist document. Consumer routes: capture resolved vocabulary through `domain-modeling` (lazily, per its own rules) and take consequential decisions to its ADR criteria rather than manufacturing an ADR for every question.
 
 Record the contract version and the available installed provenance, or `unknown`, with the handoff.
 
 ## Spike
 
-Present the question and cheapest valid probe in 2–3 sentences, then get approval. Invoke `prototype-question` with the approved question, evidence threshold, constraints, and cleanup expectation. Consume its verdict as design evidence and return to shaping; when the probe report is durable, file it as research evidence under the project's research directory (`project/research/`; legacy `docs/research/`) and link it from the owning design — never in the specs directory. Keeping prototype code is a new bounded or architectural request; `shape-design` owns that reclassification.
+Present the question and cheapest valid probe in 2–3 sentences, then get approval. Invoke `prototype-question` with the approved question, evidence threshold, constraints, and cleanup expectation. Consume its verdict as design evidence and return to shaping; file a durable probe report as research evidence per `planning-contract` paths — never in the specs directory. Keeping prototype code is a new bounded or architectural request; `shape-design` owns that reclassification.
 
 ## Bounded change
 
-Ask only material questions. Present a short design covering behavior, files, error cases, and tests. Obtain explicit approval before mutation. An explicitly approved bounded issue or short design with acceptance criteria is the bounded-change equivalent of an approved behavioral source; run the capture checkpoint proportionately and record its outcome. Then hand the approved in-chat design to `orchestrate-implementation`; do not implement it here.
+Ask only material questions. Present a short design covering behavior, files, error cases, and tests. Obtain explicit approval before mutation. An explicitly approved bounded design is the bounded-change equivalent of an approved behavioral source; run the capture checkpoint proportionately. Then hand the approved in-chat design to `orchestrate-implementation`; do not implement it here.
 
 ## Architectural change
 

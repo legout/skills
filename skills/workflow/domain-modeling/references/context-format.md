@@ -53,12 +53,4 @@ _Avoid_: Client, buyer, account
 - **Ordering ↔ Billing**: Shared types for `CustomerId` and `Money`
 ```
 
-Resolve the structure from configuration and evidence together, exactly as the skill's discovery rules do:
-
-- Read `project/agents/domain.md` (legacy `docs/agents/domain.md`) when present; its explicit single/multiple-context declaration is configuration, not a suggestion to invent names.
-- If `CONTEXT-MAP.md` exists, read it and follow its real paths; never write around a map or invent a fictional one.
-- If configuration or evidence resolves to a single context — including a configured single-context repo that has no glossary yet — use the root `CONTEXT.md`, creating it lazily only when the first term is actually resolved.
-- If configuration declares multiple contexts but no map or resolvable owner exists, stop and ask which real context owns the term; do not create a root `CONTEXT.md` just because the map is absent.
-- If explicit configuration and existing map/glossary evidence conflict, surface the conflict to the owner instead of silently rewriting either source.
-
-When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.
+Resolve the structure from configuration and evidence exactly as the skill's discovery rules do. When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.

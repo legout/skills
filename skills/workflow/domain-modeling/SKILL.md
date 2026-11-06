@@ -5,7 +5,7 @@ description: Build and sharpen a project's domain model. Use when discussing cod
 
 # Domain Modeling
 
-Actively build and sharpen the project's domain model as you design. This is the *active* discipline: challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `CONTEXT.md` for vocabulary is not this skill: that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
+Actively build and sharpen the project's domain model as you design: challenge terms, invent edge-case scenarios, and write the glossary and decisions down the moment they crystallise. (Reading `CONTEXT.md` for vocabulary is not this skill; it applies when you're changing the model, not consuming it.)
 
 This skill owns domain vocabulary and durable decision records. `shape-design` owns feature behavior and requirements. An ADR records **why** a hard-to-reverse decision was made; it is not a specification or implementation plan.
 
@@ -25,20 +25,13 @@ Most repos have a single context:
 └── src/
 ```
 
-If a `CONTEXT-MAP.md` exists at the root, or the project explicitly declares multiple contexts, the repo has multiple contexts. The map points to where each one lives:
+If a `CONTEXT-MAP.md` exists at the root, or the project explicitly declares multiple contexts, the repo has multiple contexts:
 
 ```
-/
-├── CONTEXT-MAP.md
-├── project/
-│   └── adr/                         ← system-wide decisions
-├── src/
-│   ├── ordering/
-│   │   ├── CONTEXT.md
-│   │   └── project/adr/              ← context-specific decisions
-│   └── billing/
-│       ├── CONTEXT.md
-│       └── project/adr/
+CONTEXT-MAP.md
+project/adr/                    ← system-wide decisions
+src/ordering/CONTEXT.md + src/ordering/project/adr/   ← context-specific
+src/billing/CONTEXT.md + src/billing/project/adr/
 ```
 
 Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved — for any single-context project, configured or unconfigured. Never create a root `CONTEXT.md` for a configured multi-context project. If no ADR directory exists (`project/adr/` by default; legacy `docs/adr/`), create it when the first ADR is needed.
@@ -52,7 +45,7 @@ Before writing a glossary, read `project/agents/domain.md` (legacy `docs/agents/
 3. If a term could belong to more than one context, ask which real context owns it rather than choosing silently.
 4. If explicit configuration and existing map/glossary evidence conflict, surface the conflict and ask the owner which source to update; do not rewrite either source automatically.
 5. For explicit multiple-context projects with no map or resolvable owner, stop and ask for the real context ownership. **Do not create a root `CONTEXT.md` just because the map is absent.** Capture a map or context glossary lazily once ownership is known.
-6. A project configured as single-context, or unconfigured with no map, preserves the single-context fallback: use the root `CONTEXT.md`, creating it lazily when the first term is actually resolved. A configured single-context repository with no glossary yet creates its first real glossary the same way; it does not need a context map.
+6. A project configured as single-context, or unconfigured with no map, preserves the single-context fallback: use the root `CONTEXT.md`, creating it lazily when the first term is resolved; it does not need a context map.
 
 The installer does not create placeholder glossaries or fictional domain names. A context map is meaningful only when it names real contexts and relationships.
 
@@ -68,7 +61,7 @@ When the user uses vague or overloaded terms, propose a precise canonical term. 
 
 ### Discuss concrete scenarios
 
-When domain relationships are being discussed, stress-test them with specific scenarios. Invent scenarios that probe edge cases and force the user to be precise about the boundaries between concepts.
+Stress-test domain relationships with edge-case scenarios that force the user to be precise about the boundaries between concepts.
 
 ### Cross-reference with code
 
@@ -76,9 +69,9 @@ When the user states how something works, check whether the code agrees. If you 
 
 ### Update CONTEXT.md inline
 
-When a term is resolved, update the owning `CONTEXT.md` right there. Don't batch these up: capture them as they happen. Use the format in [context-format.md](./references/context-format.md).
+When a term is resolved, update the owning `CONTEXT.md` right there; capture as it happens, not in a batch. Use the format in [context-format.md](./references/context-format.md).
 
-`CONTEXT.md` should be totally devoid of implementation details. Do not treat `CONTEXT.md` as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else.
+`CONTEXT.md` is a glossary and nothing else: no implementation details, no specs, no scratch pad.
 
 ### Offer ADRs sparingly
 
