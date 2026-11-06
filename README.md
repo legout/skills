@@ -28,7 +28,7 @@ npx skills add legout/skills --skill document-extract --skill document-to-markdo
 Add `xlsx` only when workbook delivery is needed. These commands are user-run
 installation steps, not permission for a skill to install dependencies automatically.
 
-### Unreleased cleanup migration
+### Cleanup migration — 0.2.0
 
 `deslop` now covers both settled changes and wider cleanup. The separate `simplify-code` skill is retired; use `/skill:deslop` with the desired scope. When installing this revision, inspect any local customizations and manually remove obsolete installed `simplify-code` copies, then refresh skill discovery. Also remove or retarget host prompt templates that still invoke the retired skill, such as Pi's `~/.pi/agent/prompts/simplify-code.md`; its old mandatory-reviewer instructions must not survive the migration. Updating the catalog alone does not remove installed copies or templates. No compatibility wrapper or second automatic trigger is provided.
 
