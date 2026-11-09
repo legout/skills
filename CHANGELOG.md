@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+## 0.4.0 - 2026-11-09
+
 - Extended `review-codebase-architecture` with implicit-state-machine and lifecycle-analysis triggers plus an on-demand reference for tracing state ownership, transitions, recovery, and observable UX/DX/AX trade-offs. Retained report-only discovery and design approval; no automatic library, verifier, or refactoring workflow.
 
 - Added change-coupling analysis to `deslop` and `review-codebase-architecture`, selectively adapted from `caldoai/skills`'s `untangle-codebase`: group related cleanup symptoms under root-cause proposals and examine hidden links, needless coupling, and dependency volatility. Retained bounded scope, behavior preservation, and design approval gates; no new skill or automatic refactoring loop.
