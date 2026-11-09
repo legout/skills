@@ -37,14 +37,15 @@ Stop on conflicting criteria or unresolved material decisions. Route missing beh
 
 ## 2. Select the Pi host
 
-Resolve explicit per-role/lane selection first; otherwise auto-detect the current harness from its session environment: BB (`BB_THREAD_ID`) uses BB child threads, Orca (`ORCA_PANE_KEY`/`ORCA_TAB_ID`/`ORCA_WORKTREE_ID`) uses Orca orchestration, T3 uses its child-capable **Pi** instance, an agent-scoped Paseo session uses its **Pi** provider, Herdr uses a fresh Pi pane, and none detected falls back to available native Pi subagents. Tool presence alone is not host detection. Record the chosen host and the evidence that it can perform the requested role; ask only when detection leaves the host genuinely ambiguous. A detected or selected host without the required capability blocks that role, not permission to silently switch hosts or runtimes.
+Resolve explicit per-role/lane selection first; otherwise auto-detect the current harness from its session environment: BB (`BB_THREAD_ID`) uses BB child threads, Orca (`ORCA_PANE_KEY`/`ORCA_TAB_ID`/`ORCA_WORKTREE_ID`) uses Orca orchestration, T3 uses its child-capable **Pi** instance, an agent-scoped Paseo session uses its **Pi** provider, herdr-core (`HC_TERMINAL_ID`) uses fresh Pi terminals, the older Herdr uses a fresh Pi pane, and none detected falls back to available native Pi subagents. Tool presence alone is not host detection. Record the chosen host and the evidence that it can perform the requested role; ask only when detection leaves the host genuinely ambiguous. A detected or selected host without the required capability blocks that role, not permission to silently switch hosts or runtimes.
 
 Read only the selected adapter and its installed runtime guidance before dispatch:
 
 - [BB dispatch](references/bb-dispatch.md): `bb thread spawn`, BB child threads in BB-managed worktree environments.
 - [Orca dispatch](references/orca-dispatch.md): `orchestration worker-start`, Orca-run Pi workers in Orca-managed workspaces.
 - [Native Pi dispatch](references/pi-dispatch.md): `pi-subagents`, native Pi children only.
-- [Herdr dispatch](references/herdr-dispatch.md): `herdr-pane`, fresh visible Pi sessions.
+- [herdr-core dispatch](references/herdr-core-dispatch.md): `hc`, fresh Pi terminals in separate Herdr-app tabs.
+- [Herdr dispatch](references/herdr-dispatch.md): older `herdr-pane`, fresh visible Pi sessions.
 - [Paseo dispatch](references/paseo-dispatch.md): `paseo`, Pi provider and explicitly bound workspace.
 - [T3 dispatch](references/t3-dispatch.md): `t3-delegate`, Pi driver; currently read-only until supported isolated mutation placement exists.
 
@@ -76,7 +77,7 @@ Give fresh children the bounded brief and inline role contract from [manifest an
 
 Prefer asynchronous host completion notifications. Keep independent safe work moving; yield when only children remain. A timeout, idle turn, message receipt, or attention signal is not terminal success. Use the host's status/control API to resolve ownership before a replacement writer. Cancellation stops execution and preserves available work; cleanup is a separate decision.
 
-Use `pi-intercom` for Herdr registration, progress, questions, and explicitly named Pi peers. Paseo/T3 Pi sessions may also use it if both endpoints have connected tools and the same reachable broker. Native children use their supervisor channel by default. BB children end their turn with questions and rely on parent notifications; Orca workers use orchestration `ask`/`send`/`reply`. Intercom is messaging, not workspace placement, lifecycle authority, or proof of completion; remote hosts do not inherit local paths or broker connectivity.
+Use `hc` for herdr-core child communication, and `pi-intercom` for older Herdr registration, progress, questions, and explicitly named Pi peers. Paseo/T3 Pi sessions may also use it if both endpoints have connected tools and the same reachable broker. Native children use their supervisor channel by default. BB children end their turn with questions and rely on parent notifications; Orca workers use orchestration `ask`/`send`/`reply`. Intercom is messaging, not workspace placement, lifecycle authority, or proof of completion; remote hosts do not inherit local paths or broker connectivity.
 
 ## 5. Verify, review, and correct
 

@@ -1,0 +1,17 @@
+# herdr-core Pi dispatch
+
+`hc` is herdr-core, not the older `herdr` pane API. Read `hc --skill` and the installed command help. Verify `$HC_TERMINAL_ID` resolves to the parent with `hc get`; record its address and machine. Resolve the requested Pi model/thinking pair and tools before launch. A missing parent, supported Pi pair, or visible-tab capability blocks this host; never switch hosts silently.
+
+## Placement and admission
+
+Apply the shared-root and Git-handoff preflight in `SKILL.md`. For each writer, the parent allocates a new registered, uniquely named worktree under the validated state root from the pinned base, and verifies repository, branch, base, and exclusive ownership. Read-only reviewers use a stable checkout and a fresh Pi session with the read-only role/tool contract. A path in the task text is not placement.
+
+For a separate tab per child, discover the parent's actual `herdr.space` and `herdr.tab` labels through `hc get`; do not guess IDs or reuse the parent's tab. Consult the running Herdr app's installed `herdr-app --skill`/commands when accessible. Its [documented adoption path](https://github.com/herdrdev/herdr-app/blob/master/src/SKILL.md) can show an `hc run` terminal labeled with the parent's `herdr.space` and no `herdr.tab` in a new tab; versions and remote windows may differ. If the app is on another machine, verify its capability and the resulting tab with that app or the owner. A core terminal, a label, an agent-list entry, or an expected tab is not proof of a separate visible tab. If visibility cannot be confirmed, stop before mutation and report the blocker; do not open a hidden worker instead.
+
+Start a fresh interactive Pi terminal with `hc run --bg --json`, explicit `--cwd` bound to the allocated checkout, a unique name, the verified space label, and explicit model/thinking. Put only the no-write registration request in the initial task: report the actual terminal address, cwd, repository/common Git directory, branch/base, runtime-effective model/thinking, available tools, and readiness. Use the current help for launch syntax; do not use Pi print mode, a template with an unverified command, or an existing terminal. Preserve parent-child lifecycle unless the owner explicitly requests otherwise.
+
+Record the returned child address and verify `first_message.sent`; if false or unclear, read the terminal and resolve readiness before any resend. Confirm the child identity and its separate tab, then verify the actual worktree and runtime-effective model/thinking against the packet **before mutation**. A mismatch or missing result blocks; do not send the mutation brief. Once admitted, send the bounded worker brief, or the full inline reviewer contract, through `hc send`. Never infer readiness or correctness from a launch acknowledgement alone.
+
+## Results, questions, and cleanup
+
+Use `hc` to send questions and reports between the verified child and parent; `hc wait`/child notifications report state, not acceptance. Read actual output and inspect the committed result and frozen result ref. A timeout, attention notification, or idle state does not release writer ownership. Interruption and cleanup are separate: use `hc` lifecycle controls only for owned children, confirm the writer stopped before replacement, and preserve uncertain work. The parent verifies the result and handles fixes as specified in the common handoff; visible tabs are not closed without applicable authorization.

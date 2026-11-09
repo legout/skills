@@ -37,3 +37,7 @@ Registration delivery says only "Message sent", with no `openedProjectPane` proo
 ## F. Remote intercom
 
 The selected Paseo daemon is on another machine with a separate Git database; only the parent has a connected local intercom tool. Do not assume local result refs, patch paths, or broker endpoints exist remotely. Require the approved source/result transport plan before mutation and use host blocked-report/follow-up for questions unless both Pi endpoints' connectivity is established.
+
+## G. herdr-core visible-tab admission
+
+The current Pi session has `HC_TERMINAL_ID`, no higher-priority harness or explicit host, and a verified parent core terminal in an app space. The requested worker must run in a separate visible tab on an isolated worktree. The app is remote and no app-side observation has confirmed the child tab. A core launch acknowledgement and an agent-list entry are available; neither proves a tab. Select herdr-core, not the older Herdr pane API; retain the Pi/model/worktree preflight and stop before mutation until the app or owner confirms the separate tab. Do not silently launch a hidden worker or switch hosts.

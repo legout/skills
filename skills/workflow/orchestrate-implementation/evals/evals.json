@@ -74,6 +74,15 @@
       ]
     },
     {
+      "id": 10,
+      "name": "herdr-core-visible-tab-admission",
+      "prompt": "Use orchestrate-implementation and only the supplied facts for host-admission scenario G. State the selected host and admission decision. Do not call tools, start agents, or edit files.",
+      "expected_output": "Selects herdr-core from HC_TERMINAL_ID, not the older Herdr pane API. Preserves Pi/model/worktree preflight and blocks mutation until separate-tab visibility is confirmed. Does not substitute a launch acknowledgement, agent-list entry, or silent host switch.",
+      "files": [
+        "fixtures/host-admission.md"
+      ]
+    },
+    {
       "id": 9,
       "name": "routing-plan-writing-near-miss",
       "prompt": "Write an implementation plan for this approved feature. I want to review the plan before anyone implements it. Do not delegate or begin implementation.",

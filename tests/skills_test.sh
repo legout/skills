@@ -127,6 +127,17 @@ for name in ("SKILL.md", "references/pi-dispatch.md", "references/review-and-rec
     if "re-review the complete replacement range" in text or "review the complete replacement range" in text:
         errors.append(f"{name}: reconstruction still forces a full re-review")
 
+# hc-hosted Pi sessions need their own adapter and visible-tab admission, not the old Herdr pane API.
+main = (workflow / "SKILL.md").read_text()
+core_path = workflow / "references/herdr-core-dispatch.md"
+core = core_path.read_text() if core_path.is_file() else ""
+for rule in ("HC_TERMINAL_ID", "references/herdr-core-dispatch.md"):
+    if rule not in main:
+        errors.append(f"SKILL.md: missing herdr-core routing {rule!r}")
+for rule in ("hc --skill", "herdr.space", "separate tab", "first_message.sent", "runtime-effective model/thinking", "before mutation"):
+    if rule not in core:
+        errors.append(f"herdr-core-dispatch.md: missing admission contract {rule!r}")
+
 # Verified checks may be reused only on an equivalent acceptance surface.
 text = (workflow / "SKILL.md").read_text()
 for rule in ("Reuse verified focused-check evidence", "relevant code, tests, inputs, and environment still match"):
