@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+## 0.3.0 - 2026-11-09
+
 - Added a distinct herdr-core (`hc`) Pi host adapter: admit fresh workers and reviewers in separately verified Herdr-app tabs, with worktree, model, and lifecycle checks; retain the older Herdr pane adapter. Live app/version compatibility is not yet qualified. Model defaults remain worker `zai/glm-5.3`/`high` and reviewer `openai-codex/gpt-6.1-sol`/`high`; installed settings are unchanged.
 - Selectively refreshed `drawio-skill` from its maintained standalone source: portable desktop CLI resolution, structured validator diagnostics, moved/rerouted diagram diffs, importer provenance, embedded SVG images, icon URL checks and export/documentation fixes. Preserved the local pipeline and MIT attribution; new upstream IR/MCP tooling is not bundled. Added a focused validator regression.
 - Updated `grilling` question wording and fresh-context delegation guidance in `grilling` and `research`. Audited all recorded source relationships; documented the still-open coordinated Archify and last30days runtime upgrades without replacing local adaptations or approval gates.
