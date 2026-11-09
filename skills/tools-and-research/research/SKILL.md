@@ -3,7 +3,7 @@ name: research
 description: Investigate a question against high-trust primary sources and capture the findings as a Markdown research note in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.
 ---
 
-Spin up a **background agent** to do the research, so you keep working while it reads.
+Spin up a **background agent** with a fresh context window to do the research, so you keep working while it reads.
 
 Use this for durable, primary-source research. Use `last30days` instead when the question is specifically about recent community discussion, sentiment, or trends.
 
@@ -21,4 +21,4 @@ Research is evidence, even when the owner accepts its findings. Acceptance of fi
 
 ## Provenance
 
-Adapted from [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015/skills/engineering/research) at commit `3cca18b368ae95cdbdebbff572ccafa662551015` (MIT).
+Adapted from [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d/skills/engineering/research) at commit `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d` (MIT).

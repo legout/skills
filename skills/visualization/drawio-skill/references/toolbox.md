@@ -1,6 +1,6 @@
 # Toolbox — every bundled script, by use-case
 
-A map of the 31 bundled scripts grouped by what you're trying to do. The
+A map of the bundled tools and their shared CLI resolver (`drawio_cli.py`), grouped by what you're trying to do. The
 per-task routing table in `SKILL.md` says *when* to reach for each; this says
 *how they fit together*. Read it when you're not sure which script a request
 maps to, or you want to chain several.
@@ -32,7 +32,7 @@ exports it:
 | a repo's git history | how its architecture grew | `timelapse` |
 | a `.drawio` | a shareable interactive viewer | `drawiohtml` (→ HTML: pan/zoom/search/tabs) |
 | a `.drawio` | a written description | `explain` (→ Markdown) |
-| a `.drawio` | a slide deck | `drawio2pptx` (→ PPTX) |
+| a `.drawio` | a slide deck (raster page images, not editable shapes) | `drawio2pptx` (→ PPTX) |
 | a `.drawio` | an animated data-flow | `svgflow` (→ SVG) |
 | a `.drawio` | diagrams-as-code | `drawio2mermaid` (→ Mermaid) |
 | a `.drawio` | the same diagram in another language | `relabel` (extract → translate → apply) |
@@ -80,7 +80,7 @@ The **actual** counterpart to §3 — see `references/live-infra.md`.
 
 ## 5. Compare & evolve
 
-- **`drawiodiff.py`** — diff two `.drawio` (or two live snapshots) → colour-coded graph (added=green, removed=red, changed=orange). Pairs with §4 for drift.
+- **`drawiodiff.py`** — diff two `.drawio` (or two live snapshots) → colour-coded graph (added=green, removed=red, changed=orange, moved=violet, rerouted edges=orange). Pairs with §4 for drift.
 - **`timelapse.py`** — re-run an extractor across git history → a self-contained HTML player of how the architecture grew.
 - **`heatmap.py`** — recolour any `.drawio` by a metrics file (CSV/JSON): each node shaded low→high on a gradient by its value (`--palette`, optional `--size`, auto legend). Turns a static architecture into a cost / latency / traffic / error-rate heat map.
 - **`buildup.py`** — reveal ONE diagram's cells in dependency order (topological over its edges) → self-contained HTML player (embedded PNG frames, play/pause/step/scrub); optional `--gif`. Needs the draw.io CLI.
@@ -93,7 +93,7 @@ The skill runs both directions — these turn a `.drawio` back into something el
 
 - **`drawiohtml.py`** — → a self-contained **interactive HTML viewer**: every page inlined as SVG with tabs, drag-pan, wheel-zoom, node search, and working drill-down links (C4 `data:page/id` links switch tabs). Share one file; no draw.io, no server.
 - **`explain.py`** — → structured **Markdown** (components by tier, relations, per-page C4).
-- **`drawio2pptx.py`** — → a 16:9 **PowerPoint** deck, one page per slide (needs `python-pptx`).
+- **`drawio2pptx.py`** — → a 16:9 **PowerPoint** deck, one raster page image per slide, not individually editable shapes (needs `python-pptx`).
 - **`svgflow.py`** — → an **animated SVG** (edges flow as marching ants); renders on GitHub.
 - **`drawio2mermaid.py`** — → **Mermaid** `flowchart` text (diagrams-as-code GitHub renders).
 - **`runbook.py`** — a flowchart/decision-tree → a self-contained **click-through HTML runbook** (current-step text, per-edge choice buttons, breadcrumb, Back/Restart). Reads the XML directly — no draw.io CLI needed.
@@ -102,6 +102,6 @@ The skill runs both directions — these turn a `.drawio` back into something el
 
 - **`relabel.py`** — swap every label via a JSON map, layout untouched — `--extract` dumps an identity map of all labels (vertices, edges, UserObjects, page names), translate the values, `--map` applies them. Built for bilingual (EN/CN) variants of one diagram.
 - **`restyle.py`** — apply a style preset (user or built-in, e.g. `dark`) to an existing `.drawio`: palette remap by hue, font, dark-theme extras, page background. Layout, shapes, and edge routing stay put.
-- **`validate.py`** — deterministic structural lint (dangling edges, dup/reserved ids, overlaps; `--score` for layout readability). Run before exporting.
+- **`validate.py`** — deterministic structural lint (dangling edges, dup/reserved ids, overlaps; `--score` for layout readability). Stable finding codes and fix hints are available with `--json`. Run before exporting.
 - **`repair_png.py`** — fix draw.io's truncated IEND chunk after every `-e` PNG export (issue #8).
 - **`encode_drawio_url.py`** — encode a `.drawio` into a diagrams.net browser URL when the CLI is unavailable (`--edit` for an editable editor URL).

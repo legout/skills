@@ -27,7 +27,7 @@ review for a repo.
 ## Adopting it in your own repo
 
 1. Copy `.github/actions/drawio-diff/` and `skills/visualization/drawio-skill/` (or at
-   least `scripts/prdiff.py`, `scripts/drawiodiff.py`, `scripts/autolayout.py`)
+   least `scripts/prdiff.py`, `scripts/drawio_cli.py`, `scripts/drawiodiff.py`, `scripts/autolayout.py`)
    into your repo.
 2. Copy `.github/workflows/drawio-pr-diff.example.yml` to
    `.github/workflows/drawio-pr-diff.yml`, drop the `if: false` guard, and

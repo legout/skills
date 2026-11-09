@@ -30,12 +30,14 @@ Format a round like so:
 ➡️ <your recommended answer>
 ```
 
+Word each question so "yes" accepts your recommended answer.
+
 Each answered round reshapes the tree: settled decisions unblock their dependents, so recompute the frontier before the next round. A question whose answer depends on a question still open in this round belongs to a later round.
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only its downstream questions wait for the report — ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent with a fresh context window to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only its downstream questions wait for the report — ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
 
 The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
 
 ## Provenance
 
-Adapted from [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015), combining `grilling`, `grill-me`, and `grill-with-docs` at commit `3cca18b368ae95cdbdebbff572ccafa662551015` (MIT).
+Adapted from [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/4ae2317ddb22b046e26455e4f9c9b3aaaf62212d), combining `grilling`, `grill-me`, and `grill-with-docs` (MIT). Question wording and fresh-context fact gathering follow `4ae2317`; unchanged alias pins remain in `sources.json`.

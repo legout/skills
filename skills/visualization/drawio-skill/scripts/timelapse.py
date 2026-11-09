@@ -37,6 +37,10 @@ import tarfile
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:  # loaded by file path (tests): keep the sibling import working
+    sys.path.insert(0, HERE)
+from drawio_cli import resolve_drawio
+
 IMPORTERS = {"pyimports", "jsimports", "goimports", "rustimports", "pyclasses",
              "tfimports", "k8simports", "composeimports", "sqlerd"}
 
@@ -93,11 +97,13 @@ def build_frame(importer, importer_args, work_path, direction, tmp):
         capture_output=True)
     if imp.returncode != 0 or not os.path.exists(graph_json):
         return None
-    graph = json.loads(open(graph_json, encoding="utf-8").read())
+    with open(graph_json, encoding="utf-8") as f:
+        graph = json.loads(f.read())
     if not graph.get("nodes"):
         return None
     graph["direction"] = direction
-    open(graph_json, "w", encoding="utf-8").write(json.dumps(graph))
+    with open(graph_json, "w", encoding="utf-8") as f:
+        f.write(json.dumps(graph))
     drawio = os.path.join(tmp, "frame.drawio")
     lay = subprocess.run(
         [sys.executable, os.path.join(HERE, "autolayout.py"), graph_json, "-o", drawio],
@@ -105,11 +111,16 @@ def build_frame(importer, importer_args, work_path, direction, tmp):
     if lay.returncode != 0 or not os.path.exists(drawio):
         return None
     png = os.path.join(tmp, "frame.png")
-    exp = subprocess.run(["drawio", "-x", "-f", "png", "--width", "1600",
+    drawio_exe = resolve_drawio()
+    if not drawio_exe:
+        return None
+    exp = subprocess.run([drawio_exe, "-x", "-f", "png", "--width", "1600",
                           "-o", png, drawio], capture_output=True)
     if exp.returncode != 0 or not os.path.exists(png):
         return None
-    return open(png, "rb").read(), len(graph["nodes"]), len(graph["edges"])
+    with open(png, "rb") as f:
+        png_data = f.read()
+    return png_data, len(graph["nodes"]), len(graph["edges"])
 
 
 def build_html(frames, title):
@@ -209,6 +220,8 @@ def main():
                  + ", ".join(sorted(IMPORTERS)) + ")")
     if not os.path.isdir(args.path):
         sys.exit(f"error: {args.path} is not a directory")
+    if not resolve_drawio():
+        sys.exit("error: draw.io CLI not found on PATH (is the draw.io CLI installed?)")
     code, top = git(args.path, "rev-parse", "--show-toplevel")
     if code != 0:
         sys.exit(f"error: {args.path} is not inside a git repository")
@@ -238,12 +251,14 @@ def main():
             frames.append((png, h, date, subj, nn, ee))
             if args.keep_frames:
                 fp = f"{os.path.splitext(args.output)[0]}-frame{len(frames):02d}.png"
-                open(fp, "wb").write(png)
+                with open(fp, "wb") as f:
+                    f.write(png)
 
     if not frames:
         sys.exit("error: no frames produced (importer found nothing in any commit)")
     title = f"Architecture evolution — {os.path.basename(os.path.abspath(args.path))}"
-    open(args.output, "w", encoding="utf-8").write(build_html(frames, title))
+    with open(args.output, "w", encoding="utf-8") as f:
+        f.write(build_html(frames, title))
     sys.stderr.write(f"wrote {args.output} ({len(frames)} frames)\n")
 
 

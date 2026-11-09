@@ -239,6 +239,29 @@ The existing normal creator, maintainer and feature-map examples are unchanged b
 
 An ADR explains why a durable decision was made; it is not a behavioral specification. Bounded changes proceed from an approved in-chat design directly to orchestration. Architectural or behavior-heavy changes get a written specification with observable acceptance examples, followed by the smallest executable plan. Tracker tickets are created only for established tracker workflows, explicit requests, or coordination that must outlive one run; the ticket set replaces rather than duplicates the implementation plan. Independent subsystems become separate plans or ticket groups instead of one oversized plan.
 
+## Source refresh — 2026-11-09
+
+Compared all 508 existing file relationships with the recorded branch heads across 17 repositories for the 44-skill catalog. At the original source paths, 135 relationships were content-identical, 198 differed, and 175 were absent. These are source comparisons, not 198 required local changes: adapted workflows may already incorporate the useful material. Historical pins remain valid when current paths disappear.
+
+| Local owners | Disposition |
+| --- | --- |
+| `drawio-skill` | Selectively synchronized with standalone `Agents365-ai/drawio-skill@053600a8996159f256470dd49ac8d783e5fde588`. Migrated 60 existing relationships to the maintained repository and added the exact vendored `drawio_cli.py` helper. Retained the historical PR-bot reference and corrected its helper-copy requirement. |
+| `grilling`, `research` | Adopted fresh-context child guidance from `mattpocock/skills@4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`; `grilling` also words questions so yes accepts the recommendation. Existing artifact and approval gates remain. |
+| `agent-md-refactor`, `chrome-cdp`, `doc-coauthoring`, `documentation-writer`, `marimo-notebook`, `merge-worktree`, `modern-python`, `project-formal-verification`, `project-verification`, `workflow-from-chats` | Mapped source content is unchanged; no pin bump for unrelated repository movement. |
+| `deslop`, `domain-modeling`, `effective-agent-skills`, `excalidraw`, `handoff`, `humanizer`, `improve-skill`, `marimo-pair`, `orchestrate-implementation`, `prototype-question`, `review-codebase-architecture`, `shape-design`, `systematic-debugging`, `terminal-session-control`, `verification-before-completion`, `write-implementation-plan` | Retained local adaptations and historical relationships. Relevant changes include formatting/wording, glossary filename changes, invocation metadata, fixed models and expanded delegation/PR rituals; these do not supersede catalog workflow ownership or approval gates. Marimo's cell-boundary guidance and secret redaction in debugging are already present. |
+| `capture-project-vision`, `pi-custom-model` | Current original paths are absent. Retained retrievable historical pins; no unrelated replacement. |
+| `archify`, `last30days` | Runtime upgrades remain open, not synchronized; see below. |
+| `agent-guardrails`, `document-extract`, `document-to-markdown`, `docx`, `land-changes`, `make-release`, `pdf`, `planning-contract`, `pptx`, `second-brain`, `xlsx` | Local owners without imported-file mappings; no upstream package to replace. This pass does not certify every external documentation claim. |
+
+Draw.io adopts dotted/default-install CLI resolution (including Windows), structured validator findings, moved/rerouted diff classification, source provenance in code importers, SVG image embedding, icon URL validation, UTF-8 redirected explanations, file-handle fixes, SVG-text guidance and constrained style-preset paths. The narrow extractor/layout pipeline stays in place. New Diagram IR, `diagramctl`/MCP, importers and CI capabilities are intentionally not imported; the toolbox names only bundled tools. License remains MIT, with the existing notice retained. Changed files keep local adaptations; exact equality applies only to relationships marked `vendored`.
+
+Open coordinated upgrades:
+
+- **Archify:** head `11b0d6031853bdae89eed57e7979aabbf0034097` packages Archify 3.2.0, adds diagram types, moves tests/viewer build machinery outside the distributable subtree, and changes the package license from MIT to Apache-2.0 with MIT-covered portions/notices. A file-only merge would retain obsolete tests and miss package/build/license dependencies. The current coherent MIT snapshot is unchanged; no claim that its engine is current.
+- **last30days:** head `de9bf7232b37a18df034b1165a45a41daadef7e2` is 3.32.0, changes 75 mapped files and removes `reddit_rss.py`. Its engine and the local setup/discovery/plan/output references must be upgraded together; merging only conflict-free scripts would break that contract. The existing coherent package is unchanged.
+
+Verification for this selective refresh: the new local validator JSON regression failed before the update and passed afterward; 42 focused upstream tests passed against the actual local scripts (resolver, validator/geometry, icon host checks, importers, diff classification, redirected UTF-8 and SVG image embedding). The local Python importer → existing Graphviz autolayout → refreshed validator chain also passed with the expected dependency/provenance and zero structural errors. The catalog check validated 44 skills, and the source checker validated all 509 pinned paths and vendored hashes; retained branch drift remains informational. These are offline CLI/fixture checks, not desktop rendering, live provider research or agent-routing evaluations. No installation, dependency change, publication or catalog version bump is included.
+
 ## Safety and licensing decisions
 
 - Runtime CLI help is authoritative for BB, Herdr, cmux, and Pi.

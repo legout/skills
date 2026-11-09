@@ -3,7 +3,7 @@ name: drawio-skill
 description: Create and export draw.io diagrams including architecture, flowchart, ER, UML, BPMN, network, and data visualizations.
 ---
 
-> Adapted from [`Agents365-ai/365-skills`](https://github.com/Agents365-ai/365-skills/tree/08f4791bbe21f42ef8e4013c7bd15c92347b916f) at commit `08f4791bbe21f42ef8e4013c7bd15c92347b916f` (MIT). The maintained upstream is now [`Agents365-ai/drawio-skill`](https://github.com/Agents365-ai/drawio-skill/tree/57270820d3cd71cbdf4fb6b2f7091d4fb37bb019/skills/drawio-skill); selected XML and troubleshooting guidance adapts that revision. Bundled scripts retain their original pins in `sources.json`.
+> Adapted from [`Agents365-ai/drawio-skill`](https://github.com/Agents365-ai/drawio-skill/tree/053600a8996159f256470dd49ac8d783e5fde588/skills/drawio-skill) at commit `053600a8996159f256470dd49ac8d783e5fde588` (MIT), originally from [`Agents365-ai/365-skills`](https://github.com/Agents365-ai/365-skills/tree/08f4791bbe21f42ef8e4013c7bd15c92347b916f). Selected runtime fixes are synchronized; the new Diagram IR/MCP pipeline and extra importers are not bundled. Exact file-level pins are in `sources.json`.
 
 # Draw.io diagrams
 
@@ -20,7 +20,7 @@ Create `.drawio` XML and requested PNG, SVG, PDF, or JPG exports. Use `excalidra
    - hand-written XML for precise styling or geometry: read [XML authoring](references/xml-authoring.md);
    - large graphs: read [autolayout](references/autolayout.md).
 5. For a named diagram family, read [diagram types](references/diagram-types.md). For stock or vendor symbols, use [shape search](references/shapes.md); do not guess style strings.
-6. Run `python3 scripts/validate.py <file.drawio>` before export.
+6. Run `python3 scripts/validate.py <file.drawio>` before export; add `--json` for stable finding codes and fix hints.
 7. Export a preview PNG without `-e`, capped with `--width 2000`. Inspect it for overlaps, clipping, missing connections, off-canvas shapes, and unreadable labels. If edge routing is ambiguous, inspect renderer paths using [troubleshooting](references/troubleshooting.md); structural validation alone cannot prove visual correctness.
 8. Apply targeted edits and repeat the preview until approved, at most five user-review rounds.
 9. Export final requested formats. For editable PNG use `-e`, a `.drawio.png` suffix, then run `python3 scripts/repair_png.py <file.drawio.png>`.

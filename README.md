@@ -171,6 +171,8 @@ for f in tests/skills_test.sh tests/orchestrator_handoff_test.sh scripts/check-s
 done
 bash tests/skills_test.sh
 bash tests/orchestrator_handoff_test.sh
+# Focused stdlib-only draw.io validator contract.
+python3 tests/drawio_skills_test.py
 # Office real-file checks require uv and LibreOffice; optional output directory keeps previews.
 uv run --no-project tests/office_skills_test.py
 # Synthetic PDF artifact/export checks; no private inputs or model inference required.

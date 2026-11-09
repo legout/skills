@@ -4,7 +4,8 @@
 Exports each page of a (multi-page) .drawio to a PNG via the draw.io CLI and
 lays them into a 16:9 .pptx, one page per slide, scaled to fit with the page
 name as the slide title. A C4 model (Context / Container / Component) becomes a
-ready-to-present deck; any multi-page diagram becomes a slide sequence.
+ready-to-present deck; any multi-page diagram becomes a slide sequence. Each
+page is a PNG image, not a collection of individually editable PowerPoint shapes.
 
   python3 drawio2pptx.py c4.drawio -o c4.pptx
   python3 drawio2pptx.py architecture.drawio          # -> architecture.pptx
@@ -22,6 +23,11 @@ import subprocess
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:  # loaded by file path (tests): keep the sibling import working
+    sys.path.insert(0, HERE)
+from drawio_cli import resolve_drawio
 
 
 def page_names(path):
@@ -41,9 +47,12 @@ def png_size(path):
     return struct.unpack(">II", head[16:24])
 
 
-def export_page(drawio_file, index, out_png, scale):
+def export_page(drawio_file, index, out_png, scale, drawio=None):
     """Export one page (1-based index) to PNG via the draw.io CLI."""
-    r = subprocess.run(["drawio", "-x", "-f", "png", "--page-index", str(index),
+    exe = drawio or resolve_drawio()
+    if not exe:
+        return False
+    r = subprocess.run([exe, "-x", "-f", "png", "--page-index", str(index),
                         "-s", str(scale), "-o", out_png, drawio_file],
                        capture_output=True)
     return r.returncode == 0 and os.path.exists(out_png)
@@ -64,6 +73,10 @@ def main():
     except ImportError:
         sys.exit("error: python-pptx is required (pip install python-pptx)")
 
+    drawio = resolve_drawio()
+    if not drawio:
+        sys.exit("error: draw.io CLI not found on PATH (is the draw.io CLI installed?)")
+
     names = page_names(args.file)
     out = args.output or os.path.splitext(args.file)[0] + ".pptx"
 
@@ -79,7 +92,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         for i, name in enumerate(names, 1):            # draw.io --page-index is 1-based
             png = os.path.join(tmp, f"page{i}.png")
-            if not export_page(args.file, i, png, args.scale):
+            if not export_page(args.file, i, png, args.scale, drawio):
                 sys.stderr.write(f"warning: page {i} export failed — skipped\n")
                 continue
             slide = prs.slides.add_slide(blank)
