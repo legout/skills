@@ -3,7 +3,7 @@ name: deslop
 description: Find and apply behavior-preserving KISS simplifications in a diff, file, directory, or project. Use for simplify, deslop, cleanup proposals, explicit direct cleanup, or an accepted completion-boundary pass; not bug fixing or architecture-only audits.
 ---
 
-> Adapted from [`cursor/plugins`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99), `cursor-team-kit/skills/deslop/SKILL.md`, at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor). Subtraction-first, caller-migration, legacy-deletion, and behavior-pin principles are additionally adapted from `pstack/skills/poteto-mode` at the same commit.
+> Adapted from [`cursor/plugins`](https://github.com/cursor/plugins/tree/93b00b89ef425a9c1bac0d0b317dfc49c930ac99), `cursor-team-kit/skills/deslop/SKILL.md`, at commit `93b00b89ef425a9c1bac0d0b317dfc49c930ac99` (MIT, Copyright (c) 2026 Cursor). Subtraction-first, caller-migration, legacy-deletion, and behavior-pin principles are additionally adapted from `pstack/skills/poteto-mode` at the same commit. Change-coupling and root-cause grouping adapt [`caldoai/skills`'s `untangle-codebase`](https://github.com/caldoai/skills/blob/f3cf47774975a7d9fca45730babf4ff7ad765ada/skills/untangle-codebase/SKILL.md) (MIT, Copyright (c) 2026 Maze).
 
 # Deslop: simpler code, same behavior
 
@@ -23,10 +23,10 @@ Reduce unnecessary code, concepts, indirection, and reader effort. Prefer clear 
 Read project instructions, deliberate design decisions, relevant code, and actual callers. Use one bounded pass across these three perspectives; zero worthwhile proposals is valid. Additional reviewers are optional, only when explicitly requested or required by project rules and delegation is authorized; then read [the review brief](references/review.md).
 
 - **Reuse:** demonstrably equivalent duplicate logic or work already done by a helper, standard library, framework, or platform guarantee. Cite the alternative; different contracts need not be merged.
-- **Quality:** dead code/state, narration comments, needless nesting, pass-through wrappers, parameter sprawl, and fragmented ownership. Check exports, routes, registrations, configuration, reflection, and external consumers before deleting; missing imports or a single caller are not proof. Prefer direct data flow and locality, while preserving deliberate wrappers, meaningful modules, and intentional duplication.
+- **Quality:** dead code/state, narration comments, needless nesting, pass-through wrappers, parameter sprawl, and fragmented ownership. Ask whether pieces should change together: expose hidden dependencies and separate needless coupling. Check exports, routes, registrations, configuration, reflection, and external consumers before deleting; missing imports or a single caller are not proof. Preserve deliberate wrappers, meaningful modules, and intentional duplication.
 - **Efficiency:** concrete repeated computation/reads, unused work, or overly broad operations. Show the actual cost and behavior-equivalent reduction; do not turn a hypothetical speedup into a concurrency or interface change.
 
-For each candidate, explain the current complexity cost and the smallest simpler alternative. AI authorship, style preference, file count, and line-count reduction alone are not reasons. Keep uncertain deletions as questions rather than recommendations to remove code. Separate discovered bugs from cleanup; do not silently fix behavior under a simplification request.
+For each candidate, explain the complexity cost and smallest simpler alternative. Group related symptoms under one root-cause proposal when justified; don't invent an abstraction to unite unrelated problems. Use callers and, when useful, Git co-change history as evidence, not proof of coupling by itself. AI authorship, style, file/line counts, and special-case counts alone are not reasons. Keep uncertain deletions as questions. Separate discovered bugs from cleanup; do not silently fix behavior under a simplification request.
 
 ## Proposals and selection
 

@@ -5104,6 +5104,26 @@
       "mode": "vendored",
       "upstream_sha256": "a4c1cd83d128b918cfe8dff09ccfecc4208c186b5d8531664549dc09c0680163",
       "local_sha256": "a4c1cd83d128b918cfe8dff09ccfecc4208c186b5d8531664549dc09c0680163"
+    },
+    {
+      "local": "skills/engineering/deslop/SKILL.md",
+      "source": "skills/untangle-codebase/SKILL.md",
+      "repository": "https://github.com/caldoai/skills",
+      "branch": "main",
+      "commit": "f3cf47774975a7d9fca45730babf4ff7ad765ada",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Maze",
+      "mode": "adapted"
+    },
+    {
+      "local": "skills/workflow/review-codebase-architecture/SKILL.md",
+      "source": "skills/untangle-codebase/SKILL.md",
+      "repository": "https://github.com/caldoai/skills",
+      "branch": "main",
+      "commit": "f3cf47774975a7d9fca45730babf4ff7ad765ada",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Maze",
+      "mode": "adapted"
     }
   ]
 }

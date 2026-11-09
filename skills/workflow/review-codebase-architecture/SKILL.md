@@ -1,37 +1,38 @@
 ---
 name: review-codebase-architecture
-description: Review a codebase for high-value module-deepening and seam improvements without changing code; use for architecture audits or testability and navigability problems.
+description: Review architecture, module seams, and implicit state machines without editing code. Use for architecture audits, lifecycle analysis, or testability and navigability problems.
 ---
 
-> Adapted from [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015) at commit `3cca18b368ae95cdbdebbff572ccafa662551015` (MIT).
+> Adapted from [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/3cca18b368ae95cdbdebbff572ccafa662551015) at commit `3cca18b368ae95cdbdebbff572ccafa662551015` (MIT). Change-coupling analysis additionally adapts [`caldoai/skills`'s `untangle-codebase`](https://github.com/caldoai/skills/blob/f3cf47774975a7d9fca45730babf4ff7ad765ada/skills/untangle-codebase/SKILL.md) (MIT, Copyright (c) 2026 Maze).
 
 # Architecture review
 
-Review architecture without editing code or defining final interfaces. Use the repository's domain terms and existing ADRs. Use this vocabulary consistently: module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, and locality.
+Use repository domain terms and ADRs. Vocabulary: module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, and locality.
 
 ## Scope
 
-Use the user's named area. Otherwise inspect recent history for repeatedly changed hotspots before scanning broadly. Follow actual call paths and tests.
+Use the named area; otherwise start with recent change hotspots. Trace callers and tests; Git co-change supports, but does not prove, coupling.
 
 Look for evidence of:
 
 - shallow modules whose interface nearly matches their implementation;
-- one concept scattered across many files;
+- pieces that must change together but are scattered or implicitly linked;
+- pieces that change independently but are coupled, including stable modules depending on volatile details;
+- implicit state machines across flags, callbacks, or status fields; for stateful flows, read [state lifecycles](references/state-lifecycles.md);
 - duplicated orchestration around a missing deep interface;
-- tests that reach through internals because no stable public seam exists;
-- details leaking between coupled modules; and
-- extracted helpers that improve unit-test access but reduce locality.
+- tests reaching through internals or test-only helpers reducing locality; and
+- implementation details leaking to callers.
 
 Apply the deletion test: deleting a good deep module should expose and concentrate meaningful complexity, not merely move its name.
 
 ## Report
 
-Rank only evidence-backed candidates. For each include files, observations, current interface, hidden complexity, proposed deeper module or seam, benefits, risks, affected ADRs, blast radius, and one strength: `Strong`, `Worth exploring`, or `Speculative`.
+Rank evidence-backed candidates: files, observations, current interface, hidden complexity, proposed deeper module/seam, benefits, risks, affected ADRs, blast radius; strength `Strong`, `Worth exploring`, or `Speculative`.
 
-Use Markdown by default. When the user asks for a visual report or diagrams materially clarify the relationships, follow [the HTML report guide](references/html-report.md) and write the result outside the repository unless the user asks otherwise.
+Default to Markdown. For requested or materially useful visuals, follow [the HTML report guide](references/html-report.md); write outside the repository unless asked otherwise.
 
 End with one recommendation and a justified do-nothing option.
 
 ## Boundary
 
-Do not edit code or settle interfaces. Ask which candidate to explore, then route the selected candidate to `shape-design`. Use `write-implementation-plan` only after the design is approved.
+Do not edit code or settle interfaces. Ask which candidate to explore; route it to `shape-design`, then `write-implementation-plan` only after design approval.

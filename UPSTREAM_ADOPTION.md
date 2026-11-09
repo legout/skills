@@ -146,6 +146,14 @@ The owner approved one cleanup entrypoint: scope is an input, not a second skill
 
 The `simplify-code` invocation is retired without a wrapper. Update active callers and manually migrate installed copies; catalog edits do not authorize installation. This incompatible invocation change requires a minor release while the catalog is 0.x. Existing source pins remain unchanged and the old adaptations move to `deslop` and its review reference. Earlier plans and research retain their historical names with explicit supersession notes.
 
+### Change-coupling analysis — 2026-11-09
+
+Selectively adapt [`caldoai/skills`'s `untangle-codebase`](https://github.com/caldoai/skills/blob/f3cf47774975a7d9fca45730babf4ff7ad765ada/skills/untangle-codebase/SKILL.md) (MIT, Copyright (c) 2026 Maze) into existing owners, not a new skill. `deslop` gains hidden/needless coupling checks and groups related symptoms under a root-cause proposal; `review-codebase-architecture` examines scattered co-changing pieces, unnecessary coupling, and dependencies on volatile details. Actual callers and optional Git co-change history support analysis; history alone is not proof. Keep legitimate special cases and all existing scope, behavior-preservation, and approval gates. Do not adopt fix-everything authority, mandatory decision logs, special-case-count targets, or repeat-until-empty reviewer loops. Catalog-only changes do not authorize installation.
+
+### Implicit lifecycle analysis — 2026-11-09
+
+The owner supplied an X-post prompt about discovering implicit state machines and improving UX/DX/AX; its original author, URL, and popularity are unverified. The independently authored `review-codebase-architecture/references/state-lifecycles.md` turns that idea into scoped, evidence-backed lifecycle inspection and concrete trade-offs, not an all-three-always guarantee. The existing architecture-review entrypoint owns discovery and routes consequential redesigns through its unchanged approval handoff. No new skill, dependency, formal-check mandate, or change to `shape-design` or `deslop` is needed.
+
 ## Selective upstream refresh
 
 Keep pins per file rather than replacing adapted packages wholesale. This pass adopts safer treatment of input text from `blader/humanizer` and marimo's cell-boundary and dataflow guidance from `marimo-team/marimo-pair`. It also records the existing local ADR-path edits as an adaptation, without overwriting them. The large script and asset changes in `last30days`, `archify`, and the relocated `Agents365-ai/365-skills` packages need separate reviews; their existing pins remain valid. Other upstream drift is not a reason to change catalog versions or discard local workflows. See `sources.json` for the exact file-level pins.
