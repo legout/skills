@@ -47,7 +47,7 @@ Source pin: `davidondrej/skills@11dee2ebc2d045806b686ba0b57746f1e3d7e331`.
 
 | Requested skill | Decision | Destination and rationale |
 | --- | --- | --- |
-| `herdr` | Merge | `terminal-session-control`; retain the `HERDR_ENV` guard, caller-context discovery, read-before-send, and native waits. Remove unsafe auto-approval, invented session targeting, and personal model advice. Canonical Herdr is also cited. |
+| `herdr` | Merge | `terminal-session-control`; retain the `HERDR_ENV` guard for legacy TUI only, caller-context discovery, read-before-send, and native waits. Desktop app/core use `herdr-app`/`hc` without that legacy guard. Remove unsafe auto-approval, invented session targeting, and personal model advice. Canonical Herdr is also cited. |
 | `bb-cli` | Reject | A fast-moving privileged product manual should come from BB's installed CLI skill and live `bb help`, not a small third-party snapshot. It would also overlap orchestration. |
 | `cmux` | Merge | `terminal-session-control`; retain explicit live target discovery, read-before-send, focus preservation, and live-help authority. Omit browser cookies, personal settings, topology mutation, and socket internals. Canonical cmux is reference-only because its source is GPL. |
 | `git-worktree` | Merge | Safety and bootstrap rules move into `orchestrate-implementation`; no second worktree creator. |
@@ -277,6 +277,6 @@ Verification for this selective refresh: the new local validator JSON regression
 ## Safety and licensing decisions
 
 - Runtime CLI help is authoritative for BB, Herdr, cmux, and Pi.
-- `terminal-session-control` interacts only with explicitly identified existing targets in the caller's Herdr session or cmux workspace and never launches agents or uses permission-bypass flags.
+- `terminal-session-control` interacts only with explicitly identified existing targets in Herdr app/core, the caller's legacy Herdr TUI session, or a cmux workspace; it never launches agents or uses permission-bypass flags.
 - The canonical cmux repository is GPL-3.0-or-later. It is cited as factual authority only; no cmux source text is copied.
 - All copied or materially adapted MIT content has an in-skill source block, a `sources.json` relationship, and a notice in `THIRD_PARTY_NOTICES.md`.

@@ -89,7 +89,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 - **`marimo-notebook`** — file-based marimo notebooks.
 - **`marimo-pair`** — live marimo-kernel collaboration.
 - **`pi-custom-model`** — explicit custom Pi model registration.
-- **`terminal-session-control`** — explicit Herdr or cmux target interaction.
+- **`terminal-session-control`** — existing-target interaction in Herdr app/core (`herdr-app`, `hc`), legacy Herdr TUI (`herdr`), or cmux.
 
 ### Visualization
 

@@ -1,6 +1,6 @@
 ---
 name: terminal-session-control
-description: Safely inspect or interact with an existing Herdr session or cmux workspace when the user explicitly names that tool and target. Use for reading output, sending a prompt, or waiting for an already-running terminal or agent.
+description: Safely read output, send authorized input, or wait on existing terminals and agents in the Herdr desktop app/herdr-core (herdr-app, hc), legacy Herdr TUI (herdr), or cmux when the user names the tool and target.
 ---
 
 # Terminal Session Control
@@ -17,40 +17,38 @@ Operate only the terminal tool the user explicitly requested. This skill coordin
 6. Never close, kill, restart, release, interrupt, or reconfigure a terminal target without separate explicit approval.
 7. Treat approval prompts, password prompts, and agent questions as blocked states. Show them to the user instead of answering on their behalf.
 
-## Herdr
+## Select the backend
 
-Proceed only inside a Herdr-managed pane:
+- **Herdr desktop app / herdr-core:** `herdr-app` maps spaces/tabs/panes to terminals; `hc` reads and controls those terminals. Neither requires `HERDR_ENV=1`. `$HC_TERMINAL_ID`, when present, is your terminal address, not a pane ID.
+- **Legacy Herdr TUI:** `herdr` is a different program. Only this branch requires `HERDR_ENV=1`; read [references/herdr-tui.md](references/herdr-tui.md) before using it.
+- **cmux:** use its branch below. If “Herdr” is ambiguous, identify app/core versus TUI from live context or ask; a missing legacy variable alone is not evidence of no access.
 
-```bash
-test "${HERDR_ENV:-}" = 1
-herdr --help
-herdr agent
-herdr pane
-```
+## Herdr app / core
 
-If `HERDR_ENV` is not `1`, stop. The installed `herdr` command addresses the caller's current session; do not invent or require a session-name flag.
-
-Discover current state with the supported forms shown by help, typically:
+Read the installed interfaces, then discover existing targets:
 
 ```bash
-herdr pane current --current
-herdr agent list
-herdr pane list --workspace "$HERDR_WORKSPACE_ID"
+herdr-app --help
+hc --help
+herdr-app ls
+herdr-app status
+hc ls --json
 ```
 
-Use a unique live agent name or explicit pane ID from the JSON response. For an agent, prefer the agent surface because it understands lifecycle state:
+Do not invoke bare `herdr-app`, `herdr`, or `hc`: they open/raise or attach UI. If the requested app/core is unavailable, report that; do not start or restart it. For app configuration/API questions read `$HERDR_APP_HOME/AGENTS.md` if set, otherwise `~/.config/herdr-app/AGENTS.md`; the app rewrites it, so never edit it.
+
+Map the user-named space/tab/pane from `herdr-app ls` to its **terminal** address. Confirm with `hc get`; preserve remote qualifiers such as `oracle/t7`. A mod pane has no terminal. Resolve ambiguity before reading unrelated terminals. `hc ls` may show launch cwd; `hc get` exposes current cwd under `foreground.cwd`.
 
 ```bash
-herdr agent get <agent-name-or-pane-id>
-herdr agent read <agent-name-or-pane-id> --source recent-unwrapped --lines 120
-herdr agent prompt <agent-name-or-pane-id> "<prompt>" --wait --timeout 120000
+hc get --help
+hc read --help
+hc get <terminal-address> --json
+hc read <terminal-address> --lines 0 --json
 ```
 
-For an ordinary process, use the pane commands advertised by the installed help, such as `pane read`, `pane run`, and `pane wait-output`. Prefer `--current` or an explicit pane ID over UI focus. Parse returned IDs and state from JSON rather than guessing.
+Start with the visible screen. If needed, request bounded history with `--lines 120`; history reads can scroll full-screen programs temporarily. Inspect `complete`/`why`: while working, blocked or errored, a history read may return only the screen. Do not claim complete logs from incomplete output.
 
-A successful wait means the requested lifecycle or output condition was observed; it does not prove semantic correctness or completion of background jobs. A retained agent identity may belong to a suspended process while a shell is in the foreground: inspect the pane before sending. If an agent is `blocked` or `unknown`, inspect its state and recent output, then ask the user what to do.
-
-After a timeout or `agent_prompt_stalled`, read state and output before retrying: the prompt may already have been delivered. Do not send it twice merely because the wait failed.
+For authorized input or waiting, check `hc send --help`, `hc keys --help` or `hc wait --help` first. `hc send` pastes **and presses Enter**; use only the explicit terminal address and approved text. Never use `--force` to bypass a blocked prompt. Check live foreground/state before sending; an old agent identity is not proof the agent is foreground. `hc wait` uses seconds; `--output` matches future output, not existing screen text. A wait proves only its reported condition, not task correctness. After timeouts or delivery errors, read state/output before retrying to avoid duplicate input. Do not change app focus, labels, layout or terminal keep settings to inspect output.
 
 ## cmux
 
@@ -85,4 +83,4 @@ Report:
 
 ## Sources and Adaptations
 
-Herdr behavior is based on the canonical Apache-2.0 [`herdr` skill](https://github.com/herdrdev/herdr/blob/5bd900d88c80d95f5b145397e45bbeea398b8165/skills/herdr/SKILL.md). cmux command vocabulary is fact-checked against the canonical GPL-3.0 [`cmux` skill](https://github.com/manaflow-ai/cmux/blob/4256df053a63339d7e786157a9846a765762b4cf/skills/cmux/SKILL.md) without copying its text. The narrow existing-target workflow adapts MIT guidance from David Ondrej's [`herdr`](https://github.com/davidondrej/skills/blob/11dee2ebc2d045806b686ba0b57746f1e3d7e331/skills/agent-orchestration/herdr/SKILL.md) and [`cmux`](https://github.com/davidondrej/skills/blob/11dee2ebc2d045806b686ba0b57746f1e3d7e331/skills/agent-orchestration/cmux/SKILL.md) skills. Exact relationships and pins are recorded in `sources.json`.
+For provenance and upstream pins, read [references/sources.md](references/sources.md). Installed help and the generated app guide are authoritative for current commands.

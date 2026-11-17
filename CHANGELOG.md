@@ -7,6 +7,7 @@ matching Git tag exists.
 ## Unreleased
 
 - Added `test-diet` for proposal-first test-suite slimming: inventory, spec-derived proof map, per-test classification, deletion evidence via a mapped surviving assertion plus a caught fault (coverage only finds candidates), library-before-consumer order, owner approval and regrowth prevention. `agent-guardrails` now routes suite slimming there, and its reviewer contract asks for a new test only when no existing test covers the scenario.
+- Extended `terminal-session-control` to distinguish Herdr desktop app/core (`herdr-app`, `hc`) from the legacy TUI (`herdr`). Scoped the `HERDR_ENV` gate to the TUI, added live pane-to-terminal discovery and read-only screen inspection, and preserved input, focus and restart approval gates.
 
 ## 0.5.0 - 2026-11-17
 
