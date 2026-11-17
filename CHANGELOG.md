@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+## 0.5.0 - 2026-11-17
+
 - Added `skill-distribution-audit` for explicitly requested, read-only reconciliation of intended skill identities, manifests, and consumer discovery; adapted from GitHub's awesome-copilot with source attribution. No automatic release gate or bundled helper.
 
 ## 0.4.0 - 2026-11-09
