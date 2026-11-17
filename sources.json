@@ -2,6 +2,16 @@
   "version": 2,
   "sources": [
     {
+      "local": "skills/skill-authoring/skill-distribution-audit/SKILL.md",
+      "source": "skills/skill-distribution-audit/SKILL.md",
+      "repository": "https://github.com/github/awesome-copilot",
+      "branch": "main",
+      "commit": "a06ba06d11f41b996f8c246e2a452e1bf3a17950",
+      "license": "MIT",
+      "copyright": "Copyright GitHub, Inc.",
+      "mode": "adapted"
+    },
+    {
       "local": "skills/tools-and-research/handoff/SKILL.md",
       "source": "skills/agent-orchestration/handoff/SKILL.md",
       "repository": "https://github.com/davidondrej/skills",

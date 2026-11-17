@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+- Added `skill-distribution-audit` for explicitly requested, read-only reconciliation of intended skill identities, manifests, and consumer discovery; adapted from GitHub's awesome-copilot with source attribution. No automatic release gate or bundled helper.
+
 ## 0.4.0 - 2026-11-09
 
 - Extended `review-codebase-architecture` with implicit-state-machine and lifecycle-analysis triggers plus an on-demand reference for tracing state ownership, transitions, recovery, and observable UX/DX/AX trade-offs. Retained report-only discovery and design approval; no automatic library, verifier, or refactoring workflow.

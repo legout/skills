@@ -130,7 +130,7 @@ Copyright Trail of Bits. The source and local adaptations are licensed under [Cr
 
 Source: GitHub's [`documentation-writer`](https://github.com/github/awesome-copilot/blob/7b1ebe6333397841ca918dec904d24d4695fe953/skills/documentation-writer/SKILL.md), pinned to [`7b1ebe6`](https://github.com/github/awesome-copilot/tree/7b1ebe6333397841ca918dec904d24d4695fe953).
 
-`documentation-writer` is adapted under the MIT License.
+`documentation-writer` is adapted under the MIT License. `skill-distribution-audit` is adapted from [`skill-distribution-audit`](https://github.com/github/awesome-copilot/tree/a06ba06d11f41b996f8c246e2a452e1bf3a17950/skills/skill-distribution-audit), pinned to `a06ba06d11f41b996f8c246e2a452e1bf3a17950`, under the same license.
 
 > MIT License
 >

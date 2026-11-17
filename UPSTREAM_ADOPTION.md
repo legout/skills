@@ -100,6 +100,10 @@ Source pin: `obra/superpowers@b36e0829c6d0140e93cfef2ca599b1b07d4a7797`.
 - Notion/Obsidian capture skills target external stores, not repository vision capture.
 - Firecrawl, Parallel, Tavily, and other deep-research packages remain candidates only after provider, spend, and privacy requirements are chosen.
 
+## Skill distribution audit
+
+Adapt `github/awesome-copilot@skill-distribution-audit` at `a06ba06d11f41b996f8c246e2a452e1bf3a17950` into `skill-distribution-audit`. Keep the intended-set/manifest/consumer reconciliation and incomplete-evidence limits; reuse existing checks or ordinary set comparison instead of bundling the optional helper. Audits are explicit and read-only, not an automatic release gate.
+
 ## Documentation skills
 
 | Capability | Decision | Local owner |
