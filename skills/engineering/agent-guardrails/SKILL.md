@@ -22,7 +22,7 @@ Use on every coding task involving implementation, tests, or code review, includ
 3. No automatic broad suites, per-phase certification matrices, coverage quotas, mutation campaigns, or repeat-until-green. A named mandatory project or CI gate, or explicit authorization, can require more: surface budget conflicts before execution; never silently waive requirements or expand budget.
 4. Reuse still-applicable evidence. Passing evidence survives parent/reviewer handoffs, commits, and identical-content merges when the relevant code, tests, inputs, and environment still match; an identical tree is a sufficient case, not the only one. No duplicate parent reruns; a rerun needs a relevant delta or a specific hypothesis, not a "final" or "certified" label. Formatting or prose changes normally do not invalidate behavioral proof unless that text is part of the tested contract.
 5. A failure authorizes nothing broader: no wider suites, speculative extra risks, or weakened expectations. Investigate the named failure and stop or escalate rather than loop; keep the one-fix-pass, one-delta-recheck limit.
-6. Retire tests only for explicitly retired behavior; consolidate genuine duplicates while preserving real numerical, permission, persistence, and public contracts. AI authorship alone is not deletion evidence.
+6. Retire tests only for explicitly retired behavior or with a mapped surviving assertion; consolidate genuine duplicates while preserving real numerical, permission, persistence, safety-boundary and public-contract cases, and keep uncertain cases. AI authorship alone is not deletion evidence. To slim or audit a suite, load `test-diet`.
 7. Verification is claim-matched evidence of the real artifact or outcome: the actual CLI/UI/protocol path, persisted-state read-back where relevant, and the correct installed/build identity — not compilation, mtime, a running process, a saved toast, or an agent's assertion alone. A strong automated test may already be the full proof; do not add a duplicate live-verification stage for the same claim.
 8. Keep expected and observed separate: source or app exploration cannot redefine correctness. Bind evidence to its surface, scenario, artifact, and relevant environment — CLI proof is not MCP or deployment proof. Current-state claims (a service running now) need current observation; past regression evidence cannot establish them. A feature map is a menu, not a checklist: select one necessary bounded journey (several actions may form one proof) and report narrower verified scope and failed, blocked, or unverified prerequisites honestly.
 9. Skill creation or maintenance grants no product repair, source approval, admission, production-data or user-browser access, dependency installation, restart, PR/push/release, or new-capability authority; no automatic daily audit or verifier swarm.
@@ -55,8 +55,9 @@ realistic attacker and actual attack path through real callers, inputs and
 environment. Otherwise say "security: n/a". Do not report stolen-secret,
 broken-TLS, malicious-admin or generic-hardening stories. If a genuine
 security boundary lacks facts, mark that criterion unverified.
-Tests: request one only for a named reachable scenario and regression;
-coverage percentage is not a reason.
+Tests: request one only for a named reachable scenario and regression
+that no existing test covers; prefer sharpening an existing test.
+Coverage percentage is not a reason.
 Reruns: passing evidence survives this handoff while the relevant code, tests,
 inputs, and environment still match; request a rerun only for a relevant
 delta or specific hypothesis, never a fresh label or ceremony. A failing

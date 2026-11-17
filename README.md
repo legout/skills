@@ -61,6 +61,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 - **`deslop`** — behavior-preserving KISS simplification for settled diffs, files, directories, or projects; proposals first, edits when authorized.
 - **`modern-python`** — uv, Ruff, and ty setup or migration.
 - **`systematic-debugging`** — reproducible root-cause diagnosis.
+- **`test-diet`** — slim a test suite to behavior-proving tests; every deletion mapped to a surviving assertion and a caught fault, owner approval first.
 
 ### Skill authoring
 
@@ -120,6 +121,7 @@ Until the first tag is published, `0.1.0` remains unreleased. To inspect any pub
 ## Boundaries
 
 - `deslop` owns both settled-change and broader cleanup: proposals by default, edits after selection or explicit direct authorization. Reuse, Quality, and Efficiency are perspectives, not mandatory reviewer jobs. Completion-boundary offers name the action and scope; acceptance never widens either.
+- `test-diet` owns test-suite slimming and audits; `deslop` owns production-code cleanup. `agent-guardrails` still owns evidence budgets and when tests are added.
 - `documentation-writer` owns document type and quality; `doc-coauthoring` owns collaborative drafting.
 - `marimo-notebook` edits files; `marimo-pair` works through a live kernel.
 - `effective-agent-skills` covers general authoring; `improve-skill` requires session evidence; `skill-distribution-audit` checks distribution and consumer discovery when requested.

@@ -6,6 +6,8 @@ matching Git tag exists.
 
 ## Unreleased
 
+- Added `test-diet` for proposal-first test-suite slimming: inventory, spec-derived proof map, per-test classification, deletion evidence via a mapped surviving assertion plus a caught fault (coverage only finds candidates), library-before-consumer order, owner approval and regrowth prevention. `agent-guardrails` now routes suite slimming there, and its reviewer contract asks for a new test only when no existing test covers the scenario.
+
 ## 0.5.0 - 2026-11-17
 
 - Added `skill-distribution-audit` for explicitly requested, read-only reconciliation of intended skill identities, manifests, and consumer discovery; adapted from GitHub's awesome-copilot with source attribution. No automatic release gate or bundled helper.
