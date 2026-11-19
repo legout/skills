@@ -28,6 +28,13 @@
       "expected_output": "A uses document-to-markdown and its fidelity gate. B uses document-extract, reusing parsing evidence without a mandatory Markdown intermediate. Every requested table/record is accounted for; low confidence prompts inspection or explicit uncertainty, never silent omission.",
       "files": ["fixtures/semantic-routing.md"],
       "assertions": ["Routes transcription and typed records to separate owners", "Does not force Markdown before extraction", "Does not silently omit tables"]
+    },
+    {
+      "id": 5,
+      "prompt": "Plan only: summarize a docx report whose pages embed photos, a flow diagram and a chart, plus body text. Which route serves the summary, and what is OCR's role? Do not execute tools for this routing evaluation.",
+      "expected_output": "Summarization is intent-level understanding, not transcription: read the text and inspect embedded images with native vision (Office media via unzip; text-only parents via the harness-aware vision-child policy, subject to the data boundary). OCR applies only to text scans whose printed wording the summary must quote verbatim; it cannot describe photos, diagrams or charts.",
+      "files": [],
+      "assertions": ["Does not run the transcription pipeline for a summary", "Inspects embedded images with vision rather than OCR", "Keeps image access within the approved data boundary", "Limits OCR to verbatim text recovery"]
     }
   ]
 }

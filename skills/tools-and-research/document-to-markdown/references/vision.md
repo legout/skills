@@ -36,6 +36,11 @@ choose the first eligible family below, then its first eligible provider:
 | `claude-haiku-5.5` | `claude` → `github-copilot` → `openrouter` → `opencode` |
 | `gemini-3.8-flash` | `gemini` → `github-copilot` → `openrouter` → `opencode` |
 
+For OpenCode specifically: when no Copilot or other frontier provider is eligible,
+fall back to the internal `siemens` catalog in this order — `kimi-k3.1-pro`, then
+`qwen-3.8-27b`, then `deepseek-v4.1-flash`. The same eligibility gates apply before
+sending images; the fallback order grants no permission and is not a retry ladder.
+
 In single-vendor/product harnesses use the native route instead of that provider
 search, even if another CLI happens to be installed:
 

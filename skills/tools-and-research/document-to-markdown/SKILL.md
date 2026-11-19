@@ -1,6 +1,6 @@
 ---
 name: document-to-markdown
-description: "Convert local documents into semantically faithful, source-grounded Markdown, including scanned PDFs, tables, forms, receipts and handwriting. Use for faithful document reading, transcription, OCR or conversion to Markdown across PDF, Office, OpenDocument, EPUB, images, HTML and notebooks. Local-first with an approved internal vision fallback. Use document-extract for schema-driven fields or tables as JSON/CSV; not for native Office editing or spreadsheet analysis."
+description: "Convert local documents into semantically faithful, source-grounded Markdown, including scanned PDFs, tables, forms, receipts and handwriting. Use for faithful document reading, transcription, OCR or conversion to Markdown across PDF, Office, OpenDocument, EPUB, images, HTML and notebooks. Local-first with an approved internal vision fallback. Not for summarization or image understanding: for those, inspect the document's images with native vision and use this skill only when the deliverable is a faithful transcription. Use document-extract for schema-driven fields or tables as JSON/CSV; not for native Office editing or spreadsheet analysis."
 ---
 
 # Document to Markdown
@@ -8,6 +8,21 @@ description: "Convert local documents into semantically faithful, source-grounde
 Prioritize **semantic fidelity, then completeness, structure, and speed**. A successful
 command produces a candidate, not proof of a faithful transcription. OCR confidence
 does not establish reading order, table associations, checkbox state, or coverage.
+
+## Intent routing
+
+Route by task intent before starting any engine:
+
+- **Summarize or understand a document, including its images:** transcription is not
+  the deliverable. Extract meaningful embedded images (Office containers after
+  `unzip`: `word/media/`, `ppt/media/`, `xl/media/`; PDFs: page renders or
+  `pdfimages`) and inspect them with the host's image-reading tool — vision
+  understands photos, diagrams and charts; OCR recovers only printed text. Quote
+  exact text via this skill only where the summary must be verbatim. A text-only
+  parent follows the [harness-aware vision-child policy](references/vision.md);
+  image access stays subject to the data boundary below.
+- **Requested fields/tables as JSON/CSV:** `document-extract` owns the deliverable.
+- **Faithful transcription/reading view:** continue with this skill.
 
 ## Data boundary
 
