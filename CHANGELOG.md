@@ -6,6 +6,7 @@ matching Git tag exists.
 
 ## Unreleased
 
+- `second-brain`: `add` and `page` accept `--stale-after <ISO date>` (validated; a page revision with a new date replaces the old one), and `lint` lists the paths of expired claims instead of only counting them. Decision notes record *Why*, *Trade-off* and *Revisit when*; recall labels answers as source-backed, personal note or inference.
 - Slimmed `second-brain` (skill-diet): `SKILL.md` 5414 -> 5213 bytes and references 21969 -> 11918 bytes. CLI mechanics are left to `--help`, repeated rules are kept in one place, and `SKILL.md` ends with a case-to-reference index. Every persistence contract, safety boundary and command example is kept; CLI and schema are unchanged.
 - Slimmed `agent-guardrails` (skill-diet, 10279 -> 7443 bytes): one five-part findings gate replaces three restatements, merged procedure/verification/pitfall duplicates, kept every rule and the verbatim Reviewer Dispatch block.
 - Added intent routing to `document-to-markdown`: summarization/understanding of documents with images routes to native vision on extracted embedded images (with the existing harness-aware vision-child policy for text-only parents) instead of the OCR/transcription pipeline; OCR is limited to verbatim text recovery. Description and a routing eval updated accordingly. The vision-child policy gains an OpenCode fallback tier (`kimi-k3.1-pro` → `qwen-3.8-27b` → `deepseek-v4.1-flash` via the internal `siemens` catalog) for sessions without Copilot or other frontier providers.

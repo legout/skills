@@ -22,7 +22,7 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge search "<terms>" -n 5
 uv run <skill-dir>/scripts/sb.py search "<terms>" -n 5
 ```
 
-Respect `draft`, `deprecated` and expired `stale_after`; source captures have no lifecycle `status`. `verified` is separate trust metadata and does not change status. Prefer human-verified claims, cite underlying evidence, separate general knowledge from vault findings, and state gaps instead of guessing.
+Respect `draft`, `deprecated` and expired `stale_after`; source captures have no lifecycle `status`. `verified` is separate trust metadata and does not change status. Prefer human-verified claims, cite underlying evidence, label answers as source-backed, personal note or inference, and state gaps instead of guessing.
 
 ## Capture and compile
 

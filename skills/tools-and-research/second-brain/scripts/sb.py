@@ -142,6 +142,9 @@ def main() -> int:
     for writer in (ap_add, ap_page, ap_capture, ap_idea):
         writer.add_argument("--origin-project", action="append", default=[],
                             help="origin project ID, not applicability or vault scope (repeatable)")
+    for writer in (ap_add, ap_page):
+        writer.add_argument("--stale-after", default="",
+                            help="ISO date/time after which the claim needs rechecking")
     args = ap.parse_args()
 
     if args.cmd == "selftest":

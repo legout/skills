@@ -90,9 +90,26 @@ def regression_checks() -> dict[str, bool]:
                          "--related", source.relative_to(vault).as_posix(), body="A supported claim.")
             after = target.read_bytes() if target.exists() else None
             reserved.append(result.returncode != 0 and before == after)
+        expiring = run("add", "Pricing claim", "--stale-after", "2000-01-01", "-b", "Costs 5 EUR.")
+        expiring_path = next((vault / "notes").glob("*/pricing-claim.md"))
+        invalid_date = run("add", "Bad date", "--stale-after", "next week", "-b", "x")
+        source_rel = source.relative_to(vault).as_posix()
+        dated_page = run("page", "concept", "Dated page", "--body-file", "-", "--related", source_rel,
+                         "--stale-after", "2000-01-01", body="A dated claim.")
+        page_path = vault / "concepts/dated-page.md"
+        renewed = run("page", "concept", "Dated page", "--body-file", "-", "--related", source_rel,
+                      "--stale-after", "2999-01-01", "--expect-sha256", file_sha256(page_path),
+                      "--reason", "Rechecked", body="A dated claim.")
+        stale_lint = run("lint")
         indexes = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in vault.rglob("index.md")}
         rebuilt = run("index")
         return {
+            "stale_after is settable and lint names expired paths": expiring.returncode == 0
+                and dated_page.returncode == renewed.returncode == 0 and invalid_date.returncode != 0
+                and page_path.read_text(encoding="utf-8").count("stale_after:") == 1
+                and "stale_after: 2999-01-01" in page_path.read_text(encoding="utf-8")
+                and f"stale: {expiring_path.relative_to(vault)}" in stale_lint.stdout
+                and "dated-page" not in stale_lint.stdout,
             "unchanged navigation is not rewritten": rebuilt.returncode == 0
                 and all((p.read_bytes(), p.stat().st_mtime_ns) == old for p, old in indexes.items()),
             "search --all retains source captures": capture.returncode == search.returncode == 0

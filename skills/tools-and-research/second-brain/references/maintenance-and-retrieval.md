@@ -13,7 +13,7 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge init
 ## Structural checks are not compilation
 
 ```bash
-uv run <skill-dir>/scripts/sb.py --vault knowledge lint      # links, wikilinks, types, index/FTS drift, status, staleness
+uv run <skill-dir>/scripts/sb.py --vault knowledge lint      # links, wikilinks, types, index/FTS drift, status, expired stale_after paths
 uv run <skill-dir>/scripts/sb.py --vault knowledge orphans   # missing inbound links, not a demand for new ones
 uv run <skill-dir>/scripts/sb.py --vault knowledge dedup     # similarity candidates, not permission to delete
 uv run <skill-dir>/scripts/sb.py --vault knowledge stats
@@ -21,7 +21,7 @@ uv run <skill-dir>/scripts/sb.py --vault knowledge stats
 
 None of these judge readability, source support or integration. A read-only request does not authorize `index`, `lint --fix`, metadata repair or synthesis. `lint --fix` rebuilds only generated indexes/FTS, never links or claims.
 
-Content maintenance: look for unsupported claims, unintegrated sources, disagreements and outdated syntheses; recheck changeable facts (ownership, pricing, APIs) against evidence. Missing evidence does not prove a claim false. Propose before writing when the exploration contract requires approval. `codegraph` is optional, not a default step.
+Content maintenance: look for unsupported claims, unintegrated sources, disagreements and outdated syntheses; recheck changeable facts (ownership, pricing, APIs) and `lint`'s stale paths against evidence, and check whether a decision's *Revisit when* condition has occurred. Missing evidence does not prove a claim false. Propose before writing when the exploration contract requires approval. `codegraph` is optional, not a default step.
 
 ## Evaluate real retrieval questions
 

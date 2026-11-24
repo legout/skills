@@ -67,7 +67,7 @@ def fts_drift(vault: Path) -> bool:
 def cmd_lint(vault: Path, fix: bool) -> int:
     vault = vault.resolve()
     broken: list[tuple[Path, str, str]] = []
-    untyped, unsupported_wikilinks, drafts, deprecated, stale = [], [], 0, 0, 0
+    untyped, unsupported_wikilinks, stale, drafts, deprecated = [], [], [], 0, 0
     now = dt.datetime.now(dt.timezone.utc)
     for p, text in iter_concepts(vault):
         meta = parse_note(p, vault)
@@ -81,7 +81,7 @@ def cmd_lint(vault: Path, fix: bool) -> int:
         sa = meta.get("stale_after") or ""
         inst = parse_instant(sa) if sa else None
         if inst and now >= inst:
-            stale += 1
+            stale.append(p.relative_to(vault))
         for label, target in md_links(text):
             resolved = resolve_link(vault, p, target).resolve()
             if not resolved.is_relative_to(vault) or not resolved.exists():
@@ -100,13 +100,15 @@ def cmd_lint(vault: Path, fix: bool) -> int:
     stale_fts = fts_drift(vault)
     print(f"[sb] lint: {len(broken)} broken links, {len(unsupported_wikilinks)} unsupported wikilinks, "
           f"{len(drifted_indexes)} index drift, FTS {'drift' if stale_fts else 'current'}, "
-          f"{len(untyped)} without type, {drafts} draft, {deprecated} deprecated, {stale} stale")
+          f"{len(untyped)} without type, {drafts} draft, {deprecated} deprecated, {len(stale)} stale")
     for p, label, target in broken:
         print(f"    broken: {p.relative_to(vault)} -> [{label}]({target})")
     for p, target in unsupported_wikilinks:
         print(f"    unsupported wikilink: {p.relative_to(vault)} -> [[{target}]]; use [text](path.md)")
     for rel in untyped:
         print(f"    without type: {rel}")
+    for rel in stale:
+        print(f"    stale: {rel}")
     for path in drifted_indexes:
         print(f"    index drift: {path.relative_to(vault)}")
     if stale_fts:

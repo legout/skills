@@ -31,6 +31,7 @@ from .common import (
     markdown_link,
     md_links,
     now_utc,
+    parse_instant,
     parse_note,
     preserved_original,
     project_origins,
@@ -54,9 +55,16 @@ def mutable_note(vault: Path, rel: str, *, allow_source: bool = False) -> Path:
         sys.exit(f"[sb] cannot modify protected original: {rel}")
     return target
 
+def stale_after_field(args: argparse.Namespace) -> str:
+    value = (getattr(args, "stale_after", "") or "").strip()
+    if value and parse_instant(value) is None:
+        sys.exit(f"[sb] --stale-after must be an ISO date or date-time: {value}")
+    return f"stale_after: {value}\n" if value else ""
+
 def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     vault = vault.resolve()  # Normalize once; target links are resolved paths.
     ensure_bundle(vault)
+    stale_after = stale_after_field(args)
     args.title = args.title.strip()
     args.type = args.type.strip()
     if not args.title or any(c in args.title for c in "\r\n"):
@@ -108,7 +116,7 @@ def cmd_add(vault: Path, args: argparse.Namespace) -> int:
     fm = f"type: {json.dumps(args.type, ensure_ascii=False)}\n"
     if args.status != "stable":
         fm += f"status: {args.status}\n"
-    fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\nrelevance: {args.relevance}\n"
+    fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\nrelevance: {args.relevance}\n" + stale_after
     if tags:
         fm += f"tags: {json.dumps(tags, ensure_ascii=False)}\n"
     if origins:
@@ -155,6 +163,7 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
     title = args.title.strip()
     if not title or any(c in title for c in "\r\n"):
         sys.exit("[sb] page title must be a single nonempty line")
+    stale_after = stale_after_field(args)
     page = vault / PAGE_FOLDERS[args.kind] / f"{slugify(title)}.md"
     if page.name in RESERVED:
         sys.exit("[sb] page title resolves to a reserved navigation filename; choose another title")
@@ -195,7 +204,7 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
     except ValueError as exc:
         sys.exit(str(exc))
     fm = f"type: {json.dumps(args.kind)}\nstatus: {args.status}\n"
-    fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\n"
+    fm += f"generated: {{ by: {ACTOR}, at: {now_utc()} }}\n" + stale_after
     if args.tags and args.tags.strip():
         fm += f"tags: {json.dumps([t.strip() for t in args.tags.split(',') if t.strip()], ensure_ascii=False)}\n"
     if origins:
@@ -212,6 +221,8 @@ def cmd_page(vault: Path, args: argparse.Namespace) -> int:
             replaced = {"type", "status", "generated", "verified", "sources", "origin_projects"}
             if args.tags is not None:
                 replaced.add("tags")
+            if stale_after:
+                replaced.add("stale_after")
             fields = list(FRONTMATTER_FIELD.finditer(metadata))
             fm += metadata[:fields[0].start()] if fields else metadata
             for i, field in enumerate(fields):
