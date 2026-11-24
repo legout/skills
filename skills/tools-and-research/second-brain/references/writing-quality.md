@@ -1,12 +1,9 @@
-# Writing quality for people and agents
+# Writing for people and agents
 
-Read this when authoring or revising maintained pages, source summaries or reading views. The wiki should be understandable without the original conversation and usable by both people and agents.
+Pages must make sense without the original conversation.
 
-- Introduce each page's subject, scope and relevant caveats briefly.
-- Use descriptive headings, short paragraphs and purposeful lists or tables. Include only sections with meaningful content; do not invent facts or boilerplate.
-- Distinguish source statements, observed results, interpretation, limitations and open questions. Keep evidence and qualifications beside the claims they support.
-- Preserve factual meaning, numbers, units, ranges, technical names and identifiers. Readability must not hide uncertainty or reduce precision.
-- Follow the wiki's configured prose language without changing machine-readable structure, stable paths or source quotations. The skill's instruction language does not determine the wiki's content language.
-- Keep original assets and verbatim captures unchanged. Clearly label derived summaries, translations and reading views and link them to their evidence.
-
-These writing rules do not authorize rewriting append-only captures; preserve source integrity, hashes and revision safeguards.
+- Open with subject, scope and caveats. Descriptive headings, short paragraphs, lists or tables only where they help; no boilerplate sections.
+- Separate source statements, observed results, interpretation, limitations and open questions, with evidence beside each claim.
+- Keep numbers, units, ranges, names, identifiers, stable paths and original quotations exact. Readability never hides uncertainty.
+- Write prose in the wiki's configured language, whatever language this skill uses; machine-readable structure stays unchanged.
+- Label derived summaries, translations and reading views and link their evidence. They never rewrite append-only captures. A new reading view does not inherit the capture's `content_sha256`: omit it, or let `capture` compute one for a new snapshot.

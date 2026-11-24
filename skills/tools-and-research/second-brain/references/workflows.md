@@ -1,83 +1,58 @@
 # Persistence and compilation workflows
 
-Use these patterns for normal persistence and when maintaining host-specific shortcuts. The CLI does not synthesize prose or install slash commands; `page` writes the complete body authored by the agent. An explicitly narrower user or command contract still wins.
+The CLI does not synthesize prose or install slash commands; `page` writes the complete body the agent authored. A narrower user or command contract wins.
 
 ## Choose the operation
 
-- **Remember a finding:** search first. Update the relevant maintained page when the finding changes reusable knowledge. Add a dated note only when a distinct decision, event or original observation deserves its own history. A confirmation of unchanged knowledge needs neither a duplicate note nor a cosmetic page revision.
-- **Save a session:** extract at most 3–5 durable outcomes, not a turn-by-turn diary. Reuse existing captures. Compile related outcomes into the affected pages; several notes may support one page. Leave genuine open questions as `idea` drafts.
-- **Ingest a source:** read it with the appropriate document/web tool, compare against the wiki, then compile supported findings. Existing files/directories remain in place: keep original URIs, hashes and dates, with selective source excerpts/summaries when useful, not an archive copy per file. Preserve an acquired attachment/download in `_raw/` only when it needs a managed permanent home, explicitly using `--original` plus `--archive-original`. One source does not automatically require a new topic or a page in every folder.
-- **Compile existing captures:** read current and superseded versions as evidence/history, identify the current supported claims and update their owning pages. Cite original evidence; do not treat another agent's synthesis as independent corroboration.
-- **Explore connections:** propose evidence-grounded links, possible topics or gaps. Ask for approval where the exploration contract requires it; do not equate a proposed connection with confirmed knowledge.
-- **Capture only / one research draft:** write only the requested capture and state the integration deferral. Open questions are not established facts. **Read-only lint** stays read-only and performs no synthesis.
+- **Remember a finding:** search first. Update the owning maintained page when reusable knowledge changes. Add a dated note only for a distinct decision, event or original observation. Unchanged knowledge needs no duplicate note or cosmetic revision.
+- **Save a session:** extract at most 3–5 durable outcomes, not a diary. Reuse existing captures and compile related outcomes into the affected pages; several notes may support one page. Leave genuine open questions as `idea` drafts.
+- **Ingest a source:** read it with the right document/web tool, compare against the wiki, then compile supported findings. Excerpts or summaries only where useful, not an archive copy per file ([capture details](capture-and-revisions.md)). One source does not require a new topic or a page in every folder.
+- **Compile existing captures:** read current and superseded versions as history, identify the current supported claims and update their owning pages. Cite original evidence; another agent's synthesis is not independent corroboration.
+- **Explore connections:** propose evidence-grounded links, topics or gaps. Ask for approval where the exploration contract requires it; a proposed connection is not confirmed knowledge.
+- **Capture only / one research draft:** write only the requested capture and state the deferral. Open questions are not facts. **Read-only lint** performs no writes or synthesis.
 
-For host shortcuts such as `/sb-remember`, `/sb-session` and `/sb-ingest`, document both capture and compilation when their scope is normal persistence. If a shortcut explicitly authorizes only one note or asks to propose changes before writing, preserve that boundary. A separate compile shortcut may implement the compile-existing-captures pattern, but this repository does not install it or modify existing host configuration.
+Host shortcuts such as `/sb-remember`, `/sb-session` and `/sb-ingest` document both capture and compilation when their scope is normal persistence, and keep any narrower boundary (one note, propose-before-write). This repository does not install shortcuts or change host configuration.
 
-## Routing examples
+## Routing
 
-- A field mapping or accepted schema belongs in `references/data-schema.md`; an original decision note may remain its evidence.
-- A reusable distinction belongs in `concepts/`, a concrete tracked device in `entities/`, an analysis procedure in `playbooks/`, and the cross-source project picture in `topics/`.
-- A bounded investigation or unresolved question stays in `notes/`. Do not create an entity for every inventory row or copy a whole session into a topic.
+- A field mapping or accepted schema → `references/data-schema.md`; the original decision note may remain its evidence.
+- A reusable distinction → `concepts/`; a concrete tracked device → `entities/`; an analysis procedure → `playbooks/`; the cross-source project picture → `topics/`.
+- A bounded investigation or unresolved question stays in `notes/`. No entity per inventory row; no session copied into a topic.
 
-Folder roles are separate from OKF `type`. `add -t reference` creates a dated note, not a maintained reference page. Use `page reference`, `page concept`, `page entity`, `page topic` or `page playbook` for maintained knowledge. Do not invent `syntheses/` or another `skills/` folder inside the wiki.
+`add -t reference` creates a dated note, not a maintained reference page; use `page reference|concept|entity|topic|playbook`. Do not invent `syntheses/` or a `skills/` folder inside the wiki.
 
-`add` and `idea` create `notes/YYYY-MM-DD/slug.md`, using the local creation day. A same-day title collision or a reserved filename (`index.md`, `log.md`, `schema.md`) gets a numbered suffix without overwriting earlier captures or navigation. The title itself is unchanged. Existing `notes/YYYY-MM-DD-slug.md` files remain supported and are not moved; migration requires explicit authorization.
+## Commands
 
-## Capture only when it adds evidence
-
-Commands below target project knowledge. Omit `--vault knowledge` for global knowledge. Paths supplied to `--related` must already exist inside the selected bundle; examples are placeholders, not files to manufacture.
+Examples target project knowledge; omit `--vault knowledge` for global. `--related` paths must already exist in the bundle.
 
 ```bash
+# preserve an event (does not complete integration) / an open question as draft insight
 uv run <skill-dir>/scripts/sb.py --vault knowledge add "Accepted decision" -t decision \
   --body-file /path/to/decision.md --related sources/existing-evidence.md
 uv run <skill-dir>/scripts/sb.py --vault knowledge idea "Which ownership mapping is still unknown?"
-```
 
-The first command preserves an event; it does not complete ordinary wiki integration. The second deliberately preserves an unresolved `draft insight`.
-
-## Compile a complete supported page
-
-Choose its owner, preserve valid claims and citations, and submit the complete current body. `--related` records graph edges but is not a substitute for citations beside material claims.
-
-```bash
+# create a maintained page; revise it with the hash of the current file
 uv run <skill-dir>/scripts/sb.py --vault knowledge page reference "Data schema" \
   --body-file /path/to/complete-schema.md --related notes/YYYY-MM-DD/existing-decision.md
-```
-
-For an existing page, read it and calculate its current hash first:
-
-```bash
 shasum -a 256 knowledge/references/data-schema.md
 uv run <skill-dir>/scripts/sb.py --vault knowledge page reference "Data schema" \
   --body-file /path/to/complete-schema.md --related notes/YYYY-MM-DD/existing-decision.md \
   --expect-sha256 <current-hash> --reason "Confirmed field mapping"
 ```
 
-Retain the full existing source/related set alongside new evidence. Keep uncertainty and disagreements visible; `page` defaults to `draft`. Compilation is not verification or automatic promotion to `stable`.
+`--related` records graph edges; it does not replace citations beside material claims. `page` defaults to `draft`; compilation is not verification or promotion to `stable`.
 
-## Record project origin without changing scope
+## Project origin
 
-When knowledge arises from a project, record its stable lowercase project ID in `origin_projects` with repeatable `--origin-project <id>` on `add`, `idea`, `capture` and `page`. Reuse known IDs; do not use a local path or URL, and clarify an ambiguous identity rather than guessing from the working directory. Omit provenance only when no project origin is known. Origin means where the knowledge arose, not where it applies; it never changes vault routing or authorizes global fallback for project-only knowledge.
-
-For a transferable finding from a project without its own bundle, keep the global folder schema and supply its known ID explicitly:
+`--origin-project` takes a stable lowercase project ID (works on `add`, `idea`, `capture`, `page`; repeatable). Reuse known IDs, never a path or URL; clarify an ambiguous identity instead of guessing from the working directory. Add a project only when its evidence contributes substantive knowledge. `page` revisions keep existing origins. A transferable finding from a project without a bundle goes global with its ID; project-only facts never fall back to global.
 
 ```bash
-uv run <skill-dir>/scripts/sb.py add "Reusable finding" --origin-project featherbi \
-  --body-file /path/to/finding.md
 uv run <skill-dir>/scripts/sb.py page concept "Reusable concept" --origin-project featherbi \
   --body-file /path/to/complete-concept.md --related notes/YYYY-MM-DD/existing-evidence.md
 ```
 
-These are global commands, not a fallback for project-only facts. The same flag works with `--vault knowledge`, `capture` and `idea`. Repeat it for several contributing projects; duplicates are removed. On revisions, `page` retains existing origins even if the flag is omitted. Add a new project only when its evidence contributes substantive knowledge, not merely because the edit happened there. Keep normal hash/reason safeguards and inline citations.
-
 ## Finish at a meaningful boundary
 
-Compile after an accepted topic block or session rather than after every tool call. Keep historical notes in place; only superseded claims become deprecated. Curate the hot index toward the current maintained pages and check meaning, links and sources.
+Compile after an accepted topic block or session, not after every tool call. Historical notes stay; only superseded claims become deprecated. Point the hot index at current maintained pages and check meaning, links and sources.
 
-The final response separates:
-
-- **Captures:** new or reused evidence and notes, with paths.
-- **Compiled pages:** created or revised maintained pages and their scope.
-- **Deferrals/open questions:** what was deliberately not compiled, why, and its intended owner when known.
-
-Legitimate deferrals include explicit capture-only scope, insufficient evidence or an unresolved contradiction. Routine lack of a `page` call is not successful integration. Do not add a synthetic session-report note merely to document that the other notes were written.
+Legitimate deferrals: explicit capture-only scope, insufficient evidence, an unresolved contradiction. Simply not calling `page` is not integration.
