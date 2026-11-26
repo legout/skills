@@ -4,7 +4,7 @@ The CLI does not synthesize prose or install slash commands; `page` writes the c
 
 ## Choose the operation
 
-- **Remember a finding:** search first. Update the owning maintained page when reusable knowledge changes. Add a dated note only for a distinct decision, event or original observation. Unchanged knowledge needs no duplicate note or cosmetic revision.
+- **Remember a finding:** search first. Update the owning maintained page when reusable knowledge changes, especially when readers would otherwise have to piece together several sources. Add a discretionary dated note only for a distinct decision, event or original observation. Ask what a future reader would have to rediscover: skip facts one obvious lookup would recover, but preserve decision rationale and hard-won diagnoses. Unchanged knowledge needs no duplicate note or cosmetic revision.
 - **Record a decision:** `add -t decision` with the decision, *Why*, *Trade-off* and *Revisit when* (the condition that would overturn it). A reversal is a new decision with `--supersedes`, never an edit of the old one.
 - **Save a session:** extract at most 3–5 durable outcomes, not a diary. Reuse existing captures and compile related outcomes into the affected pages; several notes may support one page. Leave genuine open questions as `idea` drafts.
 - **Ingest a source:** read it with the right document/web tool, compare against the wiki, then compile supported findings. Excerpts or summaries only where useful, not an archive copy per file ([capture details](capture-and-revisions.md)). One source does not require a new topic or a page in every folder.
