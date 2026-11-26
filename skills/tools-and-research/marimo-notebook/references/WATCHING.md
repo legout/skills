@@ -34,7 +34,7 @@ watcher_on_save = "autorun"
 Without `watchdog`, marimo falls back to polling:
 
 ```bash
-pip install watchdog
+uv add watchdog
 ```
 
 ## Module Autoreloading

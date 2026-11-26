@@ -34,8 +34,8 @@ uvx marimo export pdf notebook.py -o notebook.pdf
 PDF export uses `nbformat` and `nbconvert` under the hood. By default it uses the WebPDF exporter which requires Chromium. Install the dependencies:
 
 ```bash
-uv pip install nbformat nbconvert
-playwright install chromium
+uv add nbformat nbconvert
+uv run playwright install chromium
 ```
 
 Useful flags:
